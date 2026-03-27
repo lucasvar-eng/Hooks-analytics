@@ -1,0 +1,2995 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ECOM ANALYTICS - Plataforma v3</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #080808;
+    --bg-card: #111111;
+    --bg-card-hover: #1a1a1a;
+    --bg-sidebar: #0c0c0c;
+    --bg-header: #0a0a0a;
+    --border: #1e1e1e;
+    --border-light: #2a2a2a;
+    --text: #e0e0e0;
+    --text-secondary: #888888;
+    --text-muted: #555555;
+    --accent: #6366f1;
+    --accent-hover: #818cf8;
+    --green: #22c55e;
+    --green-bg: rgba(34,197,94,0.1);
+    --red: #ef4444;
+    --red-bg: rgba(239,68,68,0.1);
+    --yellow: #eab308;
+    --yellow-bg: rgba(234,179,8,0.1);
+    --blue: #3b82f6;
+    --blue-bg: rgba(59,130,246,0.1);
+    --orange: #f97316;
+    --purple: #a855f7;
+    --cyan: #06b6d4;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* ========== SIDEBAR ========== */
+  .sidebar {
+    width: 240px;
+    min-width: 240px;
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border);
+    display: none;
+    flex-direction: column;
+    height: 100vh;
+    overflow-y: auto;
+    z-index: 100;
+  }
+
+  .sidebar.active {
+    display: flex;
+  }
+
+  .sidebar-logo {
+    padding: 20px 20px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .sidebar-logo h1 {
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    color: #fff;
+  }
+
+  .sidebar-logo span {
+    font-size: 10px;
+    font-weight: 400;
+    color: var(--text-muted);
+    letter-spacing: 1px;
+    display: block;
+    margin-top: 2px;
+  }
+
+  .sidebar-nav {
+    flex: 1;
+    padding: 12px 8px;
+  }
+
+  .sidebar-section-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: var(--text-muted);
+    padding: 16px 12px 6px;
+    text-transform: uppercase;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    transition: all 0.15s ease;
+    margin-bottom: 2px;
+  }
+
+  .nav-item:hover {
+    background: var(--bg-card);
+    color: var(--text);
+  }
+
+  .nav-item.active {
+    background: var(--accent);
+    color: #fff;
+    font-weight: 600;
+  }
+
+  .nav-item .nav-icon {
+    font-size: 16px;
+    width: 22px;
+    text-align: center;
+  }
+
+  /* ========== MAIN ========== */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ========== HEADER ========== */
+  .header {
+    height: 56px;
+    min-height: 56px;
+    background: var(--bg-header);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .header-back-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .header-back-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .header-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .date-range {
+    background: var(--bg-card);
+    border: 1px solid var(--border-light);
+    color: var(--text);
+    padding: 7px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    outline: none;
+  }
+
+  .header-avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: #fff;
+    cursor: pointer;
+  }
+
+  /* ========== CONTENT ========== */
+  .content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px;
+  }
+
+  .content::-webkit-scrollbar { width: 6px; }
+  .content::-webkit-scrollbar-track { background: transparent; }
+  .content::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 3px; }
+
+  .page { display: none; }
+  .page.active { display: block; }
+
+  .page-header {
+    margin-bottom: 24px;
+  }
+
+  .page-header h2 {
+    font-size: 22px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 4px;
+  }
+
+  .page-header p {
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  /* ========== CARDS ========== */
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+  }
+
+  .card-title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .grid-6 { display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; }
+  .grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+
+  .metric-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+  }
+
+  .metric-card .mc-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+  }
+
+  .metric-card .mc-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  .metric-card .mc-change {
+    font-size: 11px;
+    font-weight: 600;
+    margin-top: 4px;
+  }
+
+  .mc-change.up { color: var(--green); }
+  .mc-change.down { color: var(--red); }
+
+  /* ========== STORE CARD (HOME) ========== */
+  .store-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+  }
+
+  .store-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  }
+
+  .store-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .store-name {
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  .store-status {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+  }
+
+  .store-alert {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: var(--red-bg);
+    color: var(--red);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+  }
+
+  .store-metrics {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .store-metric .sm-label {
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-bottom: 2px;
+  }
+
+  .store-metric .sm-value {
+    font-size: 15px;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  .store-metric .sm-change {
+    font-size: 10px;
+    margin-top: 2px;
+  }
+
+  .store-metric .sm-change.up { color: var(--green); }
+  .store-metric .sm-change.down { color: var(--red); }
+
+  /* ========== TABLES ========== */
+  .table-wrapper {
+    overflow-x: auto;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+
+  thead th {
+    background: #141414;
+    padding: 10px 12px;
+    text-align: right;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    white-space: nowrap;
+  }
+
+  thead th:first-child { text-align: left; }
+
+  tbody td {
+    padding: 9px 12px;
+    text-align: right;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+
+  tbody td:first-child { text-align: left; font-weight: 500; }
+  tbody tr:hover { background: rgba(99,102,241,0.04); }
+  tbody tr:last-child td { border-bottom: none; }
+
+  tr.row-total { background: #141414; font-weight: 700; }
+  tr.row-total td { border-top: 2px solid var(--border-light); color: #fff; }
+
+  /* ========== BADGES ========== */
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+  }
+
+  .badge-green { background: var(--green-bg); color: var(--green); }
+  .badge-red { background: var(--red-bg); color: var(--red); }
+  .badge-yellow { background: var(--yellow-bg); color: var(--yellow); }
+  .badge-blue { background: var(--blue-bg); color: var(--blue); }
+
+  /* ========== BUTTONS ========== */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    border: none;
+    transition: all 0.15s ease;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+  }
+
+  .btn-primary:hover { background: var(--accent-hover); }
+
+  .btn-secondary {
+    background: var(--bg-card);
+    color: var(--text);
+    border: 1px solid var(--border-light);
+  }
+
+  .btn-secondary:hover { border-color: var(--accent); }
+
+  /* ========== MODAL ========== */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .modal-overlay.active {
+    display: flex;
+  }
+
+  .modal {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    max-width: 500px;
+    width: 90%;
+    position: relative;
+  }
+
+  .modal-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 20px;
+    cursor: pointer;
+  }
+
+  .modal-close:hover {
+    color: var(--text);
+  }
+
+  /* ========== PNL ========== */
+  .pnl-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+  }
+
+  .pnl-row:last-child { border-bottom: none; }
+  .pnl-row .pnl-label { color: var(--text-secondary); font-weight: 500; }
+  .pnl-row .pnl-value { font-weight: 700; color: #fff; font-variant-numeric: tabular-nums; }
+  .pnl-row.pnl-negative .pnl-value { color: var(--red); }
+  .pnl-row.pnl-subtotal { background: #141414; border-radius: 6px; margin: 4px 0; }
+  .pnl-row.pnl-subtotal .pnl-label { color: #fff; font-weight: 700; }
+  .pnl-row.pnl-profit { background: rgba(34,197,94,0.08); border-radius: 6px; }
+  .pnl-row.pnl-profit .pnl-value { color: var(--green); font-size: 18px; }
+  .pnl-row.pnl-profit .pnl-label { color: var(--green); font-weight: 700; }
+
+  /* ========== SLIDERS ========== */
+  .slider-group {
+    margin-bottom: 20px;
+  }
+
+  .slider-group label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+  }
+
+  .slider-group label span { color: #fff; font-weight: 700; }
+
+  input[type="range"] {
+    width: 100%;
+    height: 4px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: var(--border-light);
+    border-radius: 2px;
+    outline: none;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    border: 2px solid #fff;
+  }
+
+  /* ========== CHART PLACEHOLDER ========== */
+  .chart-placeholder {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 24px;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 14px;
+  }
+
+  .chart-bars {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-around;
+    gap: 12px;
+    margin-top: 16px;
+    height: 80px;
+  }
+
+  .chart-bar {
+    background: linear-gradient(180deg, var(--accent), var(--accent-hover));
+    border-radius: 4px;
+    flex: 1;
+  }
+
+  /* ========== AD CARDS ========== */
+  .ad-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .ad-thumb {
+    width: 100%;
+    height: 120px;
+    background: linear-gradient(135deg, #6366f1, #a855f7);
+  }
+
+  .ad-info {
+    padding: 12px;
+  }
+
+  .ad-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 8px;
+  }
+
+  .ad-metrics {
+    font-size: 11px;
+    color: var(--text-secondary);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  /* ========== COMPETITOR CARDS ========== */
+  .competitor-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+  }
+
+  .competitor-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 12px;
+  }
+
+  .competitor-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+  }
+
+  .competitor-row:last-child {
+    border-bottom: none;
+  }
+
+  .competitor-row label {
+    color: var(--text-secondary);
+  }
+
+  .competitor-row .value {
+    color: #fff;
+    font-weight: 600;
+  }
+
+  /* ========== REPORT ITEM ========== */
+  .report-item {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+
+  .report-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  .report-item-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
+  }
+
+  .report-item-meta {
+    display: flex;
+    gap: 8px;
+    font-size: 11px;
+  }
+
+  .report-item-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  /* ========== SECTION CARDS ========== */
+  .section-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+
+  .section-card-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 12px;
+  }
+
+  .section-card-content {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+
+  /* ========== DISTRIBUTION BARS ========== */
+  .distribution-bar {
+    display: flex;
+    gap: 2px;
+    margin-top: 12px;
+    border-radius: 4px;
+    overflow: hidden;
+    height: 24px;
+  }
+
+  .distribution-segment {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 600;
+    color: #fff;
+  }
+
+  /* ========== HOME PAGE SPECIFIC ========== */
+  .home-wrapper {
+    display: none;
+  }
+
+  .home-wrapper.active {
+    display: block;
+  }
+
+  .home-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+  }
+
+  .home-logo {
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    color: #fff;
+  }
+
+  /* home-kpis removed — global aggregated KPIs don't apply at agency level */
+
+  .home-stores {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+
+  /* ========== MISC ========== */
+  .spacer-16 { height: 16px; }
+  .spacer-24 { height: 24px; }
+
+  .text-green { color: var(--green); }
+  .text-red { color: var(--red); }
+
+  .pill-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .pill {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 12px;
+    border-radius: 16px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+
+  .link-btn {
+    color: var(--accent);
+    cursor: pointer;
+    text-decoration: none;
+    font-weight: 600;
+  }
+
+  .link-btn:hover {
+    color: var(--accent-hover);
+  }
+
+  input[type="text"], input[type="number"] {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-family: 'Inter', sans-serif;
+    outline: none;
+  }
+
+  input[type="text"]:focus, input[type="number"]:focus {
+    border-color: var(--accent);
+  }
+
+  .setting-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .setting-row:last-child {
+    border-bottom: none;
+  }
+
+  .setting-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
+  .setting-value {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .integration-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .integration-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+  }
+
+  .integration-status {
+    font-size: 11px;
+    padding: 4px 8px;
+    border-radius: 4px;
+  }
+
+  .integration-connected {
+    background: var(--green-bg);
+    color: var(--green);
+  }
+
+  .integration-pending {
+    background: var(--yellow-bg);
+    color: var(--yellow);
+  }
+
+  /* ========== INSIGHT BAR (análisis contextual) ========== */
+  .insight-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+  .insight-bar.insight-ok { border-left-color: var(--green); }
+  .insight-bar.insight-warn { border-left-color: var(--yellow); }
+  .insight-bar.insight-critical { border-left-color: var(--red); }
+  .insight-bar-icon { font-size: 16px; flex-shrink: 0; }
+  .insight-bar-text span { color: var(--text); font-weight: 600; }
+
+  /* Health indicators en metric cards */
+  .mc-health {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    margin-top: 4px;
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+  .mc-health.health-ok { background: var(--green-bg); color: var(--green); }
+  .mc-health.health-warn { background: var(--yellow-bg); color: var(--yellow); }
+  .mc-health.health-critical { background: var(--red-bg); color: var(--red); }
+
+  /* Breakeven reference line label */
+  .breakeven-label {
+    font-size: 10px;
+    color: var(--red);
+    font-weight: 600;
+    border: 1px dashed var(--red);
+    padding: 2px 8px;
+    border-radius: 4px;
+    display: inline-block;
+    margin-bottom: 8px;
+  }
+
+  /* Objetivos panel in Settings */
+  .objetivo-card {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .objetivo-card:last-child { border-bottom: none; }
+  .objetivo-label { font-size: 13px; color: var(--text); }
+  .objetivo-sublabel { font-size: 11px; color: var(--text-muted); }
+  .objetivo-input {
+    width: 90px;
+    padding: 6px 8px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-size: 13px;
+    text-align: right;
+  }
+  .objetivo-auto {
+    font-size: 12px;
+    color: var(--accent);
+    font-weight: 600;
+    background: rgba(99,102,241,0.1);
+    padding: 4px 10px;
+    border-radius: 6px;
+  }
+  .fase-selector {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .fase-btn {
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .fase-btn.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+
+</style>
+</head>
+<body>
+
+<!-- HOME PAGE -->
+<div class="home-wrapper active" id="homeWrapper">
+  <div class="main">
+    <div class="header">
+      <div class="header-left">
+        <div class="home-logo">ECOM ANALYTICS</div>
+      </div>
+      <div class="header-right">
+        <input type="text" class="date-range" value="1 Mar - 25 Mar 2026" readonly>
+        <div class="header-avatar">LV</div>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="home-stores" id="storeCardsContainer">
+        <!-- Store cards will be generated by JS -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- STORE VIEW -->
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <h1>STORE</h1>
+    <span id="storeName">GERF</span>
+  </div>
+  <div class="sidebar-nav">
+    <div class="sidebar-section-label">Análisis</div>
+    <div class="nav-item active" onclick="navigateTo('resumen')">
+      <span class="nav-icon">📊</span>
+      <span>Resumen</span>
+    </div>
+    <div class="nav-item" onclick="navigateTo('dashboard')">
+      <span class="nav-icon">📈</span>
+      <span>Dashboard</span>
+    </div>
+    <div class="nav-item" onclick="navigateTo('cashflow')">
+      <span class="nav-icon">💵</span>
+      <span>Cashflow</span>
+    </div>
+
+    <div class="sidebar-section-label">Publicidad</div>
+    <div class="nav-item" onclick="navigateTo('metapixel')">
+      <span class="nav-icon">👁️</span>
+      <span>Meta Pixel</span>
+    </div>
+    <div class="nav-item" onclick="navigateTo('creativos')">
+      <span class="nav-icon">🎨</span>
+      <span>Creativos</span>
+    </div>
+
+    <div class="sidebar-section-label">Operaciones</div>
+    <div class="nav-item" onclick="navigateTo('costos')">
+      <span class="nav-icon">💰</span>
+      <span>Costos</span>
+    </div>
+    <div class="nav-item" onclick="navigateTo('productos')">
+      <span class="nav-icon">📦</span>
+      <span>Productos</span>
+    </div>
+    <div class="nav-item" onclick="navigateTo('clientes')">
+      <span class="nav-icon">👥</span>
+      <span>Clientes</span>
+    </div>
+
+    <div class="sidebar-section-label">Herramientas</div>
+    <div class="nav-item" onclick="navigateTo('simulador')">
+      <span class="nav-icon">🎯</span>
+      <span>Simulador</span>
+    </div>
+    <div class="nav-item" onclick="navigateTo('contenido')">
+      <span class="nav-icon">📝</span>
+      <span>Contenido</span>
+    </div>
+    <div class="nav-item" onclick="navigateTo('competencia')">
+      <span class="nav-icon">🔍</span>
+      <span>Competencia</span>
+    </div>
+    <div class="nav-item" onclick="navigateTo('reportes')">
+      <span class="nav-icon">📋</span>
+      <span>Reportes</span>
+    </div>
+
+    <div class="sidebar-section-label">Config</div>
+    <div class="nav-item" onclick="navigateTo('settings')">
+      <span class="nav-icon">⚙️</span>
+      <span>Settings</span>
+    </div>
+  </div>
+</div>
+
+<div class="main" id="storeMain" style="display: none;">
+  <div class="header">
+    <div class="header-left">
+      <button class="header-back-btn" onclick="goHome()">← Volver</button>
+      <div class="header-title" id="headerStoreName">GERF</div>
+    </div>
+    <div class="header-right">
+      <input type="text" class="date-range" value="1 Mar - 25 Mar 2026" readonly>
+      <div class="header-avatar">LV</div>
+    </div>
+  </div>
+
+  <div class="content">
+
+<!-- RESUMEN PAGE -->
+<div class="page active" id="page-resumen">
+  <div class="page-header">
+    <h2 id="resumenTitle">GERF — Resumen Configurable</h2>
+  </div>
+
+  <div style="margin-bottom: 16px;">
+    <button class="btn btn-secondary">🎨 Personalizar widgets</button>
+  </div>
+
+  <div class="grid-6">
+    <div class="metric-card">
+      <div class="card-title">Órdenes >$0</div>
+      <div class="mc-value">87</div>
+    </div>
+    <div class="metric-card">
+      <div class="card-title">Revenue</div>
+      <div class="mc-value">$5.8M</div>
+    </div>
+    <div class="metric-card">
+      <div class="card-title">Net Revenue</div>
+      <div class="mc-value">$3.9M</div>
+    </div>
+    <div class="metric-card">
+      <div class="card-title">Profit</div>
+      <div class="mc-value">$1.2M</div>
+    </div>
+    <div class="metric-card">
+      <div class="card-title">True ROAS</div>
+      <div class="mc-value">3.4x</div>
+    </div>
+    <div class="metric-card">
+      <div class="card-title">NC %</div>
+      <div class="mc-value">78%</div>
+    </div>
+  </div>
+</div>
+
+<!-- DASHBOARD PAGE -->
+<div class="page" id="page-dashboard">
+  <div class="page-header">
+    <h2>Dashboard</h2>
+    <p>Métricas consolidadas de tienda</p>
+  </div>
+
+  <!-- INSIGHT BAR — Análisis contextual -->
+  <div class="insight-bar insight-warn">
+    <div class="insight-bar-icon">⚡</div>
+    <div class="insight-bar-text">
+      <span>CPA $15K</span> está 18% por encima del máximo ($12.7K).
+      ROAS y Profit Margin dentro del rango esperado.
+      <span>NC% 78%</span> supera objetivo (40%) — buena adquisición.
+    </div>
+  </div>
+
+  <div style="margin-bottom: 24px;">
+    <h3 style="font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;">Top KPIs</h3>
+    <div class="grid-8" style="display: grid; grid-template-columns: repeat(8, 1fr); gap: 12px;">
+      <div class="metric-card">
+        <div class="card-title">Órdenes >$0</div>
+        <div class="mc-value">87</div>
+      </div>
+      <div class="metric-card">
+        <div class="card-title">Revenue</div>
+        <div class="mc-value">$5.8M</div>
+      </div>
+      <div class="metric-card">
+        <div class="card-title">Ad Spend</div>
+        <div class="mc-value">$1.12M</div>
+      </div>
+      <div class="metric-card">
+        <div class="card-title">Net Revenue</div>
+        <div class="mc-value">$3.9M</div>
+      </div>
+      <div class="metric-card">
+        <div class="card-title">Profit</div>
+        <div class="mc-value">$1.2M</div>
+        <div class="mc-health health-ok">🟢 En objetivo</div>
+      </div>
+      <div class="metric-card">
+        <div class="card-title">Profit Margin</div>
+        <div class="mc-value">20.7%</div>
+        <div class="mc-health health-ok">🟢 +5.7pp vs min 15%</div>
+      </div>
+      <div class="metric-card">
+        <div class="card-title">ROAS</div>
+        <div class="mc-value">5.2x</div>
+        <div class="mc-health health-ok">🟢 +49% vs target</div>
+      </div>
+      <div class="metric-card">
+        <div class="card-title">True ROAS</div>
+        <div class="mc-value">3.4x</div>
+        <div class="mc-health health-ok">🟢 +21% vs target 2.8x</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-bottom: 24px;">
+    <h3 style="font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;">Tienda</h3>
+    <div class="grid-6">
+      <div class="metric-card">
+        <div class="card-title">Órdenes</div>
+        <div class="mc-value">92</div>
+      </div>
+      <div class="metric-card">
+        <div class="card-title">Revenue</div>
+        <div class="mc-value">$5.8M</div>
+      </div>
+      <div class="metric-card">
+        <div class="card-title">Net Revenue</div>
+        <div class="mc-value">$3.9M</div>
+      </div>
+      <div class="metric-card">
+        <div class="card-title">AOV</div>
+        <div class="mc-value">$63K</div>
+      </div>
+      <div class="metric-card">
+        <div class="card-title">AOV Neto</div>
+        <div class="mc-value">$42.4K</div>
+      </div>
+      <div class="metric-card">
+        <div class="card-title">Devoluciones</div>
+        <div class="mc-value">3</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-bottom: 24px;">
+    <h3 style="font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;">NC/RC</h3>
+    <div class="grid-6">
+      <div class="metric-card">
+        <div class="card-title">NC %</div>
+        <div class="mc-value">78%</div>
+      </div>
+      <div class="metric-card">
+        <div class="card-title">NC Órdenes</div>
+        <div class="mc-value">72</div>
+      </div>
+      <div class="metric-card">
+        <div class="card-title">NC Revenue</div>
+        <div class="mc-value">$4.5M</div>
+      </div>
+      <div class="metric-card">
+        <div class="card-title">NC CPA</div>
+        <div class="mc-value">$15.6K</div>
+      </div>
+      <div class="metric-card">
+        <div class="card-title">RC %</div>
+        <div class="mc-value">22%</div>
+      </div>
+      <div class="metric-card">
+        <div class="card-title">RC Revenue</div>
+        <div class="mc-value">$1.3M</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-bottom: 24px;">
+    <h3 style="font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;">Canales de Marketing</h3>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th style="text-align: left;">Canal</th>
+            <th>Ad Spend</th>
+            <th>ROAS</th>
+            <th>True ROAS</th>
+            <th>Órdenes</th>
+            <th>Revenue</th>
+            <th>Net Revenue</th>
+            <th>True CPA</th>
+            <th>AOV</th>
+            <th>Net AOV</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Meta</td>
+            <td>$1.02M</td>
+            <td>5.2x</td>
+            <td>3.3x</td>
+            <td>68</td>
+            <td>$5.3M</td>
+            <td>$3.5M</td>
+            <td>$15K</td>
+            <td>$78K</td>
+            <td>$51.5K</td>
+          </tr>
+          <tr>
+            <td>Google Ads</td>
+            <td>$100K</td>
+            <td>6.1x</td>
+            <td>4.0x</td>
+            <td>12</td>
+            <td>$610K</td>
+            <td>$402K</td>
+            <td>$8.3K</td>
+            <td>$50.8K</td>
+            <td>$33.5K</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div style="margin-bottom: 24px;">
+    <h3 style="font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;">Costos del Período</h3>
+    <div class="grid-3">
+      <div class="metric-card">
+        <div class="card-title">Costos Productos</div>
+        <div class="mc-value">$1.4M</div>
+      </div>
+      <div class="metric-card">
+        <div class="card-title">Costos Envío</div>
+        <div class="mc-value">$380K</div>
+      </div>
+      <div class="metric-card">
+        <div class="card-title">Costos Adicionales</div>
+        <div class="mc-value">$120K</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-bottom: 24px;">
+    <h3 style="font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;">Últimas Ventas</h3>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th style="text-align: left;">ID Orden</th>
+            <th style="text-align: left;">Origen</th>
+            <th style="text-align: left;">Estado</th>
+            <th style="text-align: left;">Fecha</th>
+            <th>Total Orden</th>
+            <th>Total Neto</th>
+            <th style="text-align: left;">Acción</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>TN-20260315-001</td>
+            <td><span class="badge badge-blue">TiendaNube</span></td>
+            <td><span class="badge badge-green">Paid</span></td>
+            <td>15 Mar, 3:10 p.m.</td>
+            <td>$94,000</td>
+            <td>$65,573</td>
+            <td><span class="link-btn" onclick="openOrderModal()">Ver detalle</span></td>
+          </tr>
+          <tr>
+            <td>TN-20260314-045</td>
+            <td><span class="badge badge-blue">TiendaNube</span></td>
+            <td><span class="badge badge-green">Paid</span></td>
+            <td>14 Mar, 2:45 p.m.</td>
+            <td>$78,500</td>
+            <td>$54,200</td>
+            <td><span class="link-btn">Ver detalle</span></td>
+          </tr>
+          <tr>
+            <td>ML-20260313-312</td>
+            <td><span class="badge badge-yellow">MercadoLibre</span></td>
+            <td><span class="badge badge-green">Paid</span></td>
+            <td>13 Mar, 6:22 p.m.</td>
+            <td>$112,000</td>
+            <td>$76,800</td>
+            <td><span class="link-btn">Ver detalle</span></td>
+          </tr>
+          <tr>
+            <td>TN-20260312-088</td>
+            <td><span class="badge badge-blue">TiendaNube</span></td>
+            <td><span class="badge badge-yellow">Pendiente</span></td>
+            <td>12 Mar, 11:15 a.m.</td>
+            <td>$65,300</td>
+            <td>$45,100</td>
+            <td><span class="link-btn">Ver detalle</span></td>
+          </tr>
+          <tr>
+            <td>TN-20260311-056</td>
+            <td><span class="badge badge-blue">TiendaNube</span></td>
+            <td><span class="badge badge-green">Paid</span></td>
+            <td>11 Mar, 9:30 a.m.</td>
+            <td>$89,000</td>
+            <td>$61,300</td>
+            <td><span class="link-btn">Ver detalle</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- CASHFLOW PAGE -->
+<div class="page" id="page-cashflow">
+  <div class="page-header">
+    <h2>Cashflow</h2>
+    <p>Visualización de flujos de dinero</p>
+  </div>
+
+  <div class="insight-bar insight-ok">
+    <div class="insight-bar-icon">💰</div>
+    <div class="insight-bar-text">
+      Liquidable <span>$2.1M</span> cubre costos operativos del período ($1.4M). Margen de seguridad: <span>+50%</span>.
+      Próxima acreditación fuerte: 28 Mar ($890K de Mercado Pago).
+    </div>
+  </div>
+
+  <div class="grid-6" style="margin-bottom: 24px;">
+    <div class="metric-card">
+      <div class="card-title">Ventas</div>
+      <div class="mc-value">$5.8M</div>
+    </div>
+    <div class="metric-card">
+      <div class="card-title">Liquidable</div>
+      <div class="mc-value">$4.5M</div>
+    </div>
+    <div class="metric-card">
+      <div class="card-title">Comisiones Pago</div>
+      <div class="mc-value">$1.3M</div>
+    </div>
+    <div class="metric-card">
+      <div class="card-title">Pagos Pendientes</div>
+      <div class="mc-value">$1.8M</div>
+    </div>
+    <div class="metric-card">
+      <div class="card-title">Pagos Recibidos</div>
+      <div class="mc-value">$3.4M</div>
+    </div>
+    <div class="metric-card">
+      <div class="card-title">Comisiones %</div>
+      <div class="mc-value">22.4%</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom: 24px;">
+    <div class="card-title">Gráfico Semanal</div>
+    <div class="chart-placeholder">
+      📊 Gráfico semanal: Ventas vs Pagos Recibidos vs Pagos Pendientes
+      <div class="chart-bars">
+        <div class="chart-bar" style="height: 60%;"></div>
+        <div class="chart-bar" style="height: 45%;"></div>
+        <div class="chart-bar" style="height: 70%;"></div>
+        <div class="chart-bar" style="height: 55%;"></div>
+        <div class="chart-bar" style="height: 65%;"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom: 24px;">
+    <div class="card-title">Distribución Pagos Pendientes</div>
+    <div style="margin-top: 12px;">
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+        <span style="font-size: 12px; color: var(--text-secondary);">Mercado Pago (65%)</span>
+        <div class="distribution-bar" style="flex: 1;">
+          <div class="distribution-segment" style="width: 65%; background: var(--cyan);">65%</div>
+          <div class="distribution-segment" style="width: 35%; background: var(--purple);">35%</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-bottom: 24px;">
+    <h3 style="font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;">Pagos Programados (Próximas 4 semanas)</h3>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th style="text-align: left;">ID Orden</th>
+            <th style="text-align: left;">Fecha Creación</th>
+            <th style="text-align: left;">Fecha Pago</th>
+            <th style="text-align: left;">Estado</th>
+            <th>Total Orden</th>
+            <th>Liquidable</th>
+            <th style="text-align: left;">Gateway</th>
+            <th style="text-align: left;">Cuotas</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>TN-20260320-001</td>
+            <td>20 Mar</td>
+            <td>27 Mar</td>
+            <td><span class="badge badge-yellow">Pendiente</span></td>
+            <td>$94,000</td>
+            <td>$91,060</td>
+            <td>TiendaNube</td>
+            <td>1</td>
+          </tr>
+          <tr>
+            <td>ML-20260319-045</td>
+            <td>19 Mar</td>
+            <td>26 Mar</td>
+            <td><span class="badge badge-yellow">Pendiente</span></td>
+            <td>$112,000</td>
+            <td>$109,760</td>
+            <td>MercadoLibre</td>
+            <td>1</td>
+          </tr>
+          <tr>
+            <td>MP-20260318-312</td>
+            <td>18 Mar</td>
+            <td>01 Apr</td>
+            <td><span class="badge badge-yellow">Pendiente</span></td>
+            <td>$78,500</td>
+            <td>$23,550</td>
+            <td>Mercado Pago</td>
+            <td>3</td>
+          </tr>
+          <tr>
+            <td>MP-20260317-088</td>
+            <td>17 Mar</td>
+            <td>31 Mar</td>
+            <td><span class="badge badge-yellow">Pendiente</span></td>
+            <td>$89,000</td>
+            <td>$29,667</td>
+            <td>Mercado Pago</td>
+            <td>3</td>
+          </tr>
+          <tr>
+            <td>MP-20260316-056</td>
+            <td>16 Mar</td>
+            <td>23 Mar</td>
+            <td><span class="badge badge-yellow">Pendiente</span></td>
+            <td>$65,300</td>
+            <td>$21,767</td>
+            <td>Mercado Pago</td>
+            <td>3</td>
+          </tr>
+          <tr>
+            <td>MP-20260315-033</td>
+            <td>15 Mar</td>
+            <td>22 Mar</td>
+            <td><span class="badge badge-yellow">Pendiente</span></td>
+            <td>$105,000</td>
+            <td>$35,000</td>
+            <td>Mercado Pago</td>
+            <td>3</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- META PIXEL PAGE -->
+<div class="page" id="page-metapixel">
+  <div class="page-header">
+    <h2>Meta Pixel</h2>
+    <p>Campañas y resultados publicitarios</p>
+  </div>
+
+  <div class="insight-bar insight-warn">
+    <div class="insight-bar-icon">📊</div>
+    <div class="insight-bar-text">
+      <span>2 de 5 campañas</span> tienen True ROAS bajo el breakeven (2.1x).
+      "Campaña TOF Lookalike" con CPA <span>$18.2K</span> excede máximo $12.7K en 43%.
+      Campaña "Retargeting Carrito" es la mejor: True ROAS 6.8x.
+    </div>
+  </div>
+
+  <div style="margin-bottom: 24px;">
+    <h3 style="font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;">Campañas</h3>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th style="text-align: left;">Status</th>
+            <th style="text-align: left;">Nombre</th>
+            <th>Budget /día</th>
+            <th>Meta Spend</th>
+            <th>Propio Spend</th>
+            <th>Meta Revenue</th>
+            <th>Propio Revenue</th>
+            <th>Profit</th>
+            <th>CPA</th>
+            <th>ROAS</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--green);"></span></td>
+            <td>CBO | Creativos GERF</td>
+            <td>$50,000</td>
+            <td>$1.2M</td>
+            <td>$1.1M</td>
+            <td>$5.8M</td>
+            <td>$5.6M</td>
+            <td>$3.2M</td>
+            <td>$16.2K</td>
+            <td>4.8x</td>
+          </tr>
+          <tr>
+            <td><span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--green);"></span></td>
+            <td>HKS | CBO | ALL</td>
+            <td>$30,000</td>
+            <td>$750K</td>
+            <td>$720K</td>
+            <td>$3.2M</td>
+            <td>$3.0M</td>
+            <td>$1.8M</td>
+            <td>$22.5K</td>
+            <td>4.2x</td>
+          </tr>
+          <tr>
+            <td><span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--green);"></span></td>
+            <td>Tráfico | ABO</td>
+            <td>$20,000</td>
+            <td>$500K</td>
+            <td>$480K</td>
+            <td>$2.1M</td>
+            <td>$2.0M</td>
+            <td>$1.1M</td>
+            <td>$23.8K</td>
+            <td>4.1x</td>
+          </tr>
+          <tr>
+            <td><span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--red);"></span></td>
+            <td>Retargeting DPA</td>
+            <td>$15,000</td>
+            <td>$280K</td>
+            <td>$270K</td>
+            <td>$1.2M</td>
+            <td>$1.1M</td>
+            <td>$520K</td>
+            <td>$41.5K</td>
+            <td>4.0x</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div style="margin-bottom: 24px;">
+    <h3 style="font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;">Métricas Disponibles</h3>
+
+    <div style="margin-bottom: 16px;">
+      <div style="font-size: 11px; font-weight: 600; color: var(--text); margin-bottom: 8px;">Básicas</div>
+      <div class="pill-group">
+        <div class="pill">Spend</div>
+        <div class="pill">Impressions</div>
+        <div class="pill">Reach</div>
+        <div class="pill">Frequency</div>
+        <div class="pill">CPM</div>
+        <div class="pill">CTR</div>
+        <div class="pill">CPC</div>
+      </div>
+    </div>
+
+    <div style="margin-bottom: 16px;">
+      <div style="font-size: 11px; font-weight: 600; color: var(--text); margin-bottom: 8px;">Click</div>
+      <div class="pill-group">
+        <div class="pill">Link Clicks</div>
+        <div class="pill">Cost per Link Click</div>
+        <div class="pill">Unique Link Clicks</div>
+        <div class="pill">Unique CTR</div>
+      </div>
+    </div>
+
+    <div style="margin-bottom: 16px;">
+      <div style="font-size: 11px; font-weight: 600; color: var(--text); margin-bottom: 8px;">Video</div>
+      <div class="pill-group">
+        <div class="pill">Video Plays</div>
+        <div class="pill">Thruplays</div>
+        <div class="pill">Scroll Stopper Rate</div>
+        <div class="pill">Hold Rate</div>
+        <div class="pill">VV 100%</div>
+        <div class="pill">VV 75%</div>
+        <div class="pill">VV 50%</div>
+      </div>
+    </div>
+
+    <div style="margin-bottom: 16px;">
+      <div style="font-size: 11px; font-weight: 600; color: var(--text); margin-bottom: 8px;">Conversión</div>
+      <div class="pill-group">
+        <div class="pill">Cost per Purchase</div>
+        <div class="pill">ROAS</div>
+        <div class="pill">True ROAS</div>
+        <div class="pill">Net AOV</div>
+        <div class="pill">ATC</div>
+        <div class="pill">Cost per ATC</div>
+        <div class="pill">Checkouts</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-bottom: 24px;">
+    <h3 style="font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;">Resultados x Anuncio</h3>
+    <div class="grid-3">
+      <div class="ad-card">
+        <div class="ad-thumb" style="background: linear-gradient(135deg, #6366f1, #a855f7);"></div>
+        <div class="ad-info">
+          <div class="ad-name">Remera Oversize Negra</div>
+          <div class="ad-metrics">
+            <div>Gastado: $145K</div>
+            <div>Alcance: 45.2K</div>
+            <div>CTR: 3.2%</div>
+            <div>ATC: 1.8K</div>
+            <div>Checkouts: 890</div>
+            <div>Compras: 723</div>
+          </div>
+        </div>
+      </div>
+      <div class="ad-card">
+        <div class="ad-thumb" style="background: linear-gradient(135deg, #f97316, #fb923c);"></div>
+        <div class="ad-info">
+          <div class="ad-name">Bundle Premium</div>
+          <div class="ad-metrics">
+            <div>Gastado: $120K</div>
+            <div>Alcance: 38.5K</div>
+            <div>CTR: 2.8%</div>
+            <div>ATC: 1.5K</div>
+            <div>Checkouts: 756</div>
+            <div>Compras: 612</div>
+          </div>
+        </div>
+      </div>
+      <div class="ad-card">
+        <div class="ad-thumb" style="background: linear-gradient(135deg, #06b6d4, #0891b2);"></div>
+        <div class="ad-info">
+          <div class="ad-name">Colección Verano</div>
+          <div class="ad-metrics">
+            <div>Gastado: $98K</div>
+            <div>Alcance: 32.1K</div>
+            <div>CTR: 2.5%</div>
+            <div>ATC: 1.2K</div>
+            <div>Checkouts: 634</div>
+            <div>Compras: 512</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- COSTOS PAGE -->
+<div class="page" id="page-costos">
+  <div class="page-header">
+    <h2>Costos</h2>
+    <p>Desglose de costos operacionales</p>
+  </div>
+
+  <div class="insight-bar insight-ok">
+    <div class="insight-bar-icon">📉</div>
+    <div class="insight-bar-text">
+      Margen neto <span>20.7%</span> está 5.7pp sobre el mínimo (15%).
+      <span class="breakeven-label">Breakeven ROAS: 2.1x</span> — estás operando 62% por encima.
+      Comisiones de pago representan el 4.2% del revenue (estable vs mes anterior).
+    </div>
+  </div>
+
+  <div style="margin-bottom: 24px;">
+    <h3 style="font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;">Costos de Productos</h3>
+    <div class="card" style="margin-bottom: 16px;">
+      <div style="margin-bottom: 12px;">
+        <button class="btn btn-secondary">📤 Subir CSV masivo</button>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th style="text-align: left;">SKU</th>
+              <th style="text-align: left;">Nombre</th>
+              <th>Costo Unit.</th>
+              <th>Packaging</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>OVERSIZE-NEG-001</td>
+              <td>Remera Oversize Negra</td>
+              <td>$12,000</td>
+              <td>$800</td>
+            </tr>
+            <tr>
+              <td>BUNDLE-PREM-001</td>
+              <td>Bundle Premium</td>
+              <td>$35,000</td>
+              <td>$1,500</td>
+            </tr>
+            <tr>
+              <td>COLEC-VER-001</td>
+              <td>Colección Verano</td>
+              <td>$18,000</td>
+              <td>$900</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-bottom: 24px;">
+    <h3 style="font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;">Comisiones de Plataforma</h3>
+    <div class="section-card">
+      <div class="section-card-content">
+        <strong>TiendaNube:</strong> 1.5% por transacción
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-bottom: 24px;">
+    <h3 style="font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;">Comisiones de Pago</h3>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th style="text-align: left;">Medio</th>
+            <th>1 Cuota</th>
+            <th>3 Cuotas</th>
+            <th>6 Cuotas</th>
+            <th>12 Cuotas</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Visa</td>
+            <td>3.5%</td>
+            <td>8%</td>
+            <td>15%</td>
+            <td>28%</td>
+          </tr>
+          <tr>
+            <td>Mastercard</td>
+            <td>3.5%</td>
+            <td>8%</td>
+            <td>15%</td>
+            <td>28%</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div style="margin-bottom: 24px;">
+    <h3 style="font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;">Costos de Envíos</h3>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th style="text-align: left;">Zona</th>
+            <th>Costo Promedio</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>CABA</td>
+            <td>$4,500</td>
+          </tr>
+          <tr>
+            <td>GBA</td>
+            <td>$6,200</td>
+          </tr>
+          <tr>
+            <td>Interior</td>
+            <td>$9,800</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div style="margin-bottom: 24px;">
+    <h3 style="font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;">Costos Adicionales</h3>
+    <div class="section-card">
+      <div class="section-card-content">
+        <strong>Seguro:</strong> $500/orden<br>
+        <strong>Embalaje especial:</strong> $800/orden
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-bottom: 24px;">
+    <h3 style="font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;">P&L Summary</h3>
+    <div class="card">
+      <div class="pnl-row">
+        <span class="pnl-label">Revenue</span>
+        <span class="pnl-value">$5,800,000</span>
+      </div>
+      <div class="pnl-row pnl-negative">
+        <span class="pnl-label">- Costos Productos</span>
+        <span class="pnl-value">-$1,400,000</span>
+      </div>
+      <div class="pnl-row pnl-negative">
+        <span class="pnl-label">- Costos Envío</span>
+        <span class="pnl-value">-$380,000</span>
+      </div>
+      <div class="pnl-row pnl-negative">
+        <span class="pnl-label">- Comisiones Pago</span>
+        <span class="pnl-value">-$580,000</span>
+      </div>
+      <div class="pnl-row pnl-negative">
+        <span class="pnl-label">- Impuestos IBB</span>
+        <span class="pnl-value">-$203,000</span>
+      </div>
+      <div class="pnl-row pnl-negative">
+        <span class="pnl-label">- Fee Plataforma</span>
+        <span class="pnl-value">-$87,000</span>
+      </div>
+      <div class="pnl-row pnl-subtotal">
+        <span class="pnl-label">= Margen Contribución</span>
+        <span class="pnl-value">$3,150,000</span>
+      </div>
+      <div class="pnl-row pnl-negative">
+        <span class="pnl-label">- Costos Fijos</span>
+        <span class="pnl-value">-$1,950,000</span>
+      </div>
+      <div class="pnl-row pnl-profit">
+        <span class="pnl-label">= Profit Neto</span>
+        <span class="pnl-value">$1,200,000</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-bottom: 24px;">
+    <h3 style="font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;">Punto de Equilibrio</h3>
+    <div class="card">
+      <div class="section-card-content">
+        Costos Fijos ($1,950,000) / CM unitario ($34,200) = <strong>57 órdenes/mes</strong>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PRODUCTOS PAGE -->
+<div class="page" id="page-productos">
+  <div class="page-header">
+    <h2>Productos</h2>
+    <p>Análisis y rentabilidad de productos</p>
+  </div>
+
+  <div class="insight-bar insight-warn">
+    <div class="insight-bar-icon">📦</div>
+    <div class="insight-bar-text">
+      <span>3 productos</span> tienen margen bajo el objetivo (15%): Campera Puffer (-2.3%), Gorra Trucker (8.1%), Short Running (11.4%).
+      Top contributor al profit: <span>Zapatillas Urban</span> (32% del profit total).
+    </div>
+  </div>
+
+  <div style="margin-bottom: 24px;">
+    <h3 style="font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;">Top Sellers</h3>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th style="text-align: left;">Producto</th>
+            <th>Ventas</th>
+            <th>Revenue</th>
+            <th>Margen %</th>
+            <th>Stock</th>
+            <th>Velocidad</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Remera Oversize Negra</td>
+            <td>256</td>
+            <td>$11.5M</td>
+            <td>52.6%</td>
+            <td>1,240</td>
+            <td>18.3 u/día</td>
+          </tr>
+          <tr>
+            <td>Bundle Premium</td>
+            <td>145</td>
+            <td>$5.1M</td>
+            <td>48.2%</td>
+            <td>320</td>
+            <td>10.4 u/día</td>
+          </tr>
+          <tr>
+            <td>Colección Verano</td>
+            <td>112</td>
+            <td>$2.0M</td>
+            <td>45.8%</td>
+            <td>85</td>
+            <td>8.1 u/día</td>
+          </tr>
+          <tr>
+            <td>Accesorios Kit</td>
+            <td>98</td>
+            <td>$1.5M</td>
+            <td>61.3%</td>
+            <td>450</td>
+            <td>7.0 u/día</td>
+          </tr>
+          <tr>
+            <td>Gorra Bordada</td>
+            <td>76</td>
+            <td>$912K</td>
+            <td>55.2%</td>
+            <td>200</td>
+            <td>5.4 u/día</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div style="margin-bottom: 24px;">
+    <h3 style="font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;">Rentabilidad por Producto</h3>
+    <div class="card">
+      <div style="margin-bottom: 16px;">
+        <div style="font-size: 14px; font-weight: 600; color: #fff; margin-bottom: 12px;">Remera Oversize Negra — Precio: $45,000</div>
+        <div class="pnl-row">
+          <span class="pnl-label">- Costo producto</span>
+          <span class="pnl-value">-$12,000</span>
+        </div>
+        <div class="pnl-row">
+          <span class="pnl-label">- Envío promedio</span>
+          <span class="pnl-value">-$5,500</span>
+        </div>
+        <div class="pnl-row">
+          <span class="pnl-label">- Comisión pago</span>
+          <span class="pnl-value">-$1,575</span>
+        </div>
+        <div class="pnl-row">
+          <span class="pnl-label">- IBB</span>
+          <span class="pnl-value">-$1,575</span>
+        </div>
+        <div class="pnl-row">
+          <span class="pnl-label">- Fee TN</span>
+          <span class="pnl-value">-$675</span>
+        </div>
+        <div class="pnl-row pnl-profit">
+          <span class="pnl-label">= Margen neto</span>
+          <span class="pnl-value">$23,675 (52.6%)</span>
+        </div>
+      </div>
+      <button class="btn btn-secondary">Simular cambio</button>
+    </div>
+  </div>
+
+  <div style="margin-bottom: 24px;">
+    <h3 style="font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;">Alertas de Stock</h3>
+    <div class="grid-2">
+      <div class="card">
+        <div style="color: var(--yellow); font-weight: 600; margin-bottom: 8px;">⚠️ Stock Bajo</div>
+        <div style="font-size: 12px; color: var(--text-secondary);">Colección Verano: 85 unidades</div>
+      </div>
+      <div class="card">
+        <div style="color: var(--red); font-weight: 600; margin-bottom: 8px;">🔴 Crítico</div>
+        <div style="font-size: 12px; color: var(--text-secondary);">Gorra Bordada: 35 unidades</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CLIENTES PAGE -->
+<div class="page" id="page-clientes">
+  <div class="page-header">
+    <h2>Clientes</h2>
+    <p>Segmentación y análisis de cohort</p>
+  </div>
+
+  <div class="insight-bar insight-ok">
+    <div class="insight-bar-icon">👥</div>
+    <div class="insight-bar-text">
+      <span>NC% 78%</span> supera objetivo (40%) — fuerte adquisición.
+      LTV promedio $185K vs CPA $15K = ratio <span>12.3x</span> (saludable >3x).
+      RC Revenue cayó 8% vs mes anterior — monitorear retención.
+    </div>
+  </div>
+
+  <div style="margin-bottom: 24px;">
+    <h3 style="font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;">RFM Matrix</h3>
+    <div class="grid-3">
+      <div class="card" style="text-align: center;">
+        <div style="font-size: 28px; margin-bottom: 8px;">🏆</div>
+        <div style="font-size: 13px; font-weight: 600; color: #fff; margin-bottom: 4px;">Champions</div>
+        <div style="font-size: 20px; font-weight: 700; color: var(--green);">1,234</div>
+        <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">12.3% de clientes</div>
+      </div>
+      <div class="card" style="text-align: center;">
+        <div style="font-size: 28px; margin-bottom: 8px;">📈</div>
+        <div style="font-size: 13px; font-weight: 600; color: #fff; margin-bottom: 4px;">Loyal Customers</div>
+        <div style="font-size: 20px; font-weight: 700; color: var(--blue);">3,456</div>
+        <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">34.6% de clientes</div>
+      </div>
+      <div class="card" style="text-align: center;">
+        <div style="font-size: 28px; margin-bottom: 8px;">⚠️</div>
+        <div style="font-size: 13px; font-weight: 600; color: #fff; margin-bottom: 4px;">At Risk</div>
+        <div style="font-size: 20px; font-weight: 700; color: var(--red);">1,890</div>
+        <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">18.9% de clientes</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-bottom: 24px;">
+    <h3 style="font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;">Cohort Analysis (Retention)</h3>
+    <div class="table-wrapper">
+      <table class="cohort-table">
+        <thead>
+          <tr>
+            <th style="text-align: left;">Cohorte</th>
+            <th>Mes 0</th>
+            <th>Mes 1</th>
+            <th>Mes 2</th>
+            <th>Mes 3</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Diciembre 2025</td>
+            <td><span class="retention-high">100%</span></td>
+            <td><span class="retention-high">42%</span></td>
+            <td><span class="retention-mid">28%</span></td>
+            <td><span class="retention-mid">18%</span></td>
+          </tr>
+          <tr>
+            <td>Enero 2026</td>
+            <td><span class="retention-high">100%</span></td>
+            <td><span class="retention-high">48%</span></td>
+            <td><span class="retention-mid">32%</span></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>Febrero 2026</td>
+            <td><span class="retention-high">100%</span></td>
+            <td><span class="retention-high">45%</span></td>
+            <td></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>Marzo 2026</td>
+            <td><span class="retention-high">100%</span></td>
+            <td></td>
+            <td></td>
+            <td></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- SIMULADOR PAGE -->
+<div class="page" id="page-simulador">
+  <div class="page-header">
+    <h2>Simulador</h2>
+    <p>Proyecta resultados ajustando parámetros</p>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div style="margin-bottom: 20px;">
+        <div class="slider-group">
+          <label>CPM (Cost Per Mille) <span id="cpmVal">$1,200</span></label>
+          <input type="range" id="cpmSlider" min="500" max="5000" value="1200" step="100">
+        </div>
+        <div class="slider-group">
+          <label>CTR (Click Through Rate) <span id="ctrVal">2.5%</span></label>
+          <input type="range" id="ctrSlider" min="0.5" max="10" value="2.5" step="0.1">
+        </div>
+        <div class="slider-group">
+          <label>CVR (Conversion Rate) <span id="cvrVal">3.2%</span></label>
+          <input type="range" id="cvrSlider" min="0.5" max="15" value="3.2" step="0.1">
+        </div>
+        <div class="slider-group">
+          <label>AOV (Average Order Value) <span id="aovVal">$45,000</span></label>
+          <input type="range" id="aovSlider" min="10000" max="200000" value="45000" step="1000">
+        </div>
+        <div class="slider-group">
+          <label>Budget Diario <span id="budgetVal">$50,000</span></label>
+          <input type="range" id="budgetSlider" min="10000" max="500000" value="50000" step="5000">
+        </div>
+      </div>
+
+      <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border);">
+        <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 12px;">Escenarios Rápidos</div>
+        <button class="btn btn-secondary" style="width: 100%; margin-bottom: 8px;" onclick="applyScenario('conservative')">Conservador</button>
+        <button class="btn btn-secondary" style="width: 100%; margin-bottom: 8px;" onclick="applyScenario('balanced')">Balanceado</button>
+        <button class="btn btn-secondary" style="width: 100%;" onclick="applyScenario('aggressive')">Agresivo</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="margin-bottom: 20px;">
+        <div style="margin-bottom: 16px;">
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">ROAS (Return on Ad Spend)</div>
+          <div style="font-size: 28px; font-weight: 700; color: var(--green);" id="roasResult">4.2x</div>
+        </div>
+        <div style="margin-bottom: 16px;">
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">CPA (Cost Per Acquisition)</div>
+          <div style="font-size: 28px; font-weight: 700; color: var(--accent);" id="cpaResult">$15.8K</div>
+        </div>
+        <div style="margin-bottom: 16px;">
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Compras Diarias</div>
+          <div style="font-size: 28px; font-weight: 700; color: var(--blue);" id="comprasResult">42</div>
+        </div>
+        <div style="margin-bottom: 16px;">
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Revenue Diario</div>
+          <div style="font-size: 28px; font-weight: 700; color: var(--green);" id="revenueResult">$1.89M</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CREATIVOS PAGE -->
+<div class="page" id="page-creativos">
+  <div class="page-header">
+    <h2>Creativos</h2>
+    <p>Auto-clasificación y análisis de ads</p>
+  </div>
+
+  <div class="insight-bar insight-ok">
+    <div class="insight-bar-icon">🎨</div>
+    <div class="insight-bar-text">
+      <span>3 creativos Tier A</span> (superan target ROAS). 1 Tier D y 1 Tier E (bajo breakeven) — considerar pausar.
+      Mejor performer: "Carrusel Lifestyle" con True ROAS <span>5.1x</span> y CPA $8.2K.
+    </div>
+  </div>
+
+  <div style="margin-bottom: 24px;">
+    <h3 style="font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;">Auto-Clasificación</h3>
+
+    <div style="margin-bottom: 20px;">
+      <div style="font-size: 11px; color: var(--text); margin-bottom: 8px; font-weight: 600;">🏆 Winners (2)</div>
+      <div class="grid-2">
+        <div class="ad-card" style="border: 2px solid var(--green);">
+          <div class="ad-thumb" style="background: linear-gradient(135deg, #22c55e, #16a34a);"></div>
+          <div class="ad-info">
+            <div class="ad-name">Remera Oversize v1</div>
+            <div class="ad-metrics">
+              <div>CTR: 4.2%</div>
+              <div>CPA: $12.5K</div>
+              <div>ROAS: 5.8x</div>
+            </div>
+          </div>
+        </div>
+        <div class="ad-card" style="border: 2px solid var(--green);">
+          <div class="ad-thumb" style="background: linear-gradient(135deg, #22c55e, #4ade80);"></div>
+          <div class="ad-info">
+            <div class="ad-name">Bundle Premium v2</div>
+            <div class="ad-metrics">
+              <div>CTR: 3.8%</div>
+              <div>CPA: $13.2K</div>
+              <div>ROAS: 5.4x</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-bottom: 20px;">
+      <div style="font-size: 11px; color: var(--text); margin-bottom: 8px; font-weight: 600;">📈 Scaling (2)</div>
+      <div class="grid-2">
+        <div class="ad-card" style="border: 2px solid var(--blue);">
+          <div class="ad-thumb" style="background: linear-gradient(135deg, #3b82f6, #2563eb);"></div>
+          <div class="ad-info">
+            <div class="ad-name">Colección Verano v1</div>
+            <div class="ad-metrics">
+              <div>CTR: 3.1%</div>
+              <div>CPA: $16.8K</div>
+              <div>ROAS: 4.2x</div>
+            </div>
+          </div>
+        </div>
+        <div class="ad-card" style="border: 2px solid var(--blue);">
+          <div class="ad-thumb" style="background: linear-gradient(135deg, #3b82f6, #60a5fa);"></div>
+          <div class="ad-info">
+            <div class="ad-name">Accesorios Kit</div>
+            <div class="ad-metrics">
+              <div>CTR: 2.9%</div>
+              <div>CPA: $18.3K</div>
+              <div>ROAS: 3.9x</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-bottom: 20px;">
+      <div style="font-size: 11px; color: var(--text); margin-bottom: 8px; font-weight: 600;">🧪 Testing (2)</div>
+      <div class="grid-2">
+        <div class="ad-card" style="border: 2px solid var(--yellow);">
+          <div class="ad-thumb" style="background: linear-gradient(135deg, #eab308, #ca8a04);"></div>
+          <div class="ad-info">
+            <div class="ad-name">Gorra Bordada Test</div>
+            <div class="ad-metrics">
+              <div>CTR: 2.2%</div>
+              <div>CPA: $22.5K</div>
+              <div>ROAS: 2.8x</div>
+            </div>
+          </div>
+        </div>
+        <div class="ad-card" style="border: 2px solid var(--yellow);">
+          <div class="ad-thumb" style="background: linear-gradient(135deg, #eab308, #facc15);"></div>
+          <div class="ad-info">
+            <div class="ad-name">Bundle Flash Sale</div>
+            <div class="ad-metrics">
+              <div>CTR: 1.8%</div>
+              <div>CPA: $28.9K</div>
+              <div>ROAS: 2.1x</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-bottom: 20px;">
+      <div style="font-size: 11px; color: var(--text); margin-bottom: 8px; font-weight: 600;">⏸️ Retired (1)</div>
+      <div class="grid-2">
+        <div class="ad-card" style="border: 2px solid #555;">
+          <div class="ad-thumb" style="background: linear-gradient(135deg, #666, #444);"></div>
+          <div class="ad-info">
+            <div class="ad-name">Remera Old Design</div>
+            <div class="ad-metrics">
+              <div>CTR: 0.9%</div>
+              <div>CPA: $48.2K</div>
+              <div>ROAS: 0.8x</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-bottom: 24px;">
+    <h3 style="font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;">Resultados x Campaña</h3>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th style="text-align: left;">Nombre</th>
+            <th>Gastado</th>
+            <th>CPM</th>
+            <th>Alcance</th>
+            <th>CTR</th>
+            <th>ATC</th>
+            <th>Checkouts</th>
+            <th>Compras</th>
+            <th>CPA</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>CBO | Creativos GERF</td>
+            <td>$1.2M</td>
+            <td>$890</td>
+            <td>1.35M</td>
+            <td>3.2%</td>
+            <td>43.2K</td>
+            <td>12.8K</td>
+            <td>9.2K</td>
+            <td>$13.0K</td>
+          </tr>
+          <tr>
+            <td>HKS | CBO | ALL</td>
+            <td>$750K</td>
+            <td>$920</td>
+            <td>815K</td>
+            <td>2.8%</td>
+            <td>22.8K</td>
+            <td>6.8K</td>
+            <td>4.9K</td>
+            <td>$15.3K</td>
+          </tr>
+          <tr>
+            <td>Tráfico | ABO</td>
+            <td>$500K</td>
+            <td>$1,050</td>
+            <td>476K</td>
+            <td>2.1%</td>
+            <td>10.0K</td>
+            <td>2.8K</td>
+            <td>1.9K</td>
+            <td>$26.3K</td>
+          </tr>
+          <tr class="row-total">
+            <td>TOTAL</td>
+            <td>$2.45M</td>
+            <td>$920</td>
+            <td>2.64M</td>
+            <td>2.7%</td>
+            <td>76.0K</td>
+            <td>22.4K</td>
+            <td>16.0K</td>
+            <td>$15.3K</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- CONTENIDO PAGE -->
+<div class="page" id="page-contenido">
+  <div class="page-header">
+    <h2>Contenido</h2>
+    <p>Topic map y language bank</p>
+  </div>
+
+  <div style="margin-bottom: 24px;">
+    <h3 style="font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;">Topic Map</h3>
+    <div class="grid-2">
+      <div class="card">
+        <div style="margin-bottom: 8px;">
+          <div style="font-size: 13px; font-weight: 600; color: #fff;">Tendencias Fashion</div>
+          <span class="badge badge-green">Active</span>
+        </div>
+        <div style="font-size: 12px; color: var(--text-secondary);">Ropa, accesorios, moda urbana</div>
+      </div>
+      <div class="card">
+        <div style="margin-bottom: 8px;">
+          <div style="font-size: 13px; font-weight: 600; color: #fff;">Lifestyle</div>
+          <span class="badge badge-blue">Exploring</span>
+        </div>
+        <div style="font-size: 12px; color: var(--text-secondary);">Estilo de vida, viajes, fotos</div>
+      </div>
+      <div class="card">
+        <div style="margin-bottom: 8px;">
+          <div style="font-size: 13px; font-weight: 600; color: #fff;">Sustentabilidad</div>
+          <span class="badge badge-yellow">New</span>
+        </div>
+        <div style="font-size: 12px; color: var(--text-secondary);">Eco-friendly, materiales reciclados</div>
+      </div>
+      <div class="card">
+        <div style="margin-bottom: 8px;">
+          <div style="font-size: 13px; font-weight: 600; color: #fff;">Community</div>
+          <span class="badge badge-blue">Pending</span>
+        </div>
+        <div style="font-size: 12px; color: var(--text-secondary);">User generated content, reviews</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-bottom: 24px;">
+    <h3 style="font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;">Language Bank</h3>
+    <div style="display: grid; grid-template-columns: 1fr; gap: 12px;">
+      <div class="section-card">
+        <div class="section-card-title">Calls to Action</div>
+        <div class="section-card-content">
+          "Obtén tu colección exclusiva hoy", "Descubre el nuevo look", "Compra ahora y recibe envío gratis"
+        </div>
+      </div>
+      <div class="section-card">
+        <div class="section-card-title">Value Props</div>
+        <div class="section-card-content">
+          "Calidad premium a precio accesible", "Diseño único y exclusivo", "Entrega rápida en CABA"
+        </div>
+      </div>
+      <div class="section-card">
+        <div class="section-card-title">Social Proof</div>
+        <div class="section-card-content">
+          "Más de 10K clientes satisfechos", "4.8 estrellas en reviews", "Comprado 500+ veces este mes"
+        </div>
+      </div>
+      <div class="section-card">
+        <div class="section-card-title">Emotional Hooks</div>
+        <div class="section-card-content">
+          "Siente la comodidad", "Expresa tu estilo personal", "Únete al movimiento fashion"
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- COMPETENCIA PAGE -->
+<div class="page" id="page-competencia">
+  <div class="page-header">
+    <h2>Competencia</h2>
+    <p>Análisis competitivo y benchmarking</p>
+  </div>
+
+  <div style="margin-bottom: 24px;">
+    <div class="grid-3">
+      <div class="competitor-card">
+        <div class="competitor-name">BrandX</div>
+        <div class="competitor-row">
+          <label>Precio Remera</label>
+          <div class="value" style="text-align: right;">$38,000 (↓15%)</div>
+        </div>
+        <div class="competitor-row">
+          <label>Oferta Actual</label>
+          <div class="value">20% OFF</div>
+        </div>
+        <div class="competitor-row">
+          <label>Ángulo Creativo</label>
+          <div class="value" style="font-size: 11px;">Lifestyle premium</div>
+        </div>
+      </div>
+
+      <div class="competitor-card">
+        <div class="competitor-name">StoreFast</div>
+        <div class="competitor-row">
+          <label>Precio Remera</label>
+          <div class="value" style="text-align: right;">$42,000 (↓7%)</div>
+        </div>
+        <div class="competitor-row">
+          <label>Oferta Actual</label>
+          <div class="value">Envío gratis</div>
+        </div>
+        <div class="competitor-row">
+          <label>Ángulo Creativo</label>
+          <div class="value" style="font-size: 11px;">Fast delivery focus</div>
+        </div>
+      </div>
+
+      <div class="competitor-card">
+        <div class="competitor-name">FashionHub</div>
+        <div class="competitor-row">
+          <label>Precio Remera</label>
+          <div class="value" style="text-align: right;">$50,000 (↑11%)</div>
+        </div>
+        <div class="competitor-row">
+          <label>Oferta Actual</label>
+          <div class="value">Bundle 2x1</div>
+        </div>
+        <div class="competitor-row">
+          <label>Ángulo Creativo</label>
+          <div class="value" style="font-size: 11px;">Celebrity endorsement</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-bottom: 24px;">
+    <button class="btn btn-primary">🤖 Analizar con IA</button>
+  </div>
+</div>
+
+<!-- REPORTES PAGE -->
+<div class="page" id="page-reportes">
+  <div class="page-header">
+    <h2>Reportes</h2>
+    <p>Reportes guardados y análisis</p>
+  </div>
+
+  <div style="margin-bottom: 24px;">
+    <button class="btn btn-primary" style="margin-bottom: 16px;">🤖 Generar nuevo análisis</button>
+
+    <div style="display: grid; grid-template-columns: 1fr; gap: 12px;">
+      <div class="report-item">
+        <div class="report-item-header">
+          <div class="report-item-title">Performance Q1 2026</div>
+          <div class="report-item-meta">
+            <span class="badge badge-blue">Trimestral</span>
+            <span style="font-size: 11px; color: var(--text-muted);">25 Mar 2026</span>
+          </div>
+        </div>
+        <div class="report-item-actions">
+          <button class="btn btn-secondary">Ver</button>
+          <button class="btn btn-secondary">Compartir</button>
+        </div>
+      </div>
+
+      <div class="report-item">
+        <div class="report-item-header">
+          <div class="report-item-title">Análisis Meta Pixel Febrero</div>
+          <div class="report-item-meta">
+            <span class="badge badge-green">Mensual</span>
+            <span style="font-size: 11px; color: var(--text-muted);">01 Mar 2026</span>
+          </div>
+        </div>
+        <div class="report-item-actions">
+          <button class="btn btn-secondary">Ver</button>
+          <button class="btn btn-secondary">Compartir</button>
+        </div>
+      </div>
+
+      <div class="report-item">
+        <div class="report-item-header">
+          <div class="report-item-title">Insight: Productos Top Sellers</div>
+          <div class="report-item-meta">
+            <span class="badge badge-yellow">Custom</span>
+            <span style="font-size: 11px; color: var(--text-muted);">20 Feb 2026</span>
+          </div>
+        </div>
+        <div class="report-item-actions">
+          <button class="btn btn-secondary">Ver</button>
+          <button class="btn btn-secondary">Compartir</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS PAGE -->
+<div class="page" id="page-settings">
+  <div class="page-header">
+    <h2>Settings</h2>
+    <p>Configuración de tienda e integraciones</p>
+  </div>
+
+  <!-- OBJETIVOS Y BENCHMARKS (NEW) -->
+  <div style="margin-bottom: 24px;">
+    <h3 style="font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;">🎯 Objetivos y Benchmarks</h3>
+    <div class="card" style="padding: 20px;">
+
+      <div style="margin-bottom: 16px;">
+        <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px; font-weight: 600;">FASE DEL CLIENTE</div>
+        <div class="fase-selector">
+          <div class="fase-btn">Crecimiento</div>
+          <div class="fase-btn active">Escalamiento</div>
+          <div class="fase-btn">Rentabilidad</div>
+          <div class="fase-btn">Mantenimiento</div>
+        </div>
+        <div style="font-size: 11px; color: var(--text-muted);">La fase precarga targets sugeridos. Podés editarlos manualmente.</div>
+      </div>
+
+      <div style="border-top: 1px solid var(--border); padding-top: 16px; margin-bottom: 16px;">
+        <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 12px; font-weight: 600;">KPIs TARGET</div>
+        <div class="objetivo-card">
+          <div><div class="objetivo-label">ROAS Target</div><div class="objetivo-sublabel">ROAS mínimo esperado</div></div>
+          <input class="objetivo-input" type="number" value="3.5" step="0.1">
+          <div style="font-size: 11px; color: var(--green);">Actual: 5.2x ✓</div>
+        </div>
+        <div class="objetivo-card">
+          <div><div class="objetivo-label">True ROAS Target</div><div class="objetivo-sublabel">Net Revenue / Ad Spend</div></div>
+          <input class="objetivo-input" type="number" value="2.8" step="0.1">
+          <div style="font-size: 11px; color: var(--green);">Actual: 3.4x ✓</div>
+        </div>
+        <div class="objetivo-card">
+          <div><div class="objetivo-label">CPA Máximo</div><div class="objetivo-sublabel">Costo máximo por adquisición</div></div>
+          <input class="objetivo-input" type="text" value="$12,700">
+          <div style="font-size: 11px; color: var(--yellow);">Actual: $15K ⚠</div>
+        </div>
+        <div class="objetivo-card">
+          <div><div class="objetivo-label">Profit Margin Mínimo</div><div class="objetivo-sublabel">% de margen neto mínimo</div></div>
+          <input class="objetivo-input" type="text" value="15%">
+          <div style="font-size: 11px; color: var(--green);">Actual: 20.7% ✓</div>
+        </div>
+        <div class="objetivo-card">
+          <div><div class="objetivo-label">NC% Objetivo</div><div class="objetivo-sublabel">% de nuevos clientes deseado</div></div>
+          <input class="objetivo-input" type="text" value="40%">
+          <div style="font-size: 11px; color: var(--green);">Actual: 78% ✓</div>
+        </div>
+        <div class="objetivo-card">
+          <div><div class="objetivo-label">AOV Target</div><div class="objetivo-sublabel">Ticket promedio esperado</div></div>
+          <input class="objetivo-input" type="text" value="$65,000">
+          <div style="font-size: 11px; color: var(--green);">Actual: $66.7K ✓</div>
+        </div>
+        <div class="objetivo-card">
+          <div><div class="objetivo-label">Tasa Devolución Máx</div><div class="objetivo-sublabel">% máximo aceptable de devoluciones</div></div>
+          <input class="objetivo-input" type="text" value="5%">
+          <div style="font-size: 11px; color: var(--green);">Actual: 3.2% ✓</div>
+        </div>
+      </div>
+
+      <div style="border-top: 1px solid var(--border); padding-top: 16px; margin-bottom: 16px;">
+        <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 12px; font-weight: 600;">BREAKEVEN AUTOMÁTICO <span style="color: var(--accent);">(calculado desde costos)</span></div>
+        <div class="objetivo-card">
+          <div><div class="objetivo-label">ROAS Breakeven</div><div class="objetivo-sublabel">Debajo de este ROAS, se pierde plata</div></div>
+          <div class="objetivo-auto">2.1x</div>
+          <div style="font-size: 11px; color: var(--text-muted);">Auto</div>
+        </div>
+        <div class="objetivo-card">
+          <div><div class="objetivo-label">CPA Breakeven</div><div class="objetivo-sublabel">CPA máximo antes de pérdida</div></div>
+          <div class="objetivo-auto">$31,700</div>
+          <div style="font-size: 11px; color: var(--text-muted);">Auto</div>
+        </div>
+        <div class="objetivo-card">
+          <div><div class="objetivo-label">AOV Mínimo</div><div class="objetivo-sublabel">Ticket mínimo para no perder</div></div>
+          <div class="objetivo-auto">$28,400</div>
+          <div style="font-size: 11px; color: var(--text-muted);">Auto</div>
+        </div>
+      </div>
+
+      <div style="border-top: 1px solid var(--border); padding-top: 16px;">
+        <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 12px; font-weight: 600;">UMBRALES DE ALERTA</div>
+        <div class="objetivo-card">
+          <div><div class="objetivo-label">⚠️ Warning (amarillo)</div><div class="objetivo-sublabel">% desviación del target para alerta</div></div>
+          <input class="objetivo-input" type="text" value="15%">
+        </div>
+        <div class="objetivo-card">
+          <div><div class="objetivo-label">🔴 Crítico (rojo)</div><div class="objetivo-sublabel">% desviación para alerta crítica</div></div>
+          <input class="objetivo-input" type="text" value="30%">
+        </div>
+      </div>
+
+      <div style="margin-top: 16px; display: flex; gap: 8px;">
+        <button class="btn btn-primary">Guardar objetivos</button>
+        <button class="btn btn-secondary">Resetear a sugeridos</button>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-bottom: 24px;">
+    <h3 style="font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;">Cotización Dólar</h3>
+    <div class="card">
+      <div class="setting-row">
+        <label class="setting-label">Valor USD/ARS</label>
+        <div class="setting-value">
+          <input type="number" value="1250" style="width: 100px;">
+          <button class="btn btn-secondary">Actualizar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-bottom: 24px;">
+    <h3 style="font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;">Impuestos</h3>
+    <div class="card">
+      <div class="setting-row">
+        <label class="setting-label">IBB (CABA)</label>
+        <div class="setting-value">
+          <input type="text" value="3.5%" style="width: 100px;">
+          <button class="btn btn-secondary">Actualizar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-bottom: 24px;">
+    <h3 style="font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;">Comisiones</h3>
+    <div class="card">
+      <div class="setting-row">
+        <label class="setting-label">Fee TiendaNube</label>
+        <div class="setting-value">
+          <input type="text" value="1.5%" style="width: 100px;">
+          <button class="btn btn-secondary">Actualizar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-bottom: 24px;">
+    <h3 style="font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;">Integraciones</h3>
+    <div style="display: grid; grid-template-columns: 1fr; gap: 12px;">
+      <div class="integration-card">
+        <div class="integration-name">TiendaNube</div>
+        <div class="integration-status integration-connected">Conectado</div>
+      </div>
+      <div class="integration-card">
+        <div class="integration-name">Meta Ads</div>
+        <div class="integration-status integration-connected">Conectado</div>
+      </div>
+      <div class="integration-card">
+        <div class="integration-name">Google Ads</div>
+        <div class="integration-status integration-pending">Pendiente</div>
+      </div>
+      <div class="integration-card">
+        <div class="integration-name">TikTok Ads</div>
+        <div class="integration-status integration-pending">Pendiente</div>
+      </div>
+      <div class="integration-card">
+        <div class="integration-name">MercadoLibre</div>
+        <div class="integration-status integration-pending">Pendiente</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+  </div>
+</div>
+
+<!-- ORDER DETAIL MODAL -->
+<div class="modal-overlay" id="orderModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeOrderModal()">×</button>
+    <div style="margin-bottom: 16px;">
+      <div style="font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 4px;">Orden #TN-20260315-001</div>
+      <div style="font-size: 12px; color: var(--text-secondary);">15 Mar, 3:10 p.m.   •   Total: $94,000   •   Estado: Paid</div>
+    </div>
+    <div style="border-top: 1px solid var(--border); padding-top: 16px;">
+      <div class="pnl-row">
+        <span class="pnl-label">Total</span>
+        <span class="pnl-value">$94,000</span>
+      </div>
+      <div class="pnl-row pnl-negative">
+        <span class="pnl-label">Comisiones de Pago</span>
+        <span class="pnl-value">-$3,900</span>
+      </div>
+      <div class="pnl-row pnl-negative">
+        <span class="pnl-label">Impuestos (IBB)</span>
+        <span class="pnl-value">-$587</span>
+      </div>
+      <div class="pnl-row pnl-negative">
+        <span class="pnl-label">Comisiones de Cuotas</span>
+        <span class="pnl-value">-$0</span>
+      </div>
+      <div class="pnl-row pnl-negative">
+        <span class="pnl-label">Costo de envío</span>
+        <span class="pnl-value">-$6,500</span>
+      </div>
+      <div class="pnl-row pnl-negative">
+        <span class="pnl-label">Costo de productos</span>
+        <span class="pnl-value">-$16,500</span>
+      </div>
+      <div class="pnl-row pnl-negative">
+        <span class="pnl-label">Fee TiendaNube</span>
+        <span class="pnl-value">-$940</span>
+      </div>
+      <div class="pnl-row pnl-profit" style="margin-top: 12px;">
+        <span class="pnl-label">Neto</span>
+        <span class="pnl-value">$65,573</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Store data
+  const storesData = {
+    'GERF': {
+      revenue: '$5.8M', revenuePct: '↑12%',
+      roas: '5.2x', roasPct: '↓3%',
+      trueRoas: '3.4x',
+      cpa: '$11.2K',
+      ncPct: '78%',
+      alert: null,
+      health: 'ok',          // semáforo basado en objetivos
+      healthNote: '5/5 KPIs en objetivo'
+    },
+    'MANGUZ': {
+      revenue: '$4.1M', revenuePct: '↑8%',
+      roas: '4.8x', roasPct: '↑5%',
+      trueRoas: '3.1x',
+      cpa: '$9.8K',
+      ncPct: '82%',
+      alert: null,
+      health: 'ok',
+      healthNote: '5/5 KPIs en objetivo'
+    },
+    'NOMERCY': {
+      revenue: '$3.7M', revenuePct: '↓2%',
+      roas: '4.1x', roasPct: '↓8%',
+      trueRoas: '2.6x',
+      cpa: '$13.5K',
+      ncPct: '71%',
+      alert: 'ROAS cayendo 8%',
+      health: 'warn',
+      healthNote: '3/5 KPIs — ROAS y CPA fuera'
+    },
+    'ARKO': {
+      revenue: '$2.4M', revenuePct: '↓15%',
+      roas: '2.9x', roasPct: '↓12%',
+      trueRoas: '1.8x',
+      cpa: '$18.4K',
+      ncPct: '65%',
+      alert: 'CPA crítico — True ROAS bajo breakeven',
+      health: 'critical',
+      healthNote: '1/5 KPIs — True ROAS bajo breakeven'
+    },
+    'BABYGINOS': {
+      revenue: '$2.4M', revenuePct: '↑22%',
+      roas: '5.6x', roasPct: '↑10%',
+      trueRoas: '3.8x',
+      cpa: '$7.6K',
+      ncPct: '85%',
+      alert: null,
+      health: 'ok',
+      healthNote: '5/5 KPIs en objetivo'
+    }
+  };
+
+  let currentStore = null;
+
+  // Initialize
+  function init() {
+    renderStoreCards();
+    setupSimulatorListeners();
+  }
+
+  function renderStoreCards() {
+    const container = document.getElementById('storeCardsContainer');
+    container.innerHTML = '';
+
+    Object.keys(storesData).forEach(storeName => {
+      const store = storesData[storeName];
+      const card = document.createElement('div');
+      card.className = 'store-card';
+      card.onclick = () => enterStore(storeName);
+
+      let alertHtml = '';
+      if (store.alert) {
+        alertHtml = `<div class="store-alert">⚠️ ${store.alert}</div>`;
+      }
+
+      const healthIcon = store.health === 'ok' ? '🟢' : store.health === 'warn' ? '🟡' : '🔴';
+      const healthClass = 'health-' + store.health;
+
+      card.innerHTML = `
+        ${alertHtml}
+        <div class="store-card-header">
+          <div class="store-name">${storeName}</div>
+          <div class="mc-health ${healthClass}" style="font-size: 11px;">${healthIcon} ${store.healthNote}</div>
+        </div>
+        <div class="store-metrics">
+          <div class="store-metric">
+            <div class="sm-label">Revenue</div>
+            <div class="sm-value">${store.revenue}</div>
+            <div class="sm-change ${store.revenuePct.includes('↑') ? 'up' : 'down'}">${store.revenuePct}</div>
+          </div>
+          <div class="store-metric">
+            <div class="sm-label">ROAS</div>
+            <div class="sm-value">${store.roas}</div>
+            <div class="sm-change ${store.roasPct.includes('↑') ? 'up' : 'down'}">${store.roasPct}</div>
+          </div>
+          <div class="store-metric">
+            <div class="sm-label">True ROAS</div>
+            <div class="sm-value">${store.trueRoas}</div>
+          </div>
+          <div class="store-metric">
+            <div class="sm-label">CPA</div>
+            <div class="sm-value">${store.cpa}</div>
+          </div>
+          <div class="store-metric">
+            <div class="sm-label">NC %</div>
+            <div class="sm-value">${store.ncPct}</div>
+          </div>
+        </div>
+      `;
+
+      container.appendChild(card);
+    });
+  }
+
+  function enterStore(storeName) {
+    currentStore = storeName;
+    document.getElementById('homeWrapper').classList.remove('active');
+    document.getElementById('storeMain').style.display = 'flex';
+    document.getElementById('sidebar').classList.add('active');
+    document.getElementById('storeName').textContent = storeName;
+    document.getElementById('headerStoreName').textContent = storeName;
+    document.getElementById('resumenTitle').textContent = `${storeName} — Resumen Configurable`;
+    navigateTo('resumen');
+  }
+
+  function goHome() {
+    document.getElementById('homeWrapper').classList.add('active');
+    document.getElementById('storeMain').style.display = 'none';
+    document.getElementById('sidebar').classList.remove('active');
+    currentStore = null;
+  }
+
+  function navigateTo(pageId) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+
+    const page = document.getElementById('page-' + pageId);
+    if (page) {
+      page.classList.add('active');
+    }
+
+    const navItem = document.querySelector(`[onclick="navigateTo('${pageId}')"]`);
+    if (navItem) {
+      navItem.classList.add('active');
+    }
+  }
+
+  function openOrderModal() {
+    document.getElementById('orderModal').classList.add('active');
+  }
+
+  function closeOrderModal() {
+    document.getElementById('orderModal').classList.remove('active');
+  }
+
+  // Close modal on outside click
+  document.getElementById('orderModal')?.addEventListener('click', function(e) {
+    if (e.target === this) {
+      closeOrderModal();
+    }
+  });
+
+  // Simulator functions
+  function setupSimulatorListeners() {
+    const sliders = ['cpm', 'ctr', 'cvr', 'aov', 'budget'];
+    sliders.forEach(slider => {
+      const elem = document.getElementById(slider + 'Slider');
+      if (elem) {
+        elem.addEventListener('input', updateSimulator);
+      }
+    });
+  }
+
+  function updateSimulator() {
+    const cpm = parseFloat(document.getElementById('cpmSlider').value);
+    const ctr = parseFloat(document.getElementById('ctrSlider').value);
+    const cvr = parseFloat(document.getElementById('cvrSlider').value);
+    const aov = parseFloat(document.getElementById('aovSlider').value);
+    const budget = parseFloat(document.getElementById('budgetSlider').value);
+
+    // Update displays
+    document.getElementById('cpmVal').textContent = '$' + cpm.toLocaleString();
+    document.getElementById('ctrVal').textContent = ctr.toFixed(1) + '%';
+    document.getElementById('cvrVal').textContent = cvr.toFixed(1) + '%';
+    document.getElementById('aovVal').textContent = '$' + aov.toLocaleString();
+    document.getElementById('budgetVal').textContent = '$' + budget.toLocaleString();
+
+    // Calculate results
+    const impressions = (budget * 1000) / cpm;
+    const clicks = impressions * (ctr / 100);
+    const conversions = clicks * (cvr / 100);
+    const revenue = conversions * aov;
+    const cpa = budget / conversions;
+    const roas = revenue / budget;
+
+    document.getElementById('roasResult').textContent = roas.toFixed(2) + 'x';
+    document.getElementById('cpaResult').textContent = '$' + (cpa / 1000).toFixed(1) + 'K';
+    document.getElementById('comprasResult').textContent = Math.round(conversions);
+    document.getElementById('revenueResult').textContent = '$' + (revenue / 1000000).toFixed(2) + 'M';
+  }
+
+  function applyScenario(type) {
+    if (type === 'conservative') {
+      document.getElementById('cpmSlider').value = 1500;
+      document.getElementById('ctrSlider').value = 1.8;
+      document.getElementById('cvrSlider').value = 2.0;
+      document.getElementById('aovSlider').value = 35000;
+      document.getElementById('budgetSlider').value = 30000;
+    } else if (type === 'balanced') {
+      document.getElementById('cpmSlider').value = 1200;
+      document.getElementById('ctrSlider').value = 2.5;
+      document.getElementById('cvrSlider').value = 3.2;
+      document.getElementById('aovSlider').value = 45000;
+      document.getElementById('budgetSlider').value = 50000;
+    } else if (type === 'aggressive') {
+      document.getElementById('cpmSlider').value = 900;
+      document.getElementById('ctrSlider').value = 3.5;
+      document.getElementById('cvrSlider').value = 4.5;
+      document.getElementById('aovSlider').value = 60000;
+      document.getElementById('budgetSlider').value = 100000;
+    }
+    updateSimulator();
+  }
+
+  // Initialize on page load
+  init();
+</script>
+
+</body>
+</html>

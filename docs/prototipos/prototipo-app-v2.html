@@ -1,0 +1,2659 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ECOM ANALYTICS PRO - Plataforma Integral</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #080808;
+      --bg-card: #111111;
+      --bg-card-hover: #1a1a1a;
+      --bg-sidebar: #0c0c0c;
+      --bg-header: #0a0a0a;
+      --border: #1e1e1e;
+      --border-light: #2a2a2a;
+      --text: #e0e0e0;
+      --text-secondary: #888888;
+      --text-muted: #555555;
+      --accent: #6366f1;
+      --accent-hover: #818cf8;
+      --green: #22c55e;
+      --green-bg: rgba(34,197,94,0.1);
+      --red: #ef4444;
+      --red-bg: rgba(239,68,68,0.1);
+      --yellow: #eab308;
+      --yellow-bg: rgba(234,179,8,0.1);
+      --blue: #3b82f6;
+      --blue-bg: rgba(59,130,246,0.1);
+      --orange: #f97316;
+      --orange-bg: rgba(249,115,22,0.1);
+      --purple: #a855f7;
+      --purple-bg: rgba(168,85,247,0.1);
+      --cyan: #06b6d4;
+      --cyan-bg: rgba(6,182,212,0.1);
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ========== SIDEBAR ========== */
+    .sidebar {
+      width: 240px;
+      min-width: 240px;
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow-y: auto;
+    }
+
+    .sidebar-logo {
+      padding: 20px 20px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .sidebar-logo h1 {
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: 2px;
+      color: #fff;
+    }
+
+    .sidebar-logo span {
+      font-size: 10px;
+      font-weight: 400;
+      color: var(--text-muted);
+      letter-spacing: 1px;
+      display: block;
+      margin-top: 2px;
+    }
+
+    .sidebar-nav {
+      flex: 1;
+      padding: 12px 8px;
+    }
+
+    .sidebar-section-label {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      color: var(--text-muted);
+      padding: 16px 12px 6px;
+      text-transform: uppercase;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      transition: all 0.15s ease;
+      margin-bottom: 2px;
+    }
+
+    .nav-item:hover {
+      background: var(--bg-card);
+      color: var(--text);
+    }
+
+    .nav-item.active {
+      background: var(--accent);
+      color: #fff;
+      font-weight: 600;
+    }
+
+    .nav-item .nav-icon {
+      font-size: 16px;
+      width: 22px;
+      text-align: center;
+    }
+
+    .sidebar-footer {
+      padding: 12px 8px;
+      border-top: 1px solid var(--border);
+    }
+
+    /* ========== MAIN ========== */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ========== HEADER ========== */
+    .header {
+      height: 56px;
+      min-height: 56px;
+      background: var(--bg-header);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .header-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .store-select, .date-range {
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      color: var(--text);
+      padding: 7px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-family: 'Inter', sans-serif;
+      cursor: pointer;
+      outline: none;
+    }
+
+    .store-select:hover, .date-range:hover {
+      border-color: var(--accent);
+    }
+
+    .date-range {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .date-range-icon { font-size: 14px; }
+
+    .header-avatar {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+      color: #fff;
+      cursor: pointer;
+    }
+
+    /* ========== CONTENT ========== */
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+    }
+
+    .content::-webkit-scrollbar { width: 6px; }
+    .content::-webkit-scrollbar-track { background: transparent; }
+    .content::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 3px; }
+
+    .page { display: none; }
+    .page.active { display: block; }
+
+    .page-header {
+      margin-bottom: 24px;
+    }
+
+    .page-header h2 {
+      font-size: 22px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+
+    .page-header p {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    /* ========== CARDS / COMPONENTS ========== */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+    }
+
+    .card-title {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .grid-8 { display: grid; grid-template-columns: repeat(8, 1fr); gap: 16px; }
+    .grid-6 { display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; }
+    .grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+
+    .metric-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px 20px;
+    }
+
+    .metric-card .mc-label {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+    }
+
+    .metric-card .mc-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .metric-card .mc-change {
+      font-size: 11px;
+      font-weight: 600;
+      margin-top: 4px;
+    }
+
+    .mc-change.up { color: var(--green); }
+    .mc-change.down { color: var(--red); }
+
+    /* ========== TABLES ========== */
+    .table-wrapper {
+      overflow-x: auto;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+
+    thead th {
+      background: #141414;
+      padding: 10px 12px;
+      text-align: right;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      white-space: nowrap;
+    }
+
+    thead th:first-child { text-align: left; }
+
+    thead th.sortable {
+      cursor: pointer;
+      user-select: none;
+    }
+
+    thead th.sortable:hover {
+      color: var(--accent);
+    }
+
+    tbody td {
+      padding: 9px 12px;
+      text-align: right;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+    }
+
+    tbody td:first-child { text-align: left; font-weight: 500; }
+
+    tbody tr:hover { background: rgba(99,102,241,0.04); }
+
+    tbody tr:last-child td { border-bottom: none; }
+
+    tr.row-total { background: #141414; font-weight: 700; }
+    tr.row-total td { border-top: 2px solid var(--border-light); color: #fff; }
+
+    tr.row-objetivo { background: rgba(34,197,94,0.06); }
+    tr.row-objetivo td { color: var(--green); font-weight: 600; }
+
+    /* ========== BADGES ========== */
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+    }
+
+    .badge-green { background: var(--green-bg); color: var(--green); }
+    .badge-red { background: var(--red-bg); color: var(--red); }
+    .badge-yellow { background: var(--yellow-bg); color: var(--yellow); }
+    .badge-blue { background: var(--blue-bg); color: var(--blue); }
+    .badge-gray { background: rgba(100,100,100,0.15); color: #777; }
+    .badge-purple { background: rgba(168,85,247,0.12); color: var(--purple); }
+    .badge-orange { background: rgba(249,115,22,0.12); color: var(--orange); }
+    .badge-cyan { background: var(--cyan-bg); color: var(--cyan); }
+
+    /* ========== BUTTONS ========== */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      font-family: 'Inter', sans-serif;
+      cursor: pointer;
+      border: none;
+      transition: all 0.15s ease;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .btn-primary:hover { background: var(--accent-hover); }
+
+    .btn-secondary {
+      background: var(--bg-card);
+      color: var(--text);
+      border: 1px solid var(--border-light);
+    }
+
+    .btn-secondary:hover { border-color: var(--accent); }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-secondary);
+      border: 1px solid var(--border);
+    }
+
+    .btn-ghost:hover { color: var(--text); border-color: var(--text-muted); }
+
+    .btn-small {
+      padding: 6px 12px;
+      font-size: 11px;
+    }
+
+    /* ========== FORM ELEMENTS ========== */
+    select.form-select {
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      color: var(--text);
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-family: 'Inter', sans-serif;
+      outline: none;
+      cursor: pointer;
+    }
+
+    select.form-select:hover { border-color: var(--accent); }
+
+    input[type="text"], input[type="number"], input[type="email"], textarea {
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      color: var(--text);
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-family: 'Inter', sans-serif;
+      outline: none;
+    }
+
+    input[type="text"]:focus, input[type="number"]:focus, input[type="email"]:focus, textarea:focus {
+      border-color: var(--accent);
+    }
+
+    /* ========== SLIDERS ========== */
+    .slider-group {
+      margin-bottom: 20px;
+    }
+
+    .slider-group label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+    }
+
+    .slider-group label span { color: #fff; font-weight: 700; }
+
+    input[type="range"] {
+      width: 100%;
+      height: 4px;
+      -webkit-appearance: none;
+      appearance: none;
+      background: var(--border-light);
+      border-radius: 2px;
+      outline: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+      border: 2px solid #fff;
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+      border: 2px solid #fff;
+    }
+
+    /* ========== STATUS TOGGLE ========== */
+    .status-toggle {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: inline-block;
+      border: 2px solid transparent;
+      transition: all 0.2s ease;
+    }
+
+    .status-toggle.active {
+      background: var(--green);
+      border-color: var(--green);
+    }
+
+    .status-toggle.inactive {
+      background: var(--red);
+      border-color: var(--red);
+    }
+
+    /* ========== COLOR BARS ========== */
+    .bar-container {
+      display: flex;
+      height: 24px;
+      border-radius: 4px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+
+    .bar-segment {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .bar-mercadolibre { background: linear-gradient(90deg, #ffd700 0%, #ffed4e 100%); color: #333; }
+    .bar-mercadopago { background: linear-gradient(90deg, #1f2937 0%, #4b5563 100%); }
+
+    /* ========== EXPANDABLE SECTIONS ========== */
+    .expandable-section {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+
+    .expandable-header {
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .expandable-header:hover {
+      background: var(--bg-card-hover);
+    }
+
+    .expandable-header h3 {
+      font-size: 14px;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .expandable-toggle {
+      font-size: 14px;
+      transition: transform 0.2s ease;
+    }
+
+    .expandable-toggle.open {
+      transform: rotate(180deg);
+    }
+
+    .expandable-content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+      border-top: 1px solid var(--border);
+    }
+
+    .expandable-content.open {
+      max-height: 1000px;
+      padding: 16px 20px;
+    }
+
+    /* ========== MODAL ========== */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      max-width: 500px;
+      max-height: 90vh;
+      overflow-y: auto;
+      position: relative;
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 20px;
+      cursor: pointer;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .modal-close:hover {
+      background: var(--bg-card-hover);
+      color: var(--text);
+    }
+
+    .modal h3 {
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 20px;
+    }
+
+    .modal-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+    }
+
+    .modal-row:last-child {
+      border-bottom: none;
+    }
+
+    .modal-row-label {
+      color: var(--text-secondary);
+    }
+
+    .modal-row-value {
+      color: #fff;
+      font-weight: 600;
+    }
+
+    /* ========== SPECIFIC: OVERVIEW ========== */
+    .facturacion-cell {
+      position: relative;
+    }
+
+    .facturacion-bar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      background: linear-gradient(90deg, rgba(34,197,94,0.1) 0%, rgba(34,197,94,0.2) 100%);
+      z-index: -1;
+      border-radius: 4px;
+    }
+
+    /* ========== SPECIFIC: CREATIVOS ========== */
+    .kanban-board {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .kanban-column {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      min-height: 400px;
+    }
+
+    .kanban-header {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .kanban-card {
+      background: var(--bg-card-hover);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 8px;
+      cursor: move;
+    }
+
+    .kanban-card-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+
+    .kanban-card-info {
+      font-size: 10px;
+      color: var(--text-secondary);
+    }
+
+    /* ========== SPECIFIC: PRODUCT THUMBNAILS ========== */
+    .ad-thumbnail {
+      width: 100%;
+      height: 80px;
+      border-radius: 6px;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+
+    /* ========== INTEGRATION CARDS ========== */
+    .integration-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .integration-icon {
+      font-size: 32px;
+      margin-bottom: 12px;
+    }
+
+    .integration-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 6px;
+    }
+
+    .integration-status {
+      font-size: 11px;
+      padding: 4px 0;
+      margin-bottom: 12px;
+    }
+
+    .integration-status.connected {
+      color: var(--green);
+      font-weight: 600;
+    }
+
+    .integration-status.pending {
+      color: var(--yellow);
+      font-weight: 600;
+    }
+
+    /* ========== TAGS/CHIPS ========== */
+    .tag {
+      display: inline-block;
+      background: var(--bg-card-hover);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 4px 12px;
+      border-radius: 16px;
+      font-size: 11px;
+      font-weight: 500;
+      margin: 2px;
+    }
+
+    .tag-group {
+      margin: 8px 0;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ========== SIDEBAR ========== -->
+<div class="sidebar">
+  <div class="sidebar-logo">
+    <h1>ECOM ANALYTICS PRO</h1>
+    <span>Dashboard Integral</span>
+  </div>
+
+  <nav class="sidebar-nav">
+    <!-- Principal -->
+    <div class="sidebar-section-label">Principal</div>
+    <div class="nav-item active" onclick="navigateTo('overview')">
+      <span class="nav-icon">📊</span>
+      <span>Overview</span>
+    </div>
+    <div class="nav-item" onclick="navigateTo('dashboard')">
+      <span class="nav-icon">📈</span>
+      <span>Dashboard</span>
+    </div>
+
+    <!-- Finanzas -->
+    <div class="sidebar-section-label">Finanzas</div>
+    <div class="nav-item" onclick="navigateTo('cashflow')">
+      <span class="nav-icon">💰</span>
+      <span>Cashflow</span>
+    </div>
+    <div class="nav-item" onclick="navigateTo('costos')">
+      <span class="nav-icon">📉</span>
+      <span>Costos</span>
+    </div>
+
+    <!-- Marketing -->
+    <div class="sidebar-section-label">Marketing</div>
+    <div class="nav-item" onclick="navigateTo('meta-pixel')">
+      <span class="nav-icon">📱</span>
+      <span>Meta Pixel</span>
+    </div>
+    <div class="nav-item" onclick="navigateTo('creativos')">
+      <span class="nav-icon">🎨</span>
+      <span>Creativos</span>
+    </div>
+
+    <!-- Negocio -->
+    <div class="sidebar-section-label">Negocio</div>
+    <div class="nav-item" onclick="navigateTo('productos')">
+      <span class="nav-icon">🛍️</span>
+      <span>Productos</span>
+    </div>
+    <div class="nav-item" onclick="navigateTo('clientes')">
+      <span class="nav-icon">👥</span>
+      <span>Clientes</span>
+    </div>
+
+    <!-- Estrategia -->
+    <div class="sidebar-section-label">Estrategia</div>
+    <div class="nav-item" onclick="navigateTo('simulador')">
+      <span class="nav-icon">⚙️</span>
+      <span>Simulador</span>
+    </div>
+    <div class="nav-item" onclick="navigateTo('contenido')">
+      <span class="nav-icon">✍️</span>
+      <span>Contenido</span>
+    </div>
+    <div class="nav-item" onclick="navigateTo('competencia')">
+      <span class="nav-icon">🎯</span>
+      <span>Competencia</span>
+    </div>
+
+    <!-- Sistema -->
+    <div class="sidebar-section-label">Sistema</div>
+    <div class="nav-item" onclick="navigateTo('reportes')">
+      <span class="nav-icon">📄</span>
+      <span>Reportes</span>
+    </div>
+    <div class="nav-item" onclick="navigateTo('settings')">
+      <span class="nav-icon">⚙️</span>
+      <span>Settings</span>
+    </div>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="nav-item">
+      <span class="nav-icon">👤</span>
+      <span>Cuenta</span>
+    </div>
+  </div>
+</div>
+
+<!-- ========== MAIN ========== -->
+<div class="main">
+  <div class="header">
+    <div class="header-left">
+      <h3 class="header-title" id="header-title">Overview</h3>
+    </div>
+    <div class="header-right">
+      <select class="store-select" id="store-select">
+        <option>Todos los Locales</option>
+        <option>GERF</option>
+        <option>MANGUZ</option>
+        <option>NOMERCY</option>
+        <option>ARKO</option>
+        <option>BABYGINOS</option>
+      </select>
+      <div class="date-range">
+        <span class="date-range-icon">📅</span>
+        <select class="date-range">
+          <option>Últimos 30 días</option>
+          <option>Últimos 7 días</option>
+          <option>Este mes</option>
+          <option>Mes anterior</option>
+        </select>
+      </div>
+      <div class="header-avatar">AG</div>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ========== PAGE: OVERVIEW ========== -->
+    <div class="page active" id="page-overview">
+      <div class="page-header">
+        <h2>Overview Multi-Cliente</h2>
+        <p>Vista consolidada de todos tus locales</p>
+      </div>
+
+      <div class="grid-6" style="margin-bottom: 24px;">
+        <div class="metric-card">
+          <div class="mc-label">Revenue Total</div>
+          <div class="mc-value">$2.45M</div>
+          <div class="mc-change up">↑ 12.5%</div>
+        </div>
+        <div class="metric-card">
+          <div class="mc-label">Net Revenue</div>
+          <div class="mc-value">$1.89M</div>
+          <div class="mc-change up">↑ 8.2%</div>
+        </div>
+        <div class="metric-card">
+          <div class="mc-label">Ad Spend</div>
+          <div class="mc-value">$456.2K</div>
+          <div class="mc-change down">↓ 3.1%</div>
+        </div>
+        <div class="metric-card">
+          <div class="mc-label">True ROAS</div>
+          <div class="mc-value">3.8x</div>
+          <div class="mc-change up">↑ 5.6%</div>
+        </div>
+        <div class="metric-card">
+          <div class="mc-label">Profit</div>
+          <div class="mc-value">$1.12M</div>
+          <div class="mc-change up">↑ 14.3%</div>
+        </div>
+        <div class="metric-card">
+          <div class="mc-label">Profit Margin</div>
+          <div class="mc-value">45.8%</div>
+          <div class="mc-change up">↑ 2.1%</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Desempeño por Local</div>
+        <div class="table-wrapper" style="margin-top: 16px;">
+          <table>
+            <thead>
+              <tr>
+                <th class="sortable">Local</th>
+                <th class="sortable">Meta Spent $</th>
+                <th class="sortable">Compras</th>
+                <th class="sortable">Valor Conv.</th>
+                <th class="sortable">ROAS</th>
+                <th class="sortable">True ROAS</th>
+                <th class="sortable">Mensajes</th>
+                <th class="sortable">Facturación</th>
+                <th class="sortable">Gasto Diario</th>
+                <th class="sortable">NC %</th>
+                <th class="sortable">Budget</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>GERF</td>
+                <td>$125.4K <span class="mc-change up">↑3.2%</span></td>
+                <td>1,245 <span class="mc-change up">↑5.1%</span></td>
+                <td>$100.6 <span class="mc-change up">↑1.8%</span></td>
+                <td>2.8x <span class="mc-change down">↓0.3%</span></td>
+                <td>3.2x <span class="mc-change up">↑2.1%</span></td>
+                <td>342 <span class="mc-change up">↑8.5%</span></td>
+                <td style="position: relative;"><span class="facturacion-bar" style="width: 85%;"></span>$598.2K <span class="mc-change up">↑6.2%</span></td>
+                <td>$4,178 <span class="mc-change down">↓1.2%</span></td>
+                <td>2.1% <span class="mc-change down">↓0.3%</span></td>
+                <td>$5,000</td>
+              </tr>
+              <tr>
+                <td>MANGUZ</td>
+                <td>$98.7K <span class="mc-change up">↑4.5%</span></td>
+                <td>987 <span class="mc-change up">↑2.3%</span></td>
+                <td>$99.9 <span class="mc-change down">↓0.1%</span></td>
+                <td>3.1x <span class="mc-change up">↑1.2%</span></td>
+                <td>3.8x <span class="mc-change up">↑2.8%</span></td>
+                <td>278 <span class="mc-change down">↓2.1%</span></td>
+                <td style="position: relative;"><span class="facturacion-bar" style="width: 72%;"></span>$458.9K <span class="mc-change up">↑3.4%</span></td>
+                <td>$3,290 <span class="mc-change up">↑2.1%</span></td>
+                <td>3.2% <span class="mc-change up">↑0.5%</span></td>
+                <td>$4,500</td>
+              </tr>
+              <tr>
+                <td>NOMERCY</td>
+                <td>$156.8K <span class="mc-change up">↑7.2%</span></td>
+                <td>1,568 <span class="mc-change up">↑8.4%</span></td>
+                <td>$99.8 <span class="mc-change up">↑0.2%</span></td>
+                <td>2.5x <span class="mc-change down">↓1.8%</span></td>
+                <td>3.1x <span class="mc-change up">↑1.5%</span></td>
+                <td>412 <span class="mc-change up">↑12.3%</span></td>
+                <td style="position: relative;"><span class="facturacion-bar" style="width: 95%;"></span>$752.4K <span class="mc-change up">↑9.1%</span></td>
+                <td>$5,227 <span class="mc-change up">↑3.5%</span></td>
+                <td>1.8% <span class="mc-change down">↓0.2%</span></td>
+                <td>$6,000</td>
+              </tr>
+              <tr>
+                <td>ARKO</td>
+                <td>$67.2K <span class="mc-change down">↓2.1%</span></td>
+                <td>672 <span class="mc-change down">↓3.2%</span></td>
+                <td>$100.1 <span class="mc-change up">↑0.1%</span></td>
+                <td>3.5x <span class="mc-change up">↑2.3%</span></td>
+                <td>4.2x <span class="mc-change up">↑3.1%</span></td>
+                <td>198 <span class="mc-change down">↓5.2%</span></td>
+                <td style="position: relative;"><span class="facturacion-bar" style="width: 58%;"></span>$354.2K <span class="mc-change down">↓1.5%</span></td>
+                <td>$2,240 <span class="mc-change down">↓2.3%</span></td>
+                <td>2.5% <span class="mc-change up">↑0.4%</span></td>
+                <td>$3,500</td>
+              </tr>
+              <tr>
+                <td>BABYGINOS</td>
+                <td>$86.1K <span class="mc-change up">↑5.8%</span></td>
+                <td>861 <span class="mc-change up">↑6.1%</span></td>
+                <td>$100.3 <span class="mc-change up">↑0.3%</span></td>
+                <td>2.9x <span class="mc-change up">↑0.8%</span></td>
+                <td>3.5x <span class="mc-change up">↑1.9%</span></td>
+                <td>267 <span class="mc-change up">↑3.8%</span></td>
+                <td style="position: relative;"><span class="facturacion-bar" style="width: 68%;"></span>$432.1K <span class="mc-change up">↑4.7%</span></td>
+                <td>$2,870 <span class="mc-change down">↓1.1%</span></td>
+                <td>2.8% <span class="mc-change up">↑0.1%</span></td>
+                <td>$4,000</td>
+              </tr>
+              <tr class="row-total">
+                <td>TOTAL</td>
+                <td>$534.2K</td>
+                <td>5,333</td>
+                <td>$100.1</td>
+                <td>2.9x</td>
+                <td>3.5x</td>
+                <td>1,497</td>
+                <td>$2.596M</td>
+                <td>$17,805</td>
+                <td>2.5%</td>
+                <td>$23,000</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== PAGE: DASHBOARD ========== -->
+    <div class="page" id="page-dashboard">
+      <div class="page-header">
+        <h2>Dashboard Integral</h2>
+        <p>Métricas detalladas y análisis de desempeño</p>
+      </div>
+
+      <!-- Top KPIs -->
+      <div class="grid-8" style="margin-bottom: 24px;">
+        <div class="metric-card">
+          <div class="mc-label">Ordenes >$0</div>
+          <div class="mc-value">5,333</div>
+          <div class="mc-change up">↑ 6.2%</div>
+        </div>
+        <div class="metric-card">
+          <div class="mc-label">Revenue</div>
+          <div class="mc-value">$2.596M</div>
+          <div class="mc-change up">↑ 8.4%</div>
+        </div>
+        <div class="metric-card">
+          <div class="mc-label">Ad Spend</div>
+          <div class="mc-value">$534.2K</div>
+          <div class="mc-change down">↓ 1.3%</div>
+        </div>
+        <div class="metric-card">
+          <div class="mc-label">Net Revenue</div>
+          <div class="mc-value">$1.896M</div>
+          <div class="mc-change up">↑ 7.1%</div>
+        </div>
+        <div class="metric-card">
+          <div class="mc-label">Profit</div>
+          <div class="mc-value">$1.121M</div>
+          <div class="mc-change up">↑ 12.5%</div>
+        </div>
+        <div class="metric-card">
+          <div class="mc-label">Profit Margin %</div>
+          <div class="mc-value">46.1%</div>
+          <div class="mc-change up">↑ 1.8%</div>
+        </div>
+        <div class="metric-card">
+          <div class="mc-label">ROAS</div>
+          <div class="mc-value">4.9x</div>
+          <div class="mc-change up">↑ 3.2%</div>
+        </div>
+        <div class="metric-card">
+          <div class="mc-label">True ROAS</div>
+          <div class="mc-value">3.5x</div>
+          <div class="mc-change up">↑ 2.1%</div>
+        </div>
+      </div>
+
+      <!-- Tienda Section -->
+      <div class="card" style="margin-bottom: 24px;">
+        <div class="card-title">Tienda</div>
+        <div class="grid-6" style="margin-top: 16px;">
+          <div style="padding: 12px; border: 1px solid var(--border); border-radius: 6px;">
+            <div style="font-size: 10px; color: var(--text-secondary); margin-bottom: 4px;">Ordenes</div>
+            <div style="font-size: 18px; font-weight: 700; color: #fff;">5,333</div>
+          </div>
+          <div style="padding: 12px; border: 1px solid var(--border); border-radius: 6px;">
+            <div style="font-size: 10px; color: var(--text-secondary); margin-bottom: 4px;">Revenue</div>
+            <div style="font-size: 18px; font-weight: 700; color: #fff;">$2.596M</div>
+          </div>
+          <div style="padding: 12px; border: 1px solid var(--border); border-radius: 6px;">
+            <div style="font-size: 10px; color: var(--text-secondary); margin-bottom: 4px;">Net Revenue</div>
+            <div style="font-size: 18px; font-weight: 700; color: #fff;">$1.896M</div>
+          </div>
+          <div style="padding: 12px; border: 1px solid var(--border); border-radius: 6px;">
+            <div style="font-size: 10px; color: var(--text-secondary); margin-bottom: 4px;">AOV</div>
+            <div style="font-size: 18px; font-weight: 700; color: #fff;">$486.2</div>
+          </div>
+          <div style="padding: 12px; border: 1px solid var(--border); border-radius: 6px;">
+            <div style="font-size: 10px; color: var(--text-secondary); margin-bottom: 4px;">AOV Neto</div>
+            <div style="font-size: 18px; font-weight: 700; color: #fff;">$355.3</div>
+          </div>
+          <div style="padding: 12px; border: 1px solid var(--border); border-radius: 6px;">
+            <div style="font-size: 10px; color: var(--text-secondary); margin-bottom: 4px;">Ordenes >$0</div>
+            <div style="font-size: 18px; font-weight: 700; color: #fff;">5,333</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- NC/RC Section -->
+      <div class="card" style="margin-bottom: 24px;">
+        <div class="card-title">No Confirmadas / Rechazadas</div>
+        <div class="grid-6" style="margin-top: 16px;">
+          <div style="padding: 12px; border: 1px solid var(--border); border-radius: 6px;">
+            <div style="font-size: 10px; color: var(--text-secondary); margin-bottom: 4px;">NC %</div>
+            <div style="font-size: 18px; font-weight: 700; color: var(--red);">2.5%</div>
+          </div>
+          <div style="padding: 12px; border: 1px solid var(--border); border-radius: 6px;">
+            <div style="font-size: 10px; color: var(--text-secondary); margin-bottom: 4px;">NC Ordenes</div>
+            <div style="font-size: 18px; font-weight: 700; color: #fff;">133</div>
+          </div>
+          <div style="padding: 12px; border: 1px solid var(--border); border-radius: 6px;">
+            <div style="font-size: 10px; color: var(--text-secondary); margin-bottom: 4px;">NC Revenue</div>
+            <div style="font-size: 18px; font-weight: 700; color: #fff;">$64.9K</div>
+          </div>
+          <div style="padding: 12px; border: 1px solid var(--border); border-radius: 6px;">
+            <div style="font-size: 10px; color: var(--text-secondary); margin-bottom: 4px;">NC CPA</div>
+            <div style="font-size: 18px; font-weight: 700; color: #fff;">$89.2</div>
+          </div>
+          <div style="padding: 12px; border: 1px solid var(--border); border-radius: 6px;">
+            <div style="font-size: 10px; color: var(--text-secondary); margin-bottom: 4px;">NC ROAS</div>
+            <div style="font-size: 18px; font-weight: 700; color: #fff;">1.2x</div>
+          </div>
+          <div style="padding: 12px; border: 1px solid var(--border); border-radius: 6px;">
+            <div style="font-size: 10px; color: var(--text-secondary); margin-bottom: 4px;">NC True ROAS</div>
+            <div style="font-size: 18px; font-weight: 700; color: #fff;">0.9x</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mix Marketing -->
+      <div class="card" style="margin-bottom: 24px;">
+        <div class="card-title">Mix de Marketing por Canal</div>
+        <div class="grid-3" style="margin-top: 16px;">
+          <div style="padding: 16px; background: var(--bg-card-hover); border-radius: 8px;">
+            <div style="font-size: 12px; font-weight: 600; color: #fff; margin-bottom: 12px;">Meta</div>
+            <div style="padding: 4px 0; border-bottom: 1px solid var(--border); margin-bottom: 4px;">
+              <div style="font-size: 10px; color: var(--text-secondary);">Ad Spend</div>
+              <div style="font-size: 14px; font-weight: 600; color: #fff;">$350.2K</div>
+            </div>
+            <div style="padding: 4px 0; border-bottom: 1px solid var(--border); margin-bottom: 4px;">
+              <div style="font-size: 10px; color: var(--text-secondary);">ROAS</div>
+              <div style="font-size: 14px; font-weight: 600; color: #fff;">3.2x</div>
+            </div>
+            <div style="padding: 4px 0; border-bottom: 1px solid var(--border); margin-bottom: 4px;">
+              <div style="font-size: 10px; color: var(--text-secondary);">CPA</div>
+              <div style="font-size: 14px; font-weight: 600; color: #fff;">$65.8</div>
+            </div>
+            <div style="padding: 4px 0;">
+              <div style="font-size: 10px; color: var(--text-secondary);">CPC</div>
+              <div style="font-size: 14px; font-weight: 600; color: #fff;">$2.14</div>
+            </div>
+          </div>
+          <div style="padding: 16px; background: var(--bg-card-hover); border-radius: 8px;">
+            <div style="font-size: 12px; font-weight: 600; color: #fff; margin-bottom: 12px;">Google Ads</div>
+            <div style="padding: 4px 0; border-bottom: 1px solid var(--border); margin-bottom: 4px;">
+              <div style="font-size: 10px; color: var(--text-secondary);">Ad Spend</div>
+              <div style="font-size: 14px; font-weight: 600; color: #fff;">$124.8K</div>
+            </div>
+            <div style="padding: 4px 0; border-bottom: 1px solid var(--border); margin-bottom: 4px;">
+              <div style="font-size: 10px; color: var(--text-secondary);">ROAS</div>
+              <div style="font-size: 14px; font-weight: 600; color: #fff;">2.8x</div>
+            </div>
+            <div style="padding: 4px 0; border-bottom: 1px solid var(--border); margin-bottom: 4px;">
+              <div style="font-size: 10px; color: var(--text-secondary);">CPA</div>
+              <div style="font-size: 14px; font-weight: 600; color: #fff;">$78.5</div>
+            </div>
+            <div style="padding: 4px 0;">
+              <div style="font-size: 10px; color: var(--text-secondary);">CPC</div>
+              <div style="font-size: 14px; font-weight: 600; color: #fff;">$3.45</div>
+            </div>
+          </div>
+          <div style="padding: 16px; background: var(--bg-card-hover); border-radius: 8px;">
+            <div style="font-size: 12px; font-weight: 600; color: #fff; margin-bottom: 12px;">TikTok Ads</div>
+            <div style="padding: 4px 0; border-bottom: 1px solid var(--border); margin-bottom: 4px;">
+              <div style="font-size: 10px; color: var(--text-secondary);">Ad Spend</div>
+              <div style="font-size: 14px; font-weight: 600; color: #fff;">$59.2K</div>
+            </div>
+            <div style="padding: 4px 0; border-bottom: 1px solid var(--border); margin-bottom: 4px;">
+              <div style="font-size: 10px; color: var(--text-secondary);">ROAS</div>
+              <div style="font-size: 14px; font-weight: 600; color: #fff;">4.1x</div>
+            </div>
+            <div style="padding: 4px 0; border-bottom: 1px solid var(--border); margin-bottom: 4px;">
+              <div style="font-size: 10px; color: var(--text-secondary);">CPA</div>
+              <div style="font-size: 14px; font-weight: 600; color: #fff;">$54.2</div>
+            </div>
+            <div style="padding: 4px 0;">
+              <div style="font-size: 10px; color: var(--text-secondary);">CPC</div>
+              <div style="font-size: 14px; font-weight: 600; color: #fff;">$1.87</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Costos -->
+      <div class="card" style="margin-bottom: 24px;">
+        <div class="card-title">Costos</div>
+        <div class="grid-3" style="margin-top: 16px;">
+          <div style="padding: 16px; background: var(--bg-card-hover); border-radius: 8px;">
+            <div style="font-size: 10px; color: var(--text-secondary); margin-bottom: 4px;">Costo de Productos</div>
+            <div style="font-size: 20px; font-weight: 700; color: #fff;">$650.4K</div>
+            <div style="font-size: 10px; color: var(--text-secondary); margin-top: 4px;">25.1% del Revenue</div>
+          </div>
+          <div style="padding: 16px; background: var(--bg-card-hover); border-radius: 8px;">
+            <div style="font-size: 10px; color: var(--text-secondary); margin-bottom: 4px;">Costo de Envío</div>
+            <div style="font-size: 20px; font-weight: 700; color: #fff;">$389.4K</div>
+            <div style="font-size: 10px; color: var(--text-secondary); margin-top: 4px;">15.0% del Revenue</div>
+          </div>
+          <div style="padding: 16px; background: var(--bg-card-hover); border-radius: 8px;">
+            <div style="font-size: 10px; color: var(--text-secondary); margin-bottom: 4px;">Costo Adicionales</div>
+            <div style="font-size: 20px; font-weight: 700; color: #fff;">$435.8K</div>
+            <div style="font-size: 10px; color: var(--text-secondary); margin-top: 4px;">16.8% del Revenue</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Últimas Ventas -->
+      <div class="card">
+        <div class="card-title">Últimas Ventas (Devoluciones: 126)</div>
+        <div class="table-wrapper" style="margin-top: 16px;">
+          <table>
+            <thead>
+              <tr>
+                <th>ID Orden</th>
+                <th>Origen</th>
+                <th>Estado</th>
+                <th>Created At</th>
+                <th>Total Orden</th>
+                <th>Total Neto</th>
+                <th>Acción</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>#5630819401808</td>
+                <td>Instagram</td>
+                <td><span class="badge badge-green">Confirmada</span></td>
+                <td>2026-03-25 14:32</td>
+                <td>$94.0K</td>
+                <td>$65.6K</td>
+                <td><button class="btn btn-small btn-secondary" onclick="openOrderDetail()">Ver detalle</button></td>
+              </tr>
+              <tr>
+                <td>#5630819401809</td>
+                <td>Meta Ads</td>
+                <td><span class="badge badge-green">Confirmada</span></td>
+                <td>2026-03-25 13:15</td>
+                <td>$127.3K</td>
+                <td>$89.2K</td>
+                <td><button class="btn btn-small btn-secondary">Ver detalle</button></td>
+              </tr>
+              <tr>
+                <td>#5630819401810</td>
+                <td>Google Ads</td>
+                <td><span class="badge badge-yellow">Pendiente</span></td>
+                <td>2026-03-25 12:48</td>
+                <td>$156.8K</td>
+                <td>$108.4K</td>
+                <td><button class="btn btn-small btn-secondary">Ver detalle</button></td>
+              </tr>
+              <tr>
+                <td>#5630819401811</td>
+                <td>TikTok Ads</td>
+                <td><span class="badge badge-red">Rechazada</span></td>
+                <td>2026-03-25 11:22</td>
+                <td>$82.1K</td>
+                <td>$0</td>
+                <td><button class="btn btn-small btn-secondary">Ver detalle</button></td>
+              </tr>
+              <tr>
+                <td>#5630819401812</td>
+                <td>Instagram</td>
+                <td><span class="badge badge-green">Confirmada</span></td>
+                <td>2026-03-25 10:05</td>
+                <td>$213.5K</td>
+                <td>$148.1K</td>
+                <td><button class="btn btn-small btn-secondary">Ver detalle</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== PAGE: CASHFLOW ========== -->
+    <div class="page" id="page-cashflow">
+      <div class="page-header">
+        <h2>Cashflow</h2>
+        <p>Gestión de liquidez y pagos</p>
+      </div>
+
+      <div class="grid-6" style="margin-bottom: 24px;">
+        <div class="metric-card">
+          <div class="mc-label">Ventas</div>
+          <div class="mc-value">$83.2M</div>
+          <div class="mc-change up">↑ 15.3%</div>
+        </div>
+        <div class="metric-card">
+          <div class="mc-label">Liquidable Ventas</div>
+          <div class="mc-value">$64.9M</div>
+          <div class="mc-change up">↑ 12.1%</div>
+        </div>
+        <div class="metric-card">
+          <div class="mc-label">Comisiones Pago</div>
+          <div class="mc-value">$18.2M</div>
+          <div class="mc-change down">↓ 2.3%</div>
+        </div>
+        <div class="metric-card">
+          <div class="mc-label">Pagos Pendientes</div>
+          <div class="mc-value">$26.3M</div>
+          <div class="mc-change up">↑ 8.5%</div>
+        </div>
+        <div class="metric-card">
+          <div class="mc-label">Pagos Recibidos</div>
+          <div class="mc-value">$58.6M</div>
+          <div class="mc-change up">↑ 18.2%</div>
+        </div>
+        <div class="metric-card">
+          <div class="mc-label">Comisiones %</div>
+          <div class="mc-value">21.89%</div>
+          <div class="mc-change down">↓ 1.2%</div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom: 24px;">
+        <div class="card-title">Gráfico Semanal</div>
+        <div style="padding: 40px 20px; text-align: center; color: var(--text-secondary);">
+          📊 Gráfico semanal: Ventas vs Pagos Recibidos vs Pagos Pendientes
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom: 24px;">
+        <div class="card-title">Distribución de Pagos Pendientes</div>
+        <div style="margin-top: 16px;">
+          <div class="bar-container">
+            <div class="bar-segment bar-mercadolibre" style="flex: 0.6;">Mercado Libre 60%</div>
+            <div class="bar-segment bar-mercadopago" style="flex: 0.4;">Mercado Pago 40%</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Pagos Programados</div>
+        <div class="table-wrapper" style="margin-top: 16px;">
+          <table>
+            <thead>
+              <tr>
+                <th>ID Orden</th>
+                <th>Fecha Creación</th>
+                <th>Fecha Pago</th>
+                <th>Estado</th>
+                <th>Total Orden</th>
+                <th>Liquidable</th>
+                <th>Gateway</th>
+                <th>Cuotas</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>#5630819401808</td>
+                <td>2026-03-20</td>
+                <td>2026-03-28</td>
+                <td><span class="badge badge-yellow">Pendiente</span></td>
+                <td>$94.0K</td>
+                <td>$73.2K</td>
+                <td>🏦 ML</td>
+                <td>1</td>
+              </tr>
+              <tr>
+                <td>#5630819401809</td>
+                <td>2026-03-21</td>
+                <td>2026-03-29</td>
+                <td><span class="badge badge-yellow">Pendiente</span></td>
+                <td>$127.3K</td>
+                <td>$99.1K</td>
+                <td>💳 MP</td>
+                <td>3</td>
+              </tr>
+              <tr>
+                <td>#5630819401810</td>
+                <td>2026-03-22</td>
+                <td>2026-03-30</td>
+                <td><span class="badge badge-yellow">Pendiente</span></td>
+                <td>$156.8K</td>
+                <td>$121.8K</td>
+                <td>🏦 ML</td>
+                <td>1</td>
+              </tr>
+              <tr>
+                <td>#5630819401811</td>
+                <td>2026-03-23</td>
+                <td>2026-03-31</td>
+                <td><span class="badge badge-yellow">Pendiente</span></td>
+                <td>$82.1K</td>
+                <td>$63.8K</td>
+                <td>💳 MP</td>
+                <td>2</td>
+              </tr>
+              <tr>
+                <td>#5630819401812</td>
+                <td>2026-03-24</td>
+                <td>2026-04-01</td>
+                <td><span class="badge badge-yellow">Pendiente</span></td>
+                <td>$213.5K</td>
+                <td>$166.1K</td>
+                <td>🏦 ML</td>
+                <td>1</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== PAGE: META PIXEL ========== -->
+    <div class="page" id="page-meta-pixel">
+      <div class="page-header">
+        <h2>Meta Pixel - Tracking Dual</h2>
+        <p>Comparación Métricas Meta vs Propio Tracking</p>
+      </div>
+
+      <div class="card" style="margin-bottom: 24px;">
+        <div class="card-title">Selector de Métricas</div>
+        <div class="tag-group" style="margin-top: 16px;">
+          <span class="tag">Métricas Básicas</span>
+          <span class="tag">Métricas de Click</span>
+          <span class="tag">Métricas de Video</span>
+          <span class="tag">Métricas de Conversión</span>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom: 24px;">
+        <div class="card-title">Desempeño de Campañas</div>
+        <div class="table-wrapper" style="margin-top: 16px;">
+          <table>
+            <thead>
+              <tr>
+                <th style="text-align: center; width: 30px;"></th>
+                <th>Nombre Campaña</th>
+                <th>Budget</th>
+                <th>Meta Spend</th>
+                <th>Propio Spend</th>
+                <th>Meta Revenue</th>
+                <th>Propio Revenue</th>
+                <th>Meta Profit</th>
+                <th>Propio Profit</th>
+                <th>CPA</th>
+                <th>ROAS</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="text-align: center;"><div class="status-toggle active"></div></td>
+                <td>Summer Vibes - Feed</td>
+                <td>$12.5K/día ✏️</td>
+                <td>$350.2K</td>
+                <td>$345.8K</td>
+                <td>$1.12M</td>
+                <td>$1.10M</td>
+                <td>$768.2K</td>
+                <td>$754.2K</td>
+                <td>$56.2</td>
+                <td>3.2x</td>
+              </tr>
+              <tr>
+                <td style="text-align: center;"><div class="status-toggle active"></div></td>
+                <td>Conversión Directa</td>
+                <td>$8.2K/día ✏️</td>
+                <td>$234.8K</td>
+                <td>$231.5K</td>
+                <td>$892.5K</td>
+                <td>$879.3K</td>
+                <td>$657.7K</td>
+                <td>$647.8K</td>
+                <td>$72.5</td>
+                <td>3.8x</td>
+              </tr>
+              <tr>
+                <td style="text-align: center;"><div class="status-toggle inactive"></div></td>
+                <td>Retargeting Video</td>
+                <td>$5.8K/día ✏️</td>
+                <td>$128.5K</td>
+                <td>$122.1K</td>
+                <td>$445.2K</td>
+                <td>$421.8K</td>
+                <td>$316.7K</td>
+                <td>$299.7K</td>
+                <td>$89.3</td>
+                <td>3.5x</td>
+              </tr>
+              <tr>
+                <td style="text-align: center;"><div class="status-toggle active"></div></td>
+                <td>Brand Protection</td>
+                <td>$3.2K/día ✏️</td>
+                <td>$89.6K</td>
+                <td>$87.2K</td>
+                <td>$562.1K</td>
+                <td>$544.8K</td>
+                <td>$472.5K</td>
+                <td>$457.6K</td>
+                <td>$42.1</td>
+                <td>6.3x</td>
+              </tr>
+              <tr class="row-total">
+                <td></td>
+                <td>TOTAL</td>
+                <td>$30K/día</td>
+                <td>$803.1K</td>
+                <td>$786.6K</td>
+                <td>$3.02M</td>
+                <td>$2.95M</td>
+                <td>$2.22M</td>
+                <td>$2.16M</td>
+                <td>$65.0</td>
+                <td>3.8x</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Resultados x Anuncio</div>
+        <div class="table-wrapper" style="margin-top: 16px;">
+          <table>
+            <thead>
+              <tr>
+                <th>Thumbnail</th>
+                <th>Nombre Anuncio</th>
+                <th>Importe Gastado</th>
+                <th>Alcance</th>
+                <th>CTR</th>
+                <th>Agregados Carrito</th>
+                <th>Pagos Iniciados</th>
+                <th>Compras</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><div class="ad-thumbnail" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div></td>
+                <td>Summer Lookbook #1</td>
+                <td>$45.2K</td>
+                <td>125.4K</td>
+                <td>2.8%</td>
+                <td>3,508</td>
+                <td>892</td>
+                <td>412</td>
+              </tr>
+              <tr>
+                <td><div class="ad-thumbnail" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);"></div></td>
+                <td>Summer Lookbook #2</td>
+                <td>$52.8K</td>
+                <td>142.1K</td>
+                <td>3.1%</td>
+                <td>4,405</td>
+                <td>1,024</td>
+                <td>523</td>
+              </tr>
+              <tr>
+                <td><div class="ad-thumbnail" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);"></div></td>
+                <td>Limited Time Offer</td>
+                <td>$38.9K</td>
+                <td>98.5K</td>
+                <td>2.2%</td>
+                <td>2,167</td>
+                <td>521</td>
+                <td>289</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== PAGE: COSTOS ========== -->
+    <div class="page" id="page-costos">
+      <div class="page-header">
+        <h2>Gestión de Costos</h2>
+        <p>Configuración y análisis de todos los costos</p>
+      </div>
+
+      <!-- Expandable Cost Sections -->
+      <div class="expandable-section">
+        <div class="expandable-header" onclick="toggleSection(this)">
+          <h3>Costos de Productos</h3>
+          <span class="expandable-toggle">▼</span>
+        </div>
+        <div class="expandable-content">
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>SKU</th>
+                  <th>Nombre Producto</th>
+                  <th>Costo Unit.</th>
+                  <th>Margen</th>
+                  <th>% Ventas</th>
+                  <th>Costo Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>SKU-001</td>
+                  <td>Remera Premium Summer</td>
+                  <td>$25.50</td>
+                  <td>65%</td>
+                  <td>18%</td>
+                  <td>$145.3K</td>
+                </tr>
+                <tr>
+                  <td>SKU-002</td>
+                  <td>Pantalón Denim Classic</td>
+                  <td>$42.75</td>
+                  <td>58%</td>
+                  <td>22%</td>
+                  <td>$187.2K</td>
+                </tr>
+                <tr>
+                  <td>SKU-003</td>
+                  <td>Vestido Casual</td>
+                  <td>$35.20</td>
+                  <td>62%</td>
+                  <td>15%</td>
+                  <td>$132.8K</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="expandable-section">
+        <div class="expandable-header" onclick="toggleSection(this)">
+          <h3>Comisiones de Plataforma</h3>
+          <span class="expandable-toggle">▼</span>
+        </div>
+        <div class="expandable-content">
+          <div style="margin-bottom: 16px;">
+            <label style="display: block; margin-bottom: 8px; font-size: 12px; color: var(--text-secondary);">
+              TiendaNube Fee (%)
+              <input type="number" value="1.5" style="width: 80px; margin-left: 8px;" />
+            </label>
+            <div style="font-size: 12px; color: var(--text);">Estimado Mensual: $38,940</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="expandable-section">
+        <div class="expandable-header" onclick="toggleSection(this)">
+          <h3>Comisiones de Pago</h3>
+          <span class="expandable-toggle">▼</span>
+        </div>
+        <div class="expandable-content">
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Medio de Pago</th>
+                  <th>Cuotas</th>
+                  <th>Comisión Base</th>
+                  <th>Comisión Cuotas</th>
+                  <th>Comisión Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Mercado Pago - Débito</td>
+                  <td>1</td>
+                  <td>2.9%</td>
+                  <td>0%</td>
+                  <td>2.9%</td>
+                </tr>
+                <tr>
+                  <td>Mercado Pago - Crédito</td>
+                  <td>1</td>
+                  <td>3.99%</td>
+                  <td>2.99%</td>
+                  <td>3.99%</td>
+                </tr>
+                <tr>
+                  <td>Mercado Libre - Checkout</td>
+                  <td>1</td>
+                  <td>4.49%</td>
+                  <td>0%</td>
+                  <td>4.49%</td>
+                </tr>
+                <tr>
+                  <td>Transferencia Bancaria</td>
+                  <td>1</td>
+                  <td>0%</td>
+                  <td>0%</td>
+                  <td>0%</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="expandable-section">
+        <div class="expandable-header" onclick="toggleSection(this)">
+          <h3>Costos de Envíos</h3>
+          <span class="expandable-toggle">▼</span>
+        </div>
+        <div class="expandable-content">
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Zona</th>
+                  <th>Costo Base</th>
+                  <th>% sobre Orden</th>
+                  <th>Min Order</th>
+                  <th>Gratis >$</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>CABA</td>
+                  <td>$120</td>
+                  <td>0%</td>
+                  <td>$150</td>
+                  <td>$2,000</td>
+                </tr>
+                <tr>
+                  <td>GBA</td>
+                  <td>$180</td>
+                  <td>0%</td>
+                  <td>$200</td>
+                  <td>$3,000</td>
+                </tr>
+                <tr>
+                  <td>Interior</td>
+                  <td>$250</td>
+                  <td>2%</td>
+                  <td>$300</td>
+                  <td>$5,000</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="expandable-section">
+        <div class="expandable-header" onclick="toggleSection(this)">
+          <h3>Costos Adicionales</h3>
+          <span class="expandable-toggle">▼</span>
+        </div>
+        <div class="expandable-content">
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Concepto</th>
+                  <th>Monto Mensual</th>
+                  <th>% sobre Revenue</th>
+                  <th>Notas</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Impuestos (IBB)</td>
+                  <td>$64,960</td>
+                  <td>2.5%</td>
+                  <td>CABA 3.5%</td>
+                </tr>
+                <tr>
+                  <td>Publicidad Orgánica</td>
+                  <td>$45,000</td>
+                  <td>1.7%</td>
+                  <td>Influencers</td>
+                </tr>
+                <tr>
+                  <td>Hosting & Herramientas</td>
+                  <td>$12,500</td>
+                  <td>0.5%</td>
+                  <td>Servidor + Analytics</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- P&L Summary -->
+      <div class="card" style="margin-top: 24px;">
+        <div class="card-title">Resumen P&L</div>
+        <div class="table-wrapper" style="margin-top: 16px;">
+          <table>
+            <thead>
+              <tr>
+                <th>Concepto</th>
+                <th>Monto</th>
+                <th>% Revenue</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Revenue Bruto</strong></td>
+                <td><strong>$2,596,000</strong></td>
+                <td><strong>100%</strong></td>
+              </tr>
+              <tr>
+                <td>- Costo de Productos (COGS)</td>
+                <td>-$650,400</td>
+                <td>-25.1%</td>
+              </tr>
+              <tr>
+                <td>- Costos de Envío</td>
+                <td>-$389,400</td>
+                <td>-15.0%</td>
+              </tr>
+              <tr>
+                <td>- Comisiones de Plataforma</td>
+                <td>-$38,940</td>
+                <td>-1.5%</td>
+              </tr>
+              <tr>
+                <td>- Comisiones de Pago</td>
+                <td>-$103,840</td>
+                <td>-4.0%</td>
+              </tr>
+              <tr>
+                <td>- Impuestos (IBB)</td>
+                <td>-$64,960</td>
+                <td>-2.5%</td>
+              </tr>
+              <tr>
+                <td>- Costos Adicionales</td>
+                <td>-$122,500</td>
+                <td>-4.7%</td>
+              </tr>
+              <tr class="row-total">
+                <td>PROFIT NETO</td>
+                <td>$1,225,960</td>
+                <td>47.2%</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Punto de Equilibrio -->
+      <div class="card" style="margin-top: 24px;">
+        <div class="card-title">Punto de Equilibrio</div>
+        <div style="padding: 16px;">
+          <div style="margin-bottom: 12px;">
+            <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 4px;">Costos Fijos Mensuales</div>
+            <div style="font-size: 18px; font-weight: 700; color: #fff;">$122,500</div>
+          </div>
+          <div style="margin-bottom: 12px;">
+            <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 4px;">Margen Contribución Unitario (CM)</div>
+            <div style="font-size: 18px; font-weight: 700; color: #fff;">$228.94</div>
+          </div>
+          <div style="padding: 12px; background: var(--green-bg); border-radius: 6px; text-align: center;">
+            <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 4px;">Punto de Equilibrio</div>
+            <div style="font-size: 24px; font-weight: 700; color: var(--green);">536 unidades/mes</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== PAGE: PRODUCTOS ========== -->
+    <div class="page" id="page-productos">
+      <div class="page-header">
+        <h2>Productos</h2>
+        <p>Gestión de catálogo y desempeño</p>
+      </div>
+
+      <div class="card" style="margin-bottom: 24px;">
+        <div class="card-title">Top Sellers</div>
+        <div class="table-wrapper" style="margin-top: 16px;">
+          <table>
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th>Ventas</th>
+                <th>Revenue</th>
+                <th>AOV</th>
+                <th>Margen</th>
+                <th>Stock</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Remera Premium Summer</td>
+                <td>542</td>
+                <td>$318.2K</td>
+                <td>$587</td>
+                <td>65%</td>
+                <td><span class="badge badge-green">127</span></td>
+              </tr>
+              <tr>
+                <td>Pantalón Denim Classic</td>
+                <td>438</td>
+                <td>$287.5K</td>
+                <td>$656</td>
+                <td>58%</td>
+                <td><span class="badge badge-green">89</span></td>
+              </tr>
+              <tr>
+                <td>Vestido Casual</td>
+                <td>378</td>
+                <td>$234.8K</td>
+                <td>$621</td>
+                <td>62%</td>
+                <td><span class="badge badge-yellow">23</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Alertas de Stock</div>
+        <div style="padding: 16px;">
+          <div style="padding: 8px 0; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between;">
+            <span>Stock Bajo: Buzos Winter</span>
+            <span class="badge badge-yellow">5 unidades</span>
+          </div>
+          <div style="padding: 8px 0; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between;">
+            <span>Sin Stock: Gorro Beanie</span>
+            <span class="badge badge-red">0 unidades</span>
+          </div>
+          <div style="padding: 8px 0; display: flex; justify-content: space-between;">
+            <span>Dead Stock: Campera 2022</span>
+            <span class="badge badge-gray">3 unidades</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== PAGE: CLIENTES ========== -->
+    <div class="page" id="page-clientes">
+      <div class="page-header">
+        <h2>Clientes</h2>
+        <p>Análisis de cohorts y RFM</p>
+      </div>
+
+      <div class="card" style="margin-bottom: 24px;">
+        <div class="card-title">Cohort Analysis - Clientes por Mes de Primer Compra</div>
+        <div class="table-wrapper" style="margin-top: 16px;">
+          <table>
+            <thead>
+              <tr>
+                <th>Cohorte</th>
+                <th>Mes 0</th>
+                <th>Mes 1</th>
+                <th>Mes 2</th>
+                <th>Mes 3</th>
+                <th>Mes 4</th>
+                <th>Mes 5</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Octubre 2025</td>
+                <td>345</td>
+                <td>156 (45%)</td>
+                <td>89 (26%)</td>
+                <td>52 (15%)</td>
+                <td>31 (9%)</td>
+                <td>18 (5%)</td>
+              </tr>
+              <tr>
+                <td>Noviembre 2025</td>
+                <td>578</td>
+                <td>289 (50%)</td>
+                <td>156 (27%)</td>
+                <td>98 (17%)</td>
+                <td>67 (12%)</td>
+                <td></td>
+              </tr>
+              <tr>
+                <td>Diciembre 2025</td>
+                <td>812</td>
+                <td>445 (55%)</td>
+                <td>234 (29%)</td>
+                <td>145 (18%)</td>
+                <td></td>
+                <td></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Matriz RFM</div>
+        <div style="padding: 16px;">
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
+            <div style="padding: 12px; background: var(--green-bg); border-radius: 6px;">
+              <div style="font-size: 10px; color: var(--text-secondary); margin-bottom: 4px;">High Value</div>
+              <div style="font-size: 18px; font-weight: 700; color: var(--green);">347</div>
+            </div>
+            <div style="padding: 12px; background: var(--yellow-bg); border-radius: 6px;">
+              <div style="font-size: 10px; color: var(--text-secondary); margin-bottom: 4px;">Medium Value</div>
+              <div style="font-size: 18px; font-weight: 700; color: var(--yellow);">623</div>
+            </div>
+            <div style="padding: 12px; background: var(--red-bg); border-radius: 6px;">
+              <div style="font-size: 10px; color: var(--text-secondary); margin-bottom: 4px;">Low Value</div>
+              <div style="font-size: 18px; font-weight: 700; color: var(--red);">456</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== PAGE: SIMULADOR ========== -->
+    <div class="page" id="page-simulador">
+      <div class="page-header">
+        <h2>Simulador de Escenarios</h2>
+        <p>What-if analysis con impacto en KPIs</p>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">Parámetros de Simulación</div>
+
+          <div class="slider-group">
+            <label>
+              <span>Aumento Ad Spend</span>
+              <span id="slider-spend">0%</span>
+            </label>
+            <input type="range" min="0" max="100" value="0" oninput="updateSimulation(); document.getElementById('slider-spend').textContent = this.value + '%';">
+          </div>
+
+          <div class="slider-group">
+            <label>
+              <span>Aumento CTR</span>
+              <span id="slider-ctr">0%</span>
+            </label>
+            <input type="range" min="0" max="50" value="0" oninput="updateSimulation(); document.getElementById('slider-ctr').textContent = this.value + '%';">
+          </div>
+
+          <div class="slider-group">
+            <label>
+              <span>Aumento Conversión</span>
+              <span id="slider-conv">0%</span>
+            </label>
+            <input type="range" min="0" max="50" value="0" oninput="updateSimulation(); document.getElementById('slider-conv').textContent = this.value + '%';">
+          </div>
+
+          <div class="slider-group">
+            <label>
+              <span>Reducción CPC</span>
+              <span id="slider-cpc">0%</span>
+            </label>
+            <input type="range" min="0" max="30" value="0" oninput="updateSimulation(); document.getElementById('slider-cpc').textContent = this.value + '%';">
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Impacto en KPIs</div>
+          <div style="padding: 12px; background: var(--bg-card-hover); border-radius: 6px; margin-bottom: 12px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+              <span style="font-size: 12px; color: var(--text-secondary);">Ad Spend</span>
+              <span style="font-size: 12px; font-weight: 600; color: #fff;">$534.2K → $534.2K</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+              <span style="font-size: 12px; color: var(--text-secondary);">Revenue Proyectado</span>
+              <span style="font-size: 12px; font-weight: 600; color: var(--green);">$2.596M → $2.596M</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+              <span style="font-size: 12px; color: var(--text-secondary);">ROAS Esperado</span>
+              <span style="font-size: 12px; font-weight: 600; color: var(--green);">4.9x → 4.9x</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span style="font-size: 12px; color: var(--text-secondary);">Profit Esperado</span>
+              <span style="font-size: 12px; font-weight: 600; color: var(--green);">$1.121M → $1.121M</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== PAGE: CREATIVOS ========== -->
+    <div class="page" id="page-creativos">
+      <div class="page-header">
+        <h2>Gestión de Creativos</h2>
+        <p>Pipeline de creativos y desempeño de anuncios</p>
+      </div>
+
+      <!-- Kanban Board -->
+      <div class="kanban-board">
+        <div class="kanban-column">
+          <div class="kanban-header">Testing (8)</div>
+          <div class="kanban-card">
+            <div class="kanban-card-title">Summer Collection #1</div>
+            <div class="kanban-card-info">Spend: $2,450 | ROAS: 1.8x</div>
+          </div>
+          <div class="kanban-card">
+            <div class="kanban-card-title">Urban Style</div>
+            <div class="kanban-card-info">Spend: $1,890 | ROAS: 2.1x</div>
+          </div>
+          <div class="kanban-card">
+            <div class="kanban-card-title">Beach Vibes</div>
+            <div class="kanban-card-info">Spend: $3,200 | ROAS: 1.5x</div>
+          </div>
+        </div>
+
+        <div class="kanban-column">
+          <div class="kanban-header">Scaling (5)</div>
+          <div class="kanban-card">
+            <div class="kanban-card-title">Bestseller Campaign</div>
+            <div class="kanban-card-info">Spend: $12,500 | ROAS: 2.8x</div>
+          </div>
+          <div class="kanban-card">
+            <div class="kanban-card-title">Flash Sale</div>
+            <div class="kanban-card-info">Spend: $8,950 | ROAS: 3.2x</div>
+          </div>
+          <div class="kanban-card">
+            <div class="kanban-card-title">New Arrivals</div>
+            <div class="kanban-card-info">Spend: $6,780 | ROAS: 2.9x</div>
+          </div>
+        </div>
+
+        <div class="kanban-column">
+          <div class="kanban-header">Winners (3)</div>
+          <div class="kanban-card">
+            <div class="kanban-card-title">Hero Product</div>
+            <div class="kanban-card-info">Spend: $45,200 | ROAS: 4.2x</div>
+          </div>
+          <div class="kanban-card">
+            <div class="kanban-card-title">Brand Story</div>
+            <div class="kanban-card-info">Spend: $38,500 | ROAS: 3.8x</div>
+          </div>
+          <div class="kanban-card">
+            <div class="kanban-card-title">Social Proof</div>
+            <div class="kanban-card-info">Spend: $32,100 | ROAS: 4.5x</div>
+          </div>
+        </div>
+
+        <div class="kanban-column">
+          <div class="kanban-header">Retired (2)</div>
+          <div class="kanban-card">
+            <div class="kanban-card-title">Old Campaign</div>
+            <div class="kanban-card-info">Spend: $5,200 | ROAS: 1.2x</div>
+          </div>
+          <div class="kanban-card">
+            <div class="kanban-card-title">Seasonal 2024</div>
+            <div class="kanban-card-info">Spend: $4,800 | ROAS: 0.9x</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Resultados x Campaña -->
+      <div class="card" style="margin-bottom: 24px;">
+        <div class="card-title">Resultados x Campaña</div>
+        <div class="table-wrapper" style="margin-top: 16px;">
+          <table>
+            <thead>
+              <tr>
+                <th>Nombre Campaña</th>
+                <th>Importe Gastado</th>
+                <th>CPM</th>
+                <th>Alcance</th>
+                <th>CTR</th>
+                <th>ATC</th>
+                <th>Pagos Iniciados</th>
+                <th>Compras</th>
+                <th>CPA</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Hero Product</td>
+                <td>$45,200</td>
+                <td>$12.50</td>
+                <td>3.62M</td>
+                <td>3.2%</td>
+                <td>11,584</td>
+                <td>2,341</td>
+                <td>1,245</td>
+                <td>$36.30</td>
+              </tr>
+              <tr>
+                <td>Brand Story</td>
+                <td>$38,500</td>
+                <td>$14.20</td>
+                <td>2.71M</td>
+                <td>2.8%</td>
+                <td>7,588</td>
+                <td>1,654</td>
+                <td>892</td>
+                <td>$43.15</td>
+              </tr>
+              <tr>
+                <td>Social Proof</td>
+                <td>$32,100</td>
+                <td>$11.80</td>
+                <td>2.72M</td>
+                <td>2.9%</td>
+                <td>7,888</td>
+                <td>1,792</td>
+                <td>962</td>
+                <td>$33.36</td>
+              </tr>
+              <tr>
+                <td>Flash Sale</td>
+                <td>$8,950</td>
+                <td>$9.50</td>
+                <td>942K</td>
+                <td>4.1%</td>
+                <td>3,862</td>
+                <td>734</td>
+                <td>398</td>
+                <td>$22.49</td>
+              </tr>
+              <tr class="row-total">
+                <td>TOTAL</td>
+                <td>$124,750</td>
+                <td>$12.00</td>
+                <td>10.0M</td>
+                <td>3.2%</td>
+                <td>30,922</td>
+                <td>6,521</td>
+                <td>3,497</td>
+                <td>$35.68</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Resultados x Anuncio -->
+      <div class="card">
+        <div class="card-title">Resultados x Anuncio</div>
+        <div class="table-wrapper" style="margin-top: 16px;">
+          <table>
+            <thead>
+              <tr>
+                <th>Thumbnail</th>
+                <th>Nombre Anuncio</th>
+                <th>Importe Gastado</th>
+                <th>Alcance</th>
+                <th>CTR</th>
+                <th>ATC</th>
+                <th>Pagos Iniciados</th>
+                <th>Compras</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><div class="ad-thumbnail" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div></td>
+                <td>Hero Product - Main</td>
+                <td>$28,500</td>
+                <td>2.28M</td>
+                <td>3.5%</td>
+                <td>7,980</td>
+                <td>1,596</td>
+                <td>852</td>
+              </tr>
+              <tr>
+                <td><div class="ad-thumbnail" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);"></div></td>
+                <td>Hero Product - Alternative</td>
+                <td>$16,700</td>
+                <td>1.34M</td>
+                <td>2.8%</td>
+                <td>3,752</td>
+                <td>804</td>
+                <td>418</td>
+              </tr>
+              <tr>
+                <td><div class="ad-thumbnail" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);"></div></td>
+                <td>Brand Story - Video</td>
+                <td>$21,850</td>
+                <td>1.85M</td>
+                <td>2.2%</td>
+                <td>4,070</td>
+                <td>925</td>
+                <td>512</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== PAGE: CONTENIDO ========== -->
+    <div class="page" id="page-contenido">
+      <div class="page-header">
+        <h2>Gestión de Contenido</h2>
+        <p>Calendario editorial y análisis de performance</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Próximas Publicaciones</div>
+        <div style="padding: 16px;">
+          <div style="padding: 12px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between;">
+            <div>
+              <div style="font-weight: 600; color: #fff;">Summer Collection Launch</div>
+              <div style="font-size: 10px; color: var(--text-secondary); margin-top: 2px;">Próximamente: 2026-03-28</div>
+            </div>
+            <span class="badge badge-blue">Programado</span>
+          </div>
+          <div style="padding: 12px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between;">
+            <div>
+              <div style="font-weight: 600; color: #fff;">Customer Testimonials</div>
+              <div style="font-size: 10px; color: var(--text-secondary); margin-top: 2px;">Próximamente: 2026-03-30</div>
+            </div>
+            <span class="badge badge-blue">Programado</span>
+          </div>
+          <div style="padding: 12px; display: flex; justify-content: space-between;">
+            <div>
+              <div style="font-weight: 600; color: #fff;">Behind the Scenes</div>
+              <div style="font-size: 10px; color: var(--text-secondary); margin-top: 2px;">En borrador</div>
+            </div>
+            <span class="badge badge-gray">Borrador</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== PAGE: COMPETENCIA ========== -->
+    <div class="page" id="page-competencia">
+      <div class="page-header">
+        <h2>Análisis de Competencia</h2>
+        <p>Benchmarking y seguimiento de competidores</p>
+      </div>
+
+      <div class="card" style="margin-bottom: 24px;">
+        <div class="card-title">Competidores Monitoreados</div>
+        <div class="table-wrapper" style="margin-top: 16px;">
+          <table>
+            <thead>
+              <tr>
+                <th>Competidor</th>
+                <th>ROAS Est.</th>
+                <th>AOV Est.</th>
+                <th>Reviews Avg</th>
+                <th>Tráfico Est.</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Competitor A</td>
+                <td>3.2x</td>
+                <td>$425</td>
+                <td>4.5/5</td>
+                <td>250K/mes</td>
+              </tr>
+              <tr>
+                <td>Competitor B</td>
+                <td>2.8x</td>
+                <td>$380</td>
+                <td>4.2/5</td>
+                <td>180K/mes</td>
+              </tr>
+              <tr>
+                <td>Competitor C</td>
+                <td>3.5x</td>
+                <td>$510</td>
+                <td>4.8/5</td>
+                <td>320K/mes</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Análisis de Posicionamiento</div>
+        <div style="padding: 16px; text-align: center; color: var(--text-secondary);">
+          📊 Comparativa de posicionamiento en mercado
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== PAGE: REPORTES ========== -->
+    <div class="page" id="page-reportes">
+      <div class="page-header">
+        <h2>Reportes</h2>
+        <p>Genera y comparte reportes periódicos</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Reportes Disponibles</div>
+        <div style="padding: 16px;">
+          <div style="padding: 12px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <div style="font-weight: 600; color: #fff;">Reporte Semanal</div>
+              <div style="font-size: 10px; color: var(--text-secondary); margin-top: 2px;">Actualizado: 2026-03-24</div>
+            </div>
+            <button class="btn btn-secondary btn-small">Compartir</button>
+          </div>
+          <div style="padding: 12px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <div style="font-weight: 600; color: #fff;">Reporte Mensual</div>
+              <div style="font-size: 10px; color: var(--text-secondary); margin-top: 2px;">Actualizado: 2026-02-28</div>
+            </div>
+            <button class="btn btn-secondary btn-small">Compartir</button>
+          </div>
+          <div style="padding: 12px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <div style="font-weight: 600; color: #fff;">Reporte Trimestral</div>
+              <div style="font-size: 10px; color: var(--text-secondary); margin-top: 2px;">Próximo: 2026-03-31</div>
+            </div>
+            <button class="btn btn-secondary btn-small">Compartir</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== PAGE: SETTINGS ========== -->
+    <div class="page" id="page-settings">
+      <div class="page-header">
+        <h2>Configuración</h2>
+        <p>Ajustes de la plataforma e integraciones</p>
+      </div>
+
+      <!-- Cotización Dólar -->
+      <div class="card" style="margin-bottom: 24px;">
+        <div class="card-title">Cotización Dólar</div>
+        <div style="padding: 16px; display: flex; gap: 12px; align-items: flex-end;">
+          <div style="flex: 1;">
+            <label style="display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">Valor ARS/USD</label>
+            <input type="number" value="1250" step="0.01" style="width: 100%;" />
+          </div>
+          <button class="btn btn-primary">Actualizar</button>
+        </div>
+      </div>
+
+      <!-- Impuestos IBB -->
+      <div class="card" style="margin-bottom: 24px;">
+        <div class="card-title">Impuestos IBB por Provincia</div>
+        <div style="padding: 16px;">
+          <div style="display: grid; grid-template-columns: 1fr 120px; gap: 12px; margin-bottom: 12px;">
+            <label style="font-size: 12px; color: var(--text-secondary);">CABA</label>
+            <input type="number" value="3.5" step="0.1" style="width: 100%;" />
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 120px; gap: 12px; margin-bottom: 12px;">
+            <label style="font-size: 12px; color: var(--text-secondary);">Buenos Aires</label>
+            <input type="number" value="2.5" step="0.1" style="width: 100%;" />
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 120px; gap: 12px;">
+            <label style="font-size: 12px; color: var(--text-secondary);">Otras Provincias</label>
+            <input type="number" value="2.0" step="0.1" style="width: 100%;" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Fee de Plataforma -->
+      <div class="card" style="margin-bottom: 24px;">
+        <div class="card-title">Fee de Plataforma</div>
+        <div style="padding: 16px; display: flex; gap: 12px; align-items: flex-end;">
+          <div style="flex: 1;">
+            <label style="display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">TiendaNube (%)</label>
+            <input type="number" value="1.5" step="0.1" style="width: 100%;" />
+          </div>
+          <button class="btn btn-primary">Guardar</button>
+        </div>
+      </div>
+
+      <!-- Integraciones -->
+      <div class="card">
+        <div class="card-title">Integraciones</div>
+        <div class="grid-3" style="margin-top: 16px;">
+          <div class="integration-card">
+            <div class="integration-icon">🛍️</div>
+            <div class="integration-name">TiendaNube</div>
+            <div class="integration-status connected">Conectado</div>
+            <button class="btn btn-secondary btn-small">Reconectar</button>
+          </div>
+          <div class="integration-card">
+            <div class="integration-icon">📱</div>
+            <div class="integration-name">Meta Ads</div>
+            <div class="integration-status connected">Conectado</div>
+            <button class="btn btn-secondary btn-small">Reconectar</button>
+          </div>
+          <div class="integration-card">
+            <div class="integration-icon">🔍</div>
+            <div class="integration-name">Google Ads</div>
+            <div class="integration-status pending">Pendiente</div>
+            <button class="btn btn-primary btn-small">Conectar</button>
+          </div>
+          <div class="integration-card">
+            <div class="integration-icon">🎵</div>
+            <div class="integration-name">TikTok Ads</div>
+            <div class="integration-status pending">Pendiente</div>
+            <button class="btn btn-primary btn-small">Conectar</button>
+          </div>
+          <div class="integration-card">
+            <div class="integration-icon">💳</div>
+            <div class="integration-name">MercadoLibre</div>
+            <div class="integration-status pending">Pendiente</div>
+            <button class="btn btn-primary btn-small">Conectar</button>
+          </div>
+          <div class="integration-card">
+            <div class="integration-icon">📊</div>
+            <div class="integration-name">Google Analytics</div>
+            <div class="integration-status connected">Conectado</div>
+            <button class="btn btn-secondary btn-small">Reconectar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ========== ORDER DETAIL MODAL ========== -->
+<div class="modal-overlay" id="orderModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeOrderDetail()">✕</button>
+    <h3>Orden #5630819401808</h3>
+
+    <div class="modal-row">
+      <span class="modal-row-label">Total:</span>
+      <span class="modal-row-value">$94,000</span>
+    </div>
+    <div class="modal-row">
+      <span class="modal-row-label">- Comisiones de Pago:</span>
+      <span class="modal-row-value">-$3,940</span>
+    </div>
+    <div class="modal-row">
+      <span class="modal-row-label">- Impuestos (IBB):</span>
+      <span class="modal-row-value">-$587</span>
+    </div>
+    <div class="modal-row">
+      <span class="modal-row-label">- Comisiones de Cuotas:</span>
+      <span class="modal-row-value">-$0</span>
+    </div>
+    <div class="modal-row">
+      <span class="modal-row-label">- Costo de envío:</span>
+      <span class="modal-row-value">-$6,500</span>
+    </div>
+    <div class="modal-row">
+      <span class="modal-row-label">- Costo de productos:</span>
+      <span class="modal-row-value">-$16,500</span>
+    </div>
+    <div class="modal-row">
+      <span class="modal-row-label">- Fee TiendaNube:</span>
+      <span class="modal-row-value">-$940</span>
+    </div>
+    <div class="modal-row" style="border-top: 2px solid var(--accent); margin-top: 12px; padding-top: 12px;">
+      <span class="modal-row-label" style="color: var(--accent); font-weight: 700;">=  Neto:</span>
+      <span class="modal-row-value" style="color: var(--accent); font-weight: 700;">$65,533</span>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Navigation
+  function navigateTo(page) {
+    // Hide all pages
+    const pages = document.querySelectorAll('.page');
+    pages.forEach(p => p.classList.remove('active'));
+
+    // Remove active class from all nav items
+    const navItems = document.querySelectorAll('.nav-item');
+    navItems.forEach(n => n.classList.remove('active'));
+
+    // Show selected page
+    document.getElementById(`page-${page}`).classList.add('active');
+
+    // Update header title
+    const titles = {
+      'overview': 'Overview Multi-Cliente',
+      'dashboard': 'Dashboard Integral',
+      'cashflow': 'Cashflow',
+      'meta-pixel': 'Meta Pixel',
+      'costos': 'Gestión de Costos',
+      'productos': 'Productos',
+      'clientes': 'Clientes',
+      'simulador': 'Simulador',
+      'creativos': 'Creativos',
+      'contenido': 'Contenido',
+      'competencia': 'Competencia',
+      'reportes': 'Reportes',
+      'settings': 'Settings'
+    };
+
+    document.getElementById('header-title').textContent = titles[page] || page;
+
+    // Find and activate the nav item
+    const navItems2 = document.querySelectorAll('.nav-item');
+    navItems2.forEach(item => {
+      if (item.textContent.toLowerCase().includes(page.replace('-', ' '))) {
+        item.classList.add('active');
+      }
+    });
+  }
+
+  // Expandable sections toggle
+  function toggleSection(header) {
+    const content = header.nextElementSibling;
+    const toggle = header.querySelector('.expandable-toggle');
+
+    content.classList.toggle('open');
+    toggle.classList.toggle('open');
+  }
+
+  // Order detail modal
+  function openOrderDetail() {
+    document.getElementById('orderModal').classList.add('active');
+  }
+
+  function closeOrderDetail() {
+    document.getElementById('orderModal').classList.remove('active');
+  }
+
+  // Close modal on background click
+  document.getElementById('orderModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+      closeOrderDetail();
+    }
+  });
+
+  // Simulation update (placeholder)
+  function updateSimulation() {
+    // This would normally recalculate KPIs based on slider values
+    console.log('Simulation updated');
+  }
+
+  // Initialize first nav item as active
+  document.addEventListener('DOMContentLoaded', function() {
+    document.querySelector('.nav-item').classList.add('active');
+  });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1271 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Informe Comercial Completo — Giorlent — Febrero 2026</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #f0f2f5; color: #2c2c2c; line-height: 1.6; }
+  .container { max-width: 1100px; margin: 0 auto; padding: 20px; }
+
+  /* Header */
+  .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); color: white; padding: 48px 40px; border-radius: 16px; margin-bottom: 28px; position: relative; overflow: hidden; }
+  .header::after { content: ''; position: absolute; top: -50%; right: -10%; width: 400px; height: 400px; background: radial-gradient(circle, rgba(82,156,202,0.15) 0%, transparent 70%); border-radius: 50%; }
+  .header h1 { font-size: 28px; font-weight: 700; margin-bottom: 4px; position: relative; z-index: 1; }
+  .header .subtitle { font-size: 16px; color: #8ca8c4; margin-bottom: 16px; position: relative; z-index: 1; }
+  .header .meta-row { display: flex; gap: 32px; font-size: 13px; color: #6b8db5; position: relative; z-index: 1; }
+  .header .meta-row span { display: flex; align-items: center; gap: 6px; }
+
+  /* Section */
+  .section { background: white; border-radius: 12px; padding: 32px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  .section h2 { font-size: 20px; font-weight: 700; color: #1a1a2e; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #529CCA; display: flex; align-items: center; gap: 10px; }
+  .section h2 .num { background: #529CCA; color: white; width: 28px; height: 28px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; }
+  .section h3 { font-size: 16px; font-weight: 600; color: #1a1a2e; margin: 20px 0 12px; }
+
+  /* KPI Grid */
+  .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .kpi-card { background: #f8f9fb; border-radius: 10px; padding: 20px; text-align: center; border: 1px solid #e8ecf1; transition: box-shadow 0.2s; }
+  .kpi-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+  .kpi-card .label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: #7a8a9e; margin-bottom: 6px; }
+  .kpi-card .value { font-size: 26px; font-weight: 700; color: #1a1a2e; }
+  .kpi-card .sub { font-size: 12px; color: #7a8a9e; margin-top: 4px; }
+  .kpi-card.accent { border-left: 4px solid #529CCA; }
+  .kpi-card.green { border-left: 4px solid #4DAB9A; }
+  .kpi-card.orange { border-left: 4px solid #CB7B3E; }
+  .kpi-card.red { border-left: 4px solid #C75A5A; }
+
+  /* Tables */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { background: #1a1a2e; color: white; padding: 10px 12px; text-align: left; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.3px; }
+  td { padding: 10px 12px; border-bottom: 1px solid #eef0f3; }
+  tr:nth-child(even) { background: #f8f9fb; }
+  tr:hover { background: #eef3f9; }
+  .text-right { text-align: right; }
+  .text-center { text-align: center; }
+
+  /* Comparison delta */
+  .delta-pos { color: #4DAB9A; font-weight: 600; }
+  .delta-neg { color: #C75A5A; font-weight: 600; }
+
+  /* Funnel */
+  .funnel-step { display: flex; align-items: center; gap: 16px; margin-bottom: 10px; }
+  .funnel-bar-wrap { flex: 1; background: #eef0f3; border-radius: 6px; height: 36px; position: relative; overflow: hidden; }
+  .funnel-bar { height: 100%; border-radius: 6px; display: flex; align-items: center; padding-left: 12px; font-size: 12px; font-weight: 600; color: white; min-width: 40px; transition: width 0.5s ease; }
+  .funnel-label { width: 140px; font-size: 13px; font-weight: 600; color: #1a1a2e; text-align: right; flex-shrink: 0; }
+  .funnel-value { width: 100px; font-size: 13px; color: #5a6a7e; flex-shrink: 0; }
+  .funnel-cvr { width: 120px; font-size: 12px; color: #7a8a9e; flex-shrink: 0; }
+
+  /* Bar chart */
+  .chart-bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .chart-label { width: 36px; font-size: 11px; color: #7a8a9e; text-align: right; flex-shrink: 0; }
+  .chart-bar-bg { flex: 1; background: #eef0f3; border-radius: 4px; height: 22px; position: relative; }
+  .chart-bar-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, #529CCA, #4DAB9A); min-width: 2px; }
+  .chart-value { width: 90px; font-size: 11px; color: #5a6a7e; flex-shrink: 0; }
+
+  /* Badges */
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+  .badge-green { background: #e6f5f0; color: #2d8a6e; }
+  .badge-red { background: #fce8e8; color: #b44040; }
+  .badge-blue { background: #e8f0fa; color: #3a7cc6; }
+  .badge-orange { background: #fef0e0; color: #b06a2a; }
+  .badge-gray { background: #eef0f3; color: #5a6a7e; }
+
+  /* Action items */
+  .action-area { margin-bottom: 24px; }
+  .action-area h4 { font-size: 14px; font-weight: 700; color: #1a1a2e; margin-bottom: 10px; padding: 8px 14px; border-radius: 8px; display: inline-block; }
+  .action-area.meta h4 { background: #e8f0fa; color: #2a5f9e; }
+  .action-area.cro h4 { background: #e6f5f0; color: #2d8a6e; }
+  .action-area.ret h4 { background: #fef0e0; color: #b06a2a; }
+  .action-area.comp h4 { background: #f5e8f5; color: #8a4a8a; }
+  .action-list { list-style: none; padding: 0; }
+  .action-list li { padding: 8px 0 8px 24px; position: relative; font-size: 13px; border-bottom: 1px solid #f0f2f5; }
+  .action-list li::before { content: ''; position: absolute; left: 8px; top: 14px; width: 6px; height: 6px; border-radius: 50%; background: #529CCA; }
+
+  /* Projection table */
+  .proj-table td:first-child { font-weight: 600; }
+
+  /* Competitive matrix */
+  .comp-matrix th:first-child { min-width: 140px; }
+
+  /* Print */
+  @media print {
+    body { background: white; }
+    .container { padding: 0; }
+    .section { box-shadow: none; break-inside: avoid; }
+    .header { border-radius: 0; }
+  }
+
+  /* Responsive — Tablets */
+  @media (max-width: 900px) {
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .header .meta-row { flex-wrap: wrap; gap: 12px; }
+    .comp-matrix th:first-child { min-width: 100px; }
+  }
+
+  /* Responsive — Mobile */
+  @media (max-width: 600px) {
+    .container { padding: 8px; }
+
+    /* Header */
+    .header { padding: 24px 16px; border-radius: 10px; margin-bottom: 16px; }
+    .header h1 { font-size: 20px; line-height: 1.3; }
+    .header .subtitle { font-size: 14px; }
+    .header .meta-row { flex-direction: column; gap: 4px; font-size: 11px; }
+    .header::after { display: none; }
+
+    /* Sections */
+    .section { padding: 16px 14px; margin-bottom: 12px; border-radius: 10px; }
+    .section h2 { font-size: 16px; margin-bottom: 14px; padding-bottom: 8px; gap: 8px; }
+    .section h2 .num { width: 24px; height: 24px; font-size: 11px; }
+    .section h3 { font-size: 14px; margin: 16px 0 8px; }
+
+    /* KPI Grid — 2 cols on mobile, smaller cards */
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    .kpi-card { padding: 12px 10px; }
+    .kpi-card .label { font-size: 10px; margin-bottom: 2px; }
+    .kpi-card .value { font-size: 20px; }
+    .kpi-card .sub { font-size: 10px; }
+
+    /* Tables — horizontal scroll wrapper */
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 -14px; padding: 0 14px; }
+    table { font-size: 12px; min-width: 500px; }
+    th, td { padding: 8px 10px; white-space: nowrap; }
+    th { font-size: 10px; }
+
+    /* Funnel — stack vertically */
+    .funnel-step { flex-wrap: wrap; gap: 4px; margin-bottom: 14px; }
+    .funnel-label { width: 100%; text-align: left; font-size: 12px; order: 1; }
+    .funnel-bar-wrap { flex: 1 1 100%; height: 28px; order: 2; }
+    .funnel-bar { font-size: 11px; padding-left: 8px; }
+    .funnel-value { width: auto; font-size: 12px; font-weight: 600; order: 3; }
+    .funnel-cvr { width: auto; font-size: 11px; order: 4; }
+
+    /* Bar chart — daily revenue */
+    .chart-bar-row { gap: 4px; margin-bottom: 3px; }
+    .chart-label { width: 28px; font-size: 10px; }
+    .chart-bar-bg { height: 18px; }
+    .chart-value { width: 70px; font-size: 10px; }
+
+    /* Badges */
+    .badge { font-size: 10px; padding: 2px 8px; }
+
+    /* Action items */
+    .action-area h4 { font-size: 13px; padding: 6px 10px; }
+    .action-list li { font-size: 12px; padding: 6px 0 6px 20px; }
+    .action-list li::before { left: 4px; top: 12px; width: 5px; height: 5px; }
+
+    /* Comparison cards */
+    .comp-grid { grid-template-columns: 1fr !important; }
+
+    /* Projection table */
+    .proj-table { min-width: 400px; }
+  }
+
+  /* Table scroll wrapper — applied via JS-free approach */
+  .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  .bottleneck { background: #fff3e0 !important; border-left: 3px solid #CB7B3E; }
+  .highlight-row { background: #e6f5f0 !important; }
+  .threat-high { color: #CB7B3E; font-weight: 700; }
+  .threat-low { color: #4DAB9A; }
+  .nowrap { white-space: nowrap; }
+
+  /* TOC */
+  .toc { background: white; border-radius: 12px; padding: 24px 32px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  .toc h2 { font-size: 18px; font-weight: 700; color: #1a1a2e; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 2px solid #529CCA; }
+  .toc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+  .toc a { display: flex; align-items: center; gap: 10px; padding: 7px 12px; font-size: 13px; color: #2c2c2c; text-decoration: none; border-radius: 6px; transition: background 0.15s; }
+  .toc a:hover { background: #eef3f9; }
+  .toc .toc-num { background: #529CCA; color: white; width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; flex-shrink: 0; }
+  @media (max-width: 600px) {
+    .toc { padding: 16px; }
+    .toc-grid { grid-template-columns: 1fr; }
+    .toc a { font-size: 12px; padding: 6px 8px; }
+    .toc .toc-num { width: 20px; height: 20px; font-size: 10px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- ==================== 1. HEADER ==================== -->
+<div class="header">
+  <h1>Informe Comercial Completo</h1>
+  <div class="subtitle">Giorlent &mdash; Febrero 2026</div>
+  <div class="meta-row">
+    <span>Periodo: 01/02/2026 &mdash; 28/02/2026</span>
+    <span>Generado: 08/03/2026</span>
+    <span>Fuentes: TiendaNube API, Meta Ads CSV, Meta Ad Library</span>
+  </div>
+</div>
+
+<!-- ==================== TOC ==================== -->
+<div class="toc">
+  <h2>Índice</h2>
+  <div class="toc-grid">
+    <a href="#sec-1"><span class="toc-num">1</span> Resumen Ejecutivo</a>
+    <a href="#sec-10"><span class="toc-num">10</span> Clientes</a>
+    <a href="#sec-2"><span class="toc-num">2</span> Comparación vs Período Anterior</a>
+    <a href="#sec-11"><span class="toc-num">11</span> Estado de Pagos y Envíos</a>
+    <a href="#sec-3"><span class="toc-num">3</span> Funnel Completo (ECOM)</a>
+    <a href="#sec-12"><span class="toc-num">12</span> Análisis de Creativos</a>
+    <a href="#sec-4"><span class="toc-num">4</span> Costos Publicitarios (ECOM)</a>
+    <a href="#sec-13"><span class="toc-num">13</span> Análisis Competitivo</a>
+    <a href="#sec-5"><span class="toc-num">5</span> Campañas ECOM</a>
+    <a href="#sec-14"><span class="toc-num">14</span> Diagnóstico Estratégico</a>
+    <a href="#sec-6"><span class="toc-num">6</span> Top 10 Ads por ROAS</a>
+    <a href="#sec-15"><span class="toc-num">15</span> Top 5 Wins</a>
+    <a href="#sec-7"><span class="toc-num">7</span> Revenue por Día</a>
+    <a href="#sec-16"><span class="toc-num">16</span> Top 5 Problemas</a>
+    <a href="#sec-8"><span class="toc-num">8</span> Canales TiendaNube</a>
+    <a href="#sec-17"><span class="toc-num">17</span> Plan de Acción</a>
+    <a href="#sec-9"><span class="toc-num">9</span> Top 10 Productos</a>
+    <a href="#sec-18"><span class="toc-num">18</span> Proyección Marzo 2026</a>
+  </div>
+</div>
+
+<!-- ==================== 2. RESUMEN EJECUTIVO ==================== -->
+<div class="section" id="sec-1">
+  <h2><span class="num">1</span> Resumen Ejecutivo</h2>
+  <div class="kpi-grid">
+    <div class="kpi-card accent">
+      <div class="label">Revenue TN</div>
+      <div class="value">$49,0M</div>
+      <div class="sub">ARS &mdash; 28 d&iacute;as</div>
+    </div>
+    <div class="kpi-card accent">
+      <div class="label">Inversi&oacute;n ECOM</div>
+      <div class="value">$7,1M</div>
+      <div class="sub">Solo campa&ntilde;as web</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="label">ROAS Real</div>
+      <div class="value">6,89x</div>
+      <div class="sub">Revenue TN / Gasto ECOM</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="label">&Oacute;rdenes</div>
+      <div class="value">295</div>
+      <div class="sub">TiendaNube confirmadas</div>
+    </div>
+    <div class="kpi-card accent">
+      <div class="label">Ticket Promedio</div>
+      <div class="value">$166.102</div>
+      <div class="sub">ARS por orden</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="label">Margen Post-Ads</div>
+      <div class="value">$41,9M</div>
+      <div class="sub">85,5% del revenue</div>
+    </div>
+    <div class="kpi-card accent">
+      <div class="label">Compras Meta</div>
+      <div class="value">259</div>
+      <div class="sub">Atribuidas ECOM</div>
+    </div>
+    <div class="kpi-card orange">
+      <div class="label">Inv. No-Web</div>
+      <div class="value">$2,1M</div>
+      <div class="sub">918 msgs WA + Tr&aacute;fico</div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== 3. COMPARACION VS PERIODO ANTERIOR ==================== -->
+<div class="section" id="sec-2">
+  <h2><span class="num">2</span> Comparaci&oacute;n vs Per&iacute;odo Anterior</h2>
+  <p style="font-size:13px; color:#7a8a9e; margin-bottom:16px;">Periodo anterior: 04/01/2026 &mdash; 01/02/2026 (28 d&iacute;as)</p>
+<div class="table-scroll">  <table>
+    <thead>
+      <tr>
+        <th>M&eacute;trica</th>
+        <th class="text-right">Anterior</th>
+        <th class="text-right">Febrero</th>
+        <th class="text-right">Variaci&oacute;n</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Revenue</strong></td>
+        <td class="text-right">$63.873.691</td>
+        <td class="text-right">$49.280.859</td>
+        <td class="text-right delta-neg">-22,85%</td>
+      </tr>
+      <tr>
+        <td><strong>&Oacute;rdenes</strong></td>
+        <td class="text-right">390</td>
+        <td class="text-right">296</td>
+        <td class="text-right delta-neg">-24,10%</td>
+      </tr>
+      <tr>
+        <td><strong>Ticket Promedio</strong></td>
+        <td class="text-right">$163.779</td>
+        <td class="text-right">$166.489</td>
+        <td class="text-right delta-pos">+1,66%</td>
+      </tr>
+      <tr>
+        <td><strong>Descuentos</strong></td>
+        <td class="text-right">$1.509.470</td>
+        <td class="text-right">$1.147.279</td>
+        <td class="text-right delta-pos">-24,0% (menos descuento)</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+  <p style="font-size:13px; color:#C75A5A; margin-top:14px; padding:10px 14px; background:#fce8e8; border-radius:8px;">
+    <strong>Alerta:</strong> Ca&iacute;da de -22,9% en revenue y -24,1% en &oacute;rdenes vs periodo anterior. El ticket se mantuvo estable (+1,7%), lo que indica que el problema es de volumen/tr&aacute;fico, no de pricing. El periodo anterior incluy&oacute; estacionalidad de verano y vuelta a clases.
+  </p>
+</div>
+
+<!-- ==================== 4. FUNNEL COMPLETO ==================== -->
+<div class="section" id="sec-3">
+  <h2><span class="num">3</span> Funnel Completo (ECOM)</h2>
+  <p style="font-size:13px; color:#7a8a9e; margin-bottom:20px;">Solo campa&ntilde;as ECOM &mdash; excluye Retail y San Valent&iacute;n</p>
+
+  <div class="funnel-step">
+    <div class="funnel-label">Impresiones</div>
+    <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:100%; background:linear-gradient(90deg,#529CCA,#4a8ab5);">3.354.388</div></div>
+    <div class="funnel-cvr">&mdash;</div>
+  </div>
+  <div class="funnel-step">
+    <div class="funnel-label">Clics &uacute;nicos</div>
+    <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:28%; background:linear-gradient(90deg,#529CCA,#4a8ab5);">29.475</div></div>
+    <div class="funnel-cvr">CTR: 0,88%</div>
+  </div>
+  <div class="funnel-step">
+    <div class="funnel-label">Visitas landing</div>
+    <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:12%; background:linear-gradient(90deg,#4DAB9A,#3d9486);">12.430</div></div>
+    <div class="funnel-cvr">42,2% de clics</div>
+  </div>
+  <div class="funnel-step">
+    <div class="funnel-label">Add to Cart</div>
+    <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:8%; background:linear-gradient(90deg,#4DAB9A,#3d9486);">2.663</div></div>
+    <div class="funnel-cvr">CVR: 21,42%</div>
+  </div>
+  <div class="funnel-step" style="background:#fff3e0; padding:6px; border-radius:8px; border-left:3px solid #CB7B3E;">
+    <div class="funnel-label">Checkout</div>
+    <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:3.5%; background:linear-gradient(90deg,#CB7B3E,#b36a30);">396</div></div>
+    <div class="funnel-cvr" style="color:#CB7B3E; font-weight:700;">CVR: 14,87% &mdash; CUELLO DE BOTELLA</div>
+  </div>
+  <div class="funnel-step">
+    <div class="funnel-label">Compras Meta</div>
+    <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:2.5%; background:linear-gradient(90deg,#4DAB9A,#3d9486);">259</div></div>
+    <div class="funnel-cvr">CVR: 65,40%</div>
+  </div>
+
+  <div style="margin-top:16px; display:flex; gap:16px; flex-wrap:wrap;">
+    <div class="kpi-card" style="flex:1; min-width:200px;">
+      <div class="label">CVR Total</div>
+      <div class="value" style="font-size:22px;">2,08%</div>
+      <div class="sub">Visitas landing &rarr; Compra</div>
+    </div>
+    <div class="kpi-card orange" style="flex:1; min-width:200px;">
+      <div class="label">Carritos Perdidos/Mes</div>
+      <div class="value" style="font-size:22px; color:#C75A5A;">2.267</div>
+      <div class="sub">Add to Cart &minus; Checkout</div>
+    </div>
+    <div class="kpi-card" style="flex:1; min-width:200px;">
+      <div class="label">Revenue Perdido Est.</div>
+      <div class="value" style="font-size:22px; color:#C75A5A;">~$376M</div>
+      <div class="sub">2.267 &times; $166K ticket</div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== 5. COSTOS ==================== -->
+<div class="section" id="sec-4">
+  <h2><span class="num">4</span> Costos Publicitarios (ECOM)</h2>
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="label">CPM</div>
+      <div class="value" style="font-size:22px;">$2.119</div>
+      <div class="sub">Costo por mil impresiones</div>
+    </div>
+    <div class="kpi-card">
+      <div class="label">CPC &Uacute;nico</div>
+      <div class="value" style="font-size:22px;">$241</div>
+      <div class="sub">Costo por clic &uacute;nico</div>
+    </div>
+    <div class="kpi-card">
+      <div class="label">CPA Meta</div>
+      <div class="value" style="font-size:22px;">$27.441</div>
+      <div class="sub">Gasto ECOM / 259 compras</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="label">CPA Real</div>
+      <div class="value" style="font-size:22px;">$24.092</div>
+      <div class="sub">Gasto ECOM / 295 &oacute;rdenes TN</div>
+    </div>
+  </div>
+  <div style="margin-top:16px;">
+<div class="table-scroll">    <table>
+      <thead>
+        <tr><th>M&eacute;trica</th><th class="text-right">Valor</th><th>Nota</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Gasto ECOM total</td><td class="text-right">$7.107.125</td><td>3 campa&ntilde;as de ventas</td></tr>
+        <tr><td>Revenue TN</td><td class="text-right">$49.000.000</td><td>295 &oacute;rdenes confirmadas</td></tr>
+        <tr><td>ROAS real (TN/Gasto)</td><td class="text-right"><strong>6,89x</strong></td><td>Cada $1 invertido genera $6,89</td></tr>
+        <tr><td>ROAS Meta (atribuido)</td><td class="text-right">5,95x</td><td>$42,3M atribuido / $7,1M gasto</td></tr>
+        <tr><td>Margen post-ads</td><td class="text-right"><strong>$41.892.875</strong></td><td>85,5% del revenue</td></tr>
+      </tbody>
+    </table>
+</div>
+  </div>
+</div>
+
+<!-- ==================== 6. CAMPAÑAS ECOM ==================== -->
+<div class="section" id="sec-5">
+  <h2><span class="num">5</span> Campa&ntilde;as ECOM</h2>
+<div class="table-scroll">  <table>
+    <thead>
+      <tr>
+        <th>Campa&ntilde;a</th>
+        <th class="text-right">Gasto</th>
+        <th class="text-center">Compras</th>
+        <th class="text-right">Conv. Value</th>
+        <th class="text-center">ROAS</th>
+        <th class="text-right">CPA</th>
+        <th class="text-center">Ads</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="highlight-row">
+        <td><strong>ECOM | Catalogo | CBO | Clip On</strong></td>
+        <td class="text-right">$3.052.618</td>
+        <td class="text-center">137</td>
+        <td class="text-right">$21.601.746</td>
+        <td class="text-center"><strong>7,08x</strong></td>
+        <td class="text-right">$22.282</td>
+        <td class="text-center">2</td>
+      </tr>
+      <tr>
+        <td><strong>ECOM | CBO | Clip On</strong></td>
+        <td class="text-right">$2.824.687</td>
+        <td class="text-center">97</td>
+        <td class="text-right">$16.268.279</td>
+        <td class="text-center"><strong>5,76x</strong></td>
+        <td class="text-right">$29.120</td>
+        <td class="text-center">17</td>
+      </tr>
+      <tr>
+        <td><strong>ECOM | CBO | Lentes de ni&ntilde;os</strong></td>
+        <td class="text-right">$1.229.819</td>
+        <td class="text-center">25</td>
+        <td class="text-right">$4.403.528</td>
+        <td class="text-center"><strong>3,58x</strong></td>
+        <td class="text-right">$49.193</td>
+        <td class="text-center">3</td>
+      </tr>
+      <tr style="background:#1a1a2e; color:white; font-weight:600;">
+        <td>TOTAL ECOM</td>
+        <td class="text-right">$7.107.125</td>
+        <td class="text-center">259</td>
+        <td class="text-right">$42.273.553</td>
+        <td class="text-center">5,95x</td>
+        <td class="text-right">$27.441</td>
+        <td class="text-center">22</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+  <h3 style="margin-top:24px;">Inversi&oacute;n No-Web</h3>
+<div class="table-scroll">  <table>
+    <thead>
+      <tr>
+        <th>Campa&ntilde;a</th>
+        <th class="text-right">Gasto</th>
+        <th class="text-center">Resultado</th>
+        <th>Objetivo</th>
+        <th>Nota</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Giorlent Retail Presentaci&oacute;n</td>
+        <td class="text-right">$2.074.561</td>
+        <td class="text-center">918 msgs WA</td>
+        <td>Interacci&oacute;n</td>
+        <td>No genera ventas web directas</td>
+      </tr>
+      <tr>
+        <td>San Valent&iacute;n</td>
+        <td class="text-right">$18.406</td>
+        <td class="text-center">&mdash;</td>
+        <td>Tr&aacute;fico</td>
+        <td>Campa&ntilde;a puntual</td>
+      </tr>
+      <tr style="background:#f8f0e0; font-weight:600;">
+        <td>TOTAL NO-WEB</td>
+        <td class="text-right">$2.092.967</td>
+        <td class="text-center">918 msgs</td>
+        <td colspan="2">No incluido en c&aacute;lculo de ROAS web</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+</div>
+
+<!-- ==================== 7. TOP 10 ADS POR ROAS ==================== -->
+<div class="section" id="sec-6">
+  <h2><span class="num">6</span> Top 10 Ads por ROAS (ECOM)</h2>
+<div class="table-scroll">  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Ad</th>
+        <th class="text-center">ROAS</th>
+        <th class="text-center">Compras</th>
+        <th>Nota</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1</td>
+        <td>Video 2 en 1 modelo</td>
+        <td class="text-center"><strong>13,13x</strong></td>
+        <td class="text-center">3</td>
+        <td><span class="badge badge-blue">Bajo volumen</span></td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td>Fran fotocrom&aacute;ticos</td>
+        <td class="text-center"><strong>11,55x</strong></td>
+        <td class="text-center">8</td>
+        <td><span class="badge badge-green">Escalar urgente</span></td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td>Carrusel clip on</td>
+        <td class="text-center"><strong>9,79x</strong></td>
+        <td class="text-center">9</td>
+        <td><span class="badge badge-green">Escalar</span></td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td>Te vas de vacaciones</td>
+        <td class="text-center"><strong>9,64x</strong></td>
+        <td class="text-center">1</td>
+        <td><span class="badge badge-blue">Bajo volumen</span></td>
+      </tr>
+      <tr>
+        <td>5</td>
+        <td>Gior no llega a Marte</td>
+        <td class="text-center"><strong>9,45x</strong></td>
+        <td class="text-center">1</td>
+        <td><span class="badge badge-blue">Bajo volumen</span></td>
+      </tr>
+      <tr class="highlight-row">
+        <td>6</td>
+        <td>Secuencia Clip on hombre</td>
+        <td class="text-center"><strong>8,15x</strong></td>
+        <td class="text-center">69</td>
+        <td><span class="badge badge-green">Top performer (volumen + ROAS)</span></td>
+      </tr>
+      <tr>
+        <td>7</td>
+        <td>Fran colecciones</td>
+        <td class="text-center"><strong>7,86x</strong></td>
+        <td class="text-center">14</td>
+        <td><span class="badge badge-green">Escalar</span></td>
+      </tr>
+      <tr>
+        <td>8</td>
+        <td>5 en 1 navidad PDP</td>
+        <td class="text-center"><strong>7,58x</strong></td>
+        <td class="text-center">1</td>
+        <td><span class="badge badge-blue">Bajo volumen</span></td>
+      </tr>
+      <tr>
+        <td>9</td>
+        <td>Brenda vuelta a clases</td>
+        <td class="text-center"><strong>6,88x</strong></td>
+        <td class="text-center">4</td>
+        <td><span class="badge badge-blue">Potencial</span></td>
+      </tr>
+      <tr>
+        <td>10</td>
+        <td>5 en 1 placa precio Gonzalo</td>
+        <td class="text-center"><strong>6,87x</strong></td>
+        <td class="text-center">23</td>
+        <td><span class="badge badge-green">Buen volumen</span></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+  <p style="font-size:12px; color:#7a8a9e; margin-top:10px;">Nota: "Secuencia Clip on hombre" es el ad m&aacute;s valioso &mdash; combina alto ROAS (8,15x) con el mayor volumen (69 compras, 27% del total ECOM).</p>
+</div>
+
+<!-- ==================== 8. REVENUE POR DIA ==================== -->
+<div class="section" id="sec-7">
+  <h2><span class="num">7</span> Revenue por D&iacute;a</h2>
+  <div style="margin-bottom:10px; font-size:13px; color:#7a8a9e;">M&aacute;ximo: $4.587.789 (02/02) &mdash; M&iacute;nimo: $282.372 (08/02) &mdash; Promedio: $1.825.476/d&iacute;a</div>
+
+  <div class="chart-bar-row"><div class="chart-label">01</div><div class="chart-bar-bg"><div class="chart-bar-fill" style="width:6.9%"></div></div><div class="chart-value">$314.970 (3)</div></div>
+  <div class="chart-bar-row"><div class="chart-label">02</div><div class="chart-bar-bg"><div class="chart-bar-fill" style="width:100%"></div></div><div class="chart-value">$4.587.789 (23)</div></div>
+  <div class="chart-bar-row"><div class="chart-label">03</div><div class="chart-bar-bg"><div class="chart-bar-fill" style="width:63.7%"></div></div><div class="chart-value">$2.922.188 (20)</div></div>
+  <div class="chart-bar-row"><div class="chart-label">04</div><div class="chart-bar-bg"><div class="chart-bar-fill" style="width:45.5%"></div></div><div class="chart-value">$2.087.316 (15)</div></div>
+  <div class="chart-bar-row"><div class="chart-label">05</div><div class="chart-bar-bg"><div class="chart-bar-fill" style="width:69.9%"></div></div><div class="chart-value">$3.205.157 (22)</div></div>
+  <div class="chart-bar-row"><div class="chart-label">06</div><div class="chart-bar-bg"><div class="chart-bar-fill" style="width:63.1%"></div></div><div class="chart-value">$2.893.637 (18)</div></div>
+  <div class="chart-bar-row"><div class="chart-label">07</div><div class="chart-bar-bg"><div class="chart-bar-fill" style="width:31.0%"></div></div><div class="chart-value">$1.421.678 (8)</div></div>
+  <div class="chart-bar-row"><div class="chart-label">08</div><div class="chart-bar-bg"><div class="chart-bar-fill" style="width:6.2%"></div></div><div class="chart-value">$282.372 (2)</div></div>
+  <div class="chart-bar-row"><div class="chart-label">09</div><div class="chart-bar-bg"><div class="chart-bar-fill" style="width:77.3%"></div></div><div class="chart-value">$3.547.155 (22)</div></div>
+  <div class="chart-bar-row"><div class="chart-label">10</div><div class="chart-bar-bg"><div class="chart-bar-fill" style="width:64.9%"></div></div><div class="chart-value">$2.977.266 (19)</div></div>
+  <div class="chart-bar-row"><div class="chart-label">11</div><div class="chart-bar-bg"><div class="chart-bar-fill" style="width:76.2%"></div></div><div class="chart-value">$3.493.912 (17)</div></div>
+  <div class="chart-bar-row"><div class="chart-label">12</div><div class="chart-bar-bg"><div class="chart-bar-fill" style="width:49.3%"></div></div><div class="chart-value">$2.261.367 (12)</div></div>
+  <div class="chart-bar-row"><div class="chart-label">13</div><div class="chart-bar-bg"><div class="chart-bar-fill" style="width:19.3%"></div></div><div class="chart-value">$884.749 (7)</div></div>
+  <div class="chart-bar-row"><div class="chart-label">14</div><div class="chart-bar-bg"><div class="chart-bar-fill" style="width:30.1%"></div></div><div class="chart-value">$1.379.902 (7)</div></div>
+  <div class="chart-bar-row"><div class="chart-label">15</div><div class="chart-bar-bg"><div class="chart-bar-fill" style="width:8.2%"></div></div><div class="chart-value">$377.970 (3)</div></div>
+  <div class="chart-bar-row"><div class="chart-label">16</div><div class="chart-bar-bg"><div class="chart-bar-fill" style="width:0%"></div></div><div class="chart-value">$0 (0)</div></div>
+  <div class="chart-bar-row"><div class="chart-label">17</div><div class="chart-bar-bg"><div class="chart-bar-fill" style="width:11.8%"></div></div><div class="chart-value">$541.467 (4)</div></div>
+  <div class="chart-bar-row"><div class="chart-label">18</div><div class="chart-bar-bg"><div class="chart-bar-fill" style="width:59.7%"></div></div><div class="chart-value">$2.737.534 (13)</div></div>
+  <div class="chart-bar-row"><div class="chart-label">19</div><div class="chart-bar-bg"><div class="chart-bar-fill" style="width:32.8%"></div></div><div class="chart-value">$1.506.570 (9)</div></div>
+  <div class="chart-bar-row"><div class="chart-label">20</div><div class="chart-bar-bg"><div class="chart-bar-fill" style="width:26.4%"></div></div><div class="chart-value">$1.212.586 (8)</div></div>
+  <div class="chart-bar-row"><div class="chart-label">21</div><div class="chart-bar-bg"><div class="chart-bar-fill" style="width:10.5%"></div></div><div class="chart-value">$483.070 (4)</div></div>
+  <div class="chart-bar-row"><div class="chart-label">22</div><div class="chart-bar-bg"><div class="chart-bar-fill" style="width:7.9%"></div></div><div class="chart-value">$362.965 (3)</div></div>
+  <div class="chart-bar-row"><div class="chart-label">23</div><div class="chart-bar-bg"><div class="chart-bar-fill" style="width:24.4%"></div></div><div class="chart-value">$1.120.475 (9)</div></div>
+  <div class="chart-bar-row"><div class="chart-label">24</div><div class="chart-bar-bg"><div class="chart-bar-fill" style="width:53.4%"></div></div><div class="chart-value">$2.449.866 (11)</div></div>
+  <div class="chart-bar-row"><div class="chart-label">25</div><div class="chart-bar-bg"><div class="chart-bar-fill" style="width:28.5%"></div></div><div class="chart-value">$1.306.000 (9)</div></div>
+  <div class="chart-bar-row"><div class="chart-label">26</div><div class="chart-bar-bg"><div class="chart-bar-fill" style="width:22.1%"></div></div><div class="chart-value">$1.012.691 (5)</div></div>
+  <div class="chart-bar-row"><div class="chart-label">27</div><div class="chart-bar-bg"><div class="chart-bar-fill" style="width:53.5%"></div></div><div class="chart-value">$2.453.396 (15)</div></div>
+  <div class="chart-bar-row"><div class="chart-label">28</div><div class="chart-bar-bg"><div class="chart-bar-fill" style="width:31.8%"></div></div><div class="chart-value">$1.456.811 (8)</div></div>
+
+  <p style="font-size:12px; color:#7a8a9e; margin-top:12px;">Patr&oacute;n: picos lunes-mi&eacute;rcoles, ca&iacute;da fines de semana. Semana 3 (13-16 feb) fue la m&aacute;s d&eacute;bil &mdash; posible saturaci&oacute;n de audiencia.</p>
+</div>
+
+<!-- ==================== 9. CANALES TN ==================== -->
+<div class="section" id="sec-8">
+  <h2><span class="num">8</span> Canales TiendaNube</h2>
+<div class="table-scroll">  <table>
+    <thead>
+      <tr>
+        <th>Canal</th>
+        <th class="text-right">Revenue</th>
+        <th class="text-center">&Oacute;rdenes</th>
+        <th class="text-right">Ticket Promedio</th>
+        <th class="text-right">% Revenue</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Desktop (store)</strong></td>
+        <td class="text-right">$40.994.197</td>
+        <td class="text-center">219</td>
+        <td class="text-right">$187.188</td>
+        <td class="text-right">83,2%</td>
+      </tr>
+      <tr>
+        <td><strong>Mobile</strong></td>
+        <td class="text-right">$8.286.662</td>
+        <td class="text-center">77</td>
+        <td class="text-right">$107.619</td>
+        <td class="text-right">16,8%</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+  <div style="margin-top:14px; padding:10px 14px; background:#fff3e0; border-radius:8px; border-left:3px solid #CB7B3E;">
+    <p style="font-size:13px; color:#CB7B3E; font-weight:600;">Brecha mobile: El ticket mobile ($107.619) es 42% menor que desktop ($187.188). Mobile genera solo 16,8% del revenue pero probablemente recibe &gt;60% del tr&aacute;fico de Meta Ads. Oportunidad de mejora en UX mobile.</p>
+  </div>
+</div>
+
+<!-- ==================== 10. TOP PRODUCTOS ==================== -->
+<div class="section" id="sec-9">
+  <h2><span class="num">9</span> Top 10 Productos por Revenue</h2>
+<div class="table-scroll">  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Producto</th>
+        <th class="text-right">Revenue</th>
+        <th class="text-center">Unidades</th>
+        <th class="text-right">Precio</th>
+        <th class="text-right">% Revenue</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="highlight-row">
+        <td>1</td>
+        <td>Cristales HD MR8 1.60 Control Blue + AR</td>
+        <td class="text-right">$9.375.000</td>
+        <td class="text-center">125</td>
+        <td class="text-right">$75.000</td>
+        <td class="text-right">19,0%</td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td>CLIP ON PRO | 5 en 1</td>
+        <td class="text-right">$4.499.500</td>
+        <td class="text-center">50</td>
+        <td class="text-right">$89.990</td>
+        <td class="text-right">9,1%</td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td>CLIP ON VYSSO Aviador Acetato | 3 en 1</td>
+        <td class="text-right">$1.852.830</td>
+        <td class="text-center">17</td>
+        <td class="text-right">$108.990</td>
+        <td class="text-right">3,8%</td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td>Cristales HD MR8 1.60 CB+AR (variante)</td>
+        <td class="text-right">$1.720.000</td>
+        <td class="text-center">16</td>
+        <td class="text-right">$107.500</td>
+        <td class="text-right">3,5%</td>
+      </tr>
+      <tr>
+        <td>5</td>
+        <td>Cristales BLUE LIGHT CUT</td>
+        <td class="text-right">$1.535.100</td>
+        <td class="text-center">51</td>
+        <td class="text-right">$30.100</td>
+        <td class="text-right">3,1%</td>
+      </tr>
+      <tr>
+        <td>6</td>
+        <td>CLIP ON ZYRA | VYSSO 3 en 1</td>
+        <td class="text-right">$1.416.870</td>
+        <td class="text-center">13</td>
+        <td class="text-right">$108.990</td>
+        <td class="text-right">2,9%</td>
+      </tr>
+      <tr>
+        <td>7</td>
+        <td>CLIP ON VYSSO Aviador Plateado | 3 en 1</td>
+        <td class="text-right">$1.307.880</td>
+        <td class="text-center">12</td>
+        <td class="text-right">$108.990</td>
+        <td class="text-right">2,7%</td>
+      </tr>
+      <tr>
+        <td>8</td>
+        <td>Cristales HD MR8 1.67 CB+AR</td>
+        <td class="text-right">$1.120.000</td>
+        <td class="text-center">7</td>
+        <td class="text-right">$160.000</td>
+        <td class="text-right">2,3%</td>
+      </tr>
+      <tr>
+        <td>9</td>
+        <td>CLIP ON VYSSO Honey Traslucido | 3 en 1</td>
+        <td class="text-right">$980.910</td>
+        <td class="text-center">9</td>
+        <td class="text-right">$108.990</td>
+        <td class="text-right">2,0%</td>
+      </tr>
+      <tr>
+        <td>10</td>
+        <td>Multifocal Amplitude First View + Spectrum</td>
+        <td class="text-right">$941.452</td>
+        <td class="text-center">2</td>
+        <td class="text-right">$488.600</td>
+        <td class="text-right">1,9%</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+  <p style="font-size:12px; color:#7a8a9e; margin-top:10px;">120 productos &uacute;nicos vendidos, 572 unidades totales. Top 10 = 50,3% del revenue. Cristales HD 1.60 lidera con 19% &mdash; es el producto complementario a clip-ons.</p>
+</div>
+
+<!-- ==================== 11. CLIENTES ==================== -->
+<div class="section" id="sec-10">
+  <h2><span class="num">10</span> Clientes</h2>
+  <div class="kpi-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom:20px;">
+    <div class="kpi-card">
+      <div class="label">Total Clientes</div>
+      <div class="value" style="font-size:22px;">288</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="label">Nuevos</div>
+      <div class="value" style="font-size:22px;">280</div>
+      <div class="sub">97,2%</div>
+    </div>
+    <div class="kpi-card orange">
+      <div class="label">Recurrentes</div>
+      <div class="value" style="font-size:22px;">8</div>
+      <div class="sub">2,78%</div>
+    </div>
+    <div class="kpi-card red">
+      <div class="label">Tasa Repetici&oacute;n</div>
+      <div class="value" style="font-size:22px;">2,78%</div>
+      <div class="sub">Muy baja</div>
+    </div>
+  </div>
+
+  <h3>Top 5 Clientes por Gasto</h3>
+<div class="table-scroll">  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Cliente</th>
+        <th class="text-right">Total Gastado</th>
+        <th class="text-center">&Oacute;rdenes</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>1</td><td>Yanina Quilodr&aacute;n</td><td class="text-right">$743.960</td><td class="text-center">1</td></tr>
+      <tr><td>2</td><td>Bruno E. R. Fenoglio</td><td class="text-right">$597.590</td><td class="text-center">1</td></tr>
+      <tr><td>3</td><td>Elida N. del Valle G&oacute;mez</td><td class="text-right">$592.390</td><td class="text-center">1</td></tr>
+      <tr><td>4</td><td>Lucas Santana</td><td class="text-right">$578.590</td><td class="text-center">1</td></tr>
+      <tr><td>5</td><td>M&oacute;nica Anah&iacute; Medina</td><td class="text-right">$561.842</td><td class="text-center">1</td></tr>
+    </tbody>
+  </table>
+</div>
+  <p style="font-size:12px; color:#7a8a9e; margin-top:10px;">Todos los top spenders son compradores de una sola vez. La baja recurrencia (2,78%) indica oportunidad grande en retenci&oacute;n y cross-sell.</p>
+</div>
+
+<!-- ==================== 12. ESTADO DE PAGOS ==================== -->
+<div class="section" id="sec-11">
+  <h2><span class="num">11</span> Estado de Pagos y Env&iacute;os</h2>
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px;">
+    <div>
+      <h3>Pagos</h3>
+<div class="table-scroll">      <table>
+        <thead><tr><th>Estado</th><th class="text-center">Cantidad</th><th class="text-right">Monto</th></tr></thead>
+        <tbody>
+          <tr><td><span style="color:#4DAB9A;">&#9679;</span> Pagado</td><td class="text-center">296</td><td class="text-right">$49.280.859</td></tr>
+          <tr><td><span style="color:#C75A5A;">&#9679;</span> Anulado</td><td class="text-center">10</td><td class="text-right">$1.308.921</td></tr>
+          <tr><td><span style="color:#CB7B3E;">&#9679;</span> Pendiente</td><td class="text-center">3</td><td class="text-right">$624.263</td></tr>
+          <tr><td><span style="color:#7a8a9e;">&#9679;</span> Reembolsado</td><td class="text-center">2</td><td class="text-right">$421.121</td></tr>
+        </tbody>
+      </table>
+</div>
+    </div>
+    <div>
+      <h3>Env&iacute;os</h3>
+<div class="table-scroll">      <table>
+        <thead><tr><th>Estado</th><th class="text-center">Cantidad</th><th class="text-right">%</th></tr></thead>
+        <tbody>
+          <tr><td><span style="color:#4DAB9A;">&#9679;</span> Entregado</td><td class="text-center">185</td><td class="text-right">59,5%</td></tr>
+          <tr><td><span style="color:#529CCA;">&#9679;</span> Enviado</td><td class="text-center">89</td><td class="text-right">28,6%</td></tr>
+          <tr><td><span style="color:#CB7B3E;">&#9679;</span> Sin empacar</td><td class="text-center">37</td><td class="text-right">11,9%</td></tr>
+        </tbody>
+      </table>
+</div>
+    </div>
+  </div>
+  <p style="font-size:12px; color:#7a8a9e; margin-top:14px;">Tasa de cancelaci&oacute;n: 3,2% (10/311) &mdash; aceptable. 37 &oacute;rdenes a&uacute;n sin empacar al cierre del periodo.</p>
+</div>
+
+<!-- ==================== 13. ANALISIS DE CREATIVOS ==================== -->
+<div class="section" id="sec-12">
+  <h2><span class="num">12</span> An&aacute;lisis de Creativos</h2>
+  <p style="font-size:14px; color:#5a6a7e; margin-bottom:20px;">34 ads activos en Meta Ad Library. An&aacute;lisis cruzado de formato, protagonista y &aacute;ngulo de venta sobre las campa&ntilde;as ECOM.</p>
+
+  <h3>Por Formato</h3>
+<div class="table-scroll">  <table>
+    <thead>
+      <tr><th>Formato</th><th class="text-center">% de Ads</th><th class="text-center">ROAS</th><th>Veredicto</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Video UGC</td>
+        <td class="text-center">~75%</td>
+        <td class="text-center">3,26x</td>
+        <td>Depende del protagonista &mdash; variable</td>
+      </tr>
+      <tr class="highlight-row">
+        <td>Cat&aacute;logo / Secuencia</td>
+        <td class="text-center">~15%</td>
+        <td class="text-center"><strong>7,19x</strong></td>
+        <td><span class="badge badge-green">Escalar</span> &mdash; mejor ROAS con menos ads</td>
+      </tr>
+      <tr>
+        <td>Imagen est&aacute;tica</td>
+        <td class="text-center">~10%</td>
+        <td class="text-center">0,51x</td>
+        <td><span class="badge badge-red">No funciona</span> &mdash; ROAS negativo</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+  <h3>Por Protagonista</h3>
+<div class="table-scroll">  <table>
+    <thead>
+      <tr><th>Protagonista</th><th class="text-center">Ads</th><th class="text-center">Compras</th><th class="text-center">ROAS</th><th>Veredicto</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Sin persona / Marca</td>
+        <td class="text-center">15</td>
+        <td class="text-center">179</td>
+        <td class="text-center">5,19x</td>
+        <td><span class="badge badge-green">Cat&aacute;logos funcionan</span></td>
+      </tr>
+      <tr class="highlight-row">
+        <td>Fran</td>
+        <td class="text-center">4</td>
+        <td class="text-center">24</td>
+        <td class="text-center"><strong>8,14x</strong></td>
+        <td><span class="badge badge-green">Mejor ROAS</span> &mdash; Hook Rate 21%</td>
+      </tr>
+      <tr>
+        <td>Gonzalo</td>
+        <td class="text-center">8</td>
+        <td class="text-center">52</td>
+        <td class="text-center">3,61x</td>
+        <td><span class="badge badge-orange">Volumen pero bajo ROAS</span></td>
+      </tr>
+      <tr>
+        <td>Brenda</td>
+        <td class="text-center">1</td>
+        <td class="text-center">4</td>
+        <td class="text-center">6,88x</td>
+        <td><span class="badge badge-blue">Potencial &mdash; 1 solo ad</span></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+  <h3>Por &Aacute;ngulo de Venta</h3>
+<div class="table-scroll">  <table>
+    <thead>
+      <tr><th>&Aacute;ngulo</th><th class="text-center">Ads</th><th class="text-center">Compras</th><th class="text-center">ROAS</th><th>Veredicto</th></tr>
+    </thead>
+    <tbody>
+      <tr class="highlight-row">
+        <td>Cat&aacute;logo producto</td>
+        <td class="text-center">2</td>
+        <td class="text-center">137</td>
+        <td class="text-center"><strong>7,08x</strong></td>
+        <td><span class="badge badge-green">Escalar</span></td>
+      </tr>
+      <tr class="highlight-row">
+        <td>Feature fotocrom&aacute;tico</td>
+        <td class="text-center">1</td>
+        <td class="text-center">8</td>
+        <td class="text-center"><strong>11,55x</strong></td>
+        <td><span class="badge badge-green">Escalar urgente</span></td>
+      </tr>
+      <tr>
+        <td>Precio / Descuento</td>
+        <td class="text-center">4</td>
+        <td class="text-center">39</td>
+        <td class="text-center">4,85x</td>
+        <td><span class="badge badge-green">Mantener</span></td>
+      </tr>
+      <tr>
+        <td>Colecci&oacute;n / Favoritos</td>
+        <td class="text-center">2</td>
+        <td class="text-center">35</td>
+        <td class="text-center">4,30x</td>
+        <td><span class="badge badge-green">Mantener</span></td>
+      </tr>
+      <tr>
+        <td>Branding</td>
+        <td class="text-center">3</td>
+        <td class="text-center">10</td>
+        <td class="text-center">5,54x</td>
+        <td><span class="badge badge-green">Mantener</span></td>
+      </tr>
+      <tr style="background:#fce8e8;">
+        <td>Versatilidad X en 1</td>
+        <td class="text-center">8</td>
+        <td class="text-center">5</td>
+        <td class="text-center" style="color:#C75A5A;"><strong>1,04x</strong></td>
+        <td><span class="badge badge-red">Pausar</span> &mdash; ~70% del presupuesto desperdiciado</td>
+      </tr>
+      <tr>
+        <td>Soluci&oacute;n &oacute;ptica</td>
+        <td class="text-center">7</td>
+        <td class="text-center">15</td>
+        <td class="text-center">1,41x</td>
+        <td><span class="badge badge-orange">Revisar</span></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+  <div style="margin-top:20px; padding:16px; background:#f0f7ff; border-radius:10px; border-left:4px solid #529CCA;">
+    <p style="font-size:13px; font-weight:600; color:#1a1a2e; margin-bottom:8px;">Hallazgos clave de creativos:</p>
+    <ul style="font-size:13px; color:#5a6a7e; padding-left:20px;">
+      <li><strong>Fotocrom&aacute;tico</strong> (ROAS 11,55x) tiene solo 1 ad activo &mdash; es la oportunidad m&aacute;s clara de escalado inmediato.</li>
+      <li><strong>75% de los ads son video UGC</strong> pero el formato <strong>Cat&aacute;logo/Secuencia convierte 2,2x mejor</strong> en ROAS.</li>
+      <li><strong>Fran</strong> como protagonista tiene el doble de ROAS que Gonzalo (8,14x vs 3,61x).</li>
+      <li>El &aacute;ngulo <strong>&quot;Versatilidad X en 1&quot; consume ~8-9 ads con ROAS 1,04x</strong> &mdash; pausar inmediatamente.</li>
+      <li><strong>&Aacute;ngulos sin testear:</strong> ahorro/anti-inflaci&oacute;n, precio como hook, urgencia/stock, social proof num&eacute;rico, segmento 40+ progresivos.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ==================== 14. ANALISIS COMPETITIVO ==================== -->
+<div class="section" id="sec-13">
+  <h2><span class="num">13</span> An&aacute;lisis Competitivo</h2>
+  <div style="overflow-x:auto;">
+<div class="table-scroll">    <table class="comp-matrix">
+      <thead>
+        <tr>
+          <th></th>
+          <th class="text-center">Giorlent</th>
+          <th class="text-center">Sigma</th>
+          <th class="text-center">Central Store</th>
+          <th class="text-center">Lookout</th>
+          <th class="text-center">ZoomVision</th>
+          <th class="text-center">Vulk</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Producto core</strong></td>
+          <td class="text-center">Clip-on recetado</td>
+          <td class="text-center">Cat&aacute;logo &oacute;ptico</td>
+          <td class="text-center">Lujo multimarca</td>
+          <td class="text-center">Cat&aacute;logo + clip-on</td>
+          <td class="text-center">Multifocal</td>
+          <td class="text-center">Sol premium</td>
+        </tr>
+        <tr>
+          <td><strong>Clip-on propio</strong></td>
+          <td class="text-center" style="color:#4DAB9A; font-weight:700;">Si</td>
+          <td class="text-center" style="color:#C75A5A;">No</td>
+          <td class="text-center" style="color:#C75A5A;">No</td>
+          <td class="text-center" style="color:#CB7B3E;">No (reventa)</td>
+          <td class="text-center" style="color:#CB7B3E;">No (reventa)</td>
+          <td class="text-center" style="color:#7a8a9e;">N/A</td>
+        </tr>
+        <tr>
+          <td><strong>Precio entry</strong></td>
+          <td class="text-center" style="color:#4DAB9A; font-weight:700;">$75.000</td>
+          <td class="text-center">N/D</td>
+          <td class="text-center">Premium</td>
+          <td class="text-center">$108.800</td>
+          <td class="text-center">$98.900</td>
+          <td class="text-center">N/A</td>
+        </tr>
+        <tr>
+          <td><strong>Meta Ads activos</strong></td>
+          <td class="text-center" style="color:#4DAB9A; font-weight:700;">34</td>
+          <td class="text-center" style="color:#C75A5A;">0</td>
+          <td class="text-center" style="color:#CB7B3E;">14</td>
+          <td class="text-center" style="color:#CB7B3E;">23</td>
+          <td class="text-center" style="color:#C75A5A;">0</td>
+          <td class="text-center">12 (IG)</td>
+        </tr>
+        <tr>
+          <td><strong>Amenaza</strong></td>
+          <td class="text-center">&mdash;</td>
+          <td class="text-center threat-low">Baja</td>
+          <td class="text-center threat-low">Baja</td>
+          <td class="text-center threat-high">Media</td>
+          <td class="text-center threat-low">Baja</td>
+          <td class="text-center threat-low">Nula</td>
+        </tr>
+      </tbody>
+    </table>
+</div>
+  </div>
+
+  <div style="margin-top:20px; padding:16px; background:#f8f0fa; border-radius:10px; border-left:4px solid #8a4a8a;">
+    <p style="font-size:13px; font-weight:600; color:#1a1a2e; margin-bottom:8px;">Insights competitivos:</p>
+    <ul style="font-size:13px; color:#5a6a7e; padding-left:20px;">
+      <li><strong>Lookout</strong> es la &uacute;nica amenaza real: 23 ads activos, 60 a&ntilde;os de trayectoria, pero su messaging es d&eacute;bil y gen&eacute;rico.</li>
+      <li><strong>Nadie comunica fotocrom&aacute;tico</strong> como feature en paid ads &mdash; oportunidad de apropiaci&oacute;n total del &aacute;ngulo.</li>
+      <li><strong>Giorlent tiene ~12 meses de ventaja</strong> en ejecuci&oacute;n de Meta Ads vs cualquier competidor directo.</li>
+      <li>Precio entry de Giorlent ($75K) es 31% menor que Lookout ($108K) &mdash; ventaja competitiva clara.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ==================== 15. DIAGNOSTICO ESTRATEGICO ==================== -->
+<div class="section" id="sec-14">
+  <h2><span class="num">14</span> Diagn&oacute;stico Estrat&eacute;gico</h2>
+  <div style="padding:20px; background:#f0f2f5; border-radius:10px; font-size:14px; line-height:1.8; color:#2c2c2c;">
+    <p>Giorlent cerr&oacute; febrero 2026 con $49M de revenue y un ROAS real de 6,89x &mdash; un negocio rentable con m&aacute;rgenes excepcionales (85,5% post-ads). Sin embargo, la ca&iacute;da de -23% en revenue y -24% en &oacute;rdenes vs el periodo anterior enciende una alarma de volumen. El ticket se mantuvo estable (+1,7%), confirmando que el problema no es de pricing sino de adquisici&oacute;n. La concentraci&oacute;n de ~70% del presupuesto publicitario en &aacute;ngulos de ROAS menor a 1,5x ("Versatilidad X en 1" y "Soluci&oacute;n &oacute;ptica") es el mayor desperdicio identificado. Simult&aacute;neamente, los &aacute;ngulos de mayor retorno (fotocrom&aacute;tico 11,55x, cat&aacute;logo 7,08x) est&aacute;n sub-explotados con apenas 1-2 ads cada uno. El cuello de botella en el funnel est&aacute; en Cart&rarr;Checkout (14,9%), donde se pierden ~2.267 carritos mensuales ($376M potenciales). La recurrencia de 2,78% indica ausencia total de estrategia de retenci&oacute;n. La ventaja competitiva es clara: ning&uacute;n competidor tiene la sofisticaci&oacute;n en Meta Ads ni la propuesta de clip-on recetado a $75K. La oportunidad inmediata est&aacute; en reasignar presupuesto hacia &aacute;ngulos probados y destrabar el checkout.</p>
+  </div>
+</div>
+
+<!-- ==================== 16. TOP 5 WINS ==================== -->
+<div class="section" id="sec-15">
+  <h2><span class="num">15</span> Top 5 Wins</h2>
+  <div style="display:grid; gap:12px;">
+    <div style="display:flex; gap:14px; align-items:flex-start; padding:14px; background:#e6f5f0; border-radius:10px;">
+      <div style="background:#4DAB9A; color:white; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; flex-shrink:0;">1</div>
+      <div>
+        <div style="font-weight:600; color:#1a1a2e;">ROAS real 6,89x con margen post-ads de 85,5%</div>
+        <div style="font-size:12px; color:#5a6a7e;">Cada $1 invertido en ECOM genera $6,89 de revenue. Margen neto de publicidad: $41,9M.</div>
+      </div>
+    </div>
+    <div style="display:flex; gap:14px; align-items:flex-start; padding:14px; background:#e6f5f0; border-radius:10px;">
+      <div style="background:#4DAB9A; color:white; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; flex-shrink:0;">2</div>
+      <div>
+        <div style="font-weight:600; color:#1a1a2e;">Fran: ROAS 8,14x + Hook Rate 21%</div>
+        <div style="font-size:12px; color:#5a6a7e;">El mejor protagonista identificado. Con solo 4 ads genera el doble de ROAS que Gonzalo.</div>
+      </div>
+    </div>
+    <div style="display:flex; gap:14px; align-items:flex-start; padding:14px; background:#e6f5f0; border-radius:10px;">
+      <div style="background:#4DAB9A; color:white; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; flex-shrink:0;">3</div>
+      <div>
+        <div style="font-weight:600; color:#1a1a2e;">Cat&aacute;logo/Secuencia: ROAS 7,19x corriendo desde marzo 2025</div>
+        <div style="font-size:12px; color:#5a6a7e;">Formato estable y escalable, 12 meses de data validada. Genera el 53% de las compras ECOM.</div>
+      </div>
+    </div>
+    <div style="display:flex; gap:14px; align-items:flex-start; padding:14px; background:#e6f5f0; border-radius:10px;">
+      <div style="background:#4DAB9A; color:white; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; flex-shrink:0;">4</div>
+      <div>
+        <div style="font-weight:600; color:#1a1a2e;">Fotocrom&aacute;tico: ROAS 11,55x con 1 solo ad</div>
+        <div style="font-size:12px; color:#5a6a7e;">El &aacute;ngulo de mayor retorno, completamente sub-explotado. Nadie en la competencia lo usa en paid.</div>
+      </div>
+    </div>
+    <div style="display:flex; gap:14px; align-items:flex-start; padding:14px; background:#e6f5f0; border-radius:10px;">
+      <div style="background:#4DAB9A; color:white; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; flex-shrink:0;">5</div>
+      <div>
+        <div style="font-weight:600; color:#1a1a2e;">Sin competencia real en paid social</div>
+        <div style="font-size:12px; color:#5a6a7e;">34 ads vs 0-23 de competidores. 12 meses de ventaja en data y optimizaci&oacute;n de audiencias.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== 17. TOP 5 PROBLEMAS ==================== -->
+<div class="section" id="sec-16">
+  <h2><span class="num">16</span> Top 5 Problemas</h2>
+  <div style="display:grid; gap:12px;">
+    <div style="display:flex; gap:14px; align-items:flex-start; padding:14px; background:#fce8e8; border-radius:10px;">
+      <div style="background:#C75A5A; color:white; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; flex-shrink:0;">1</div>
+      <div>
+        <div style="font-weight:600; color:#1a1a2e;">~70% del presupuesto en &aacute;ngulos de ROAS 1,04x</div>
+        <div style="font-size:12px; color:#5a6a7e;">&quot;Versatilidad X en 1&quot; (8 ads, ROAS 1,04x) y &quot;Soluci&oacute;n &oacute;ptica&quot; (7 ads, 1,41x) consumen la mayor&iacute;a del gasto con retorno m&iacute;nimo.</div>
+      </div>
+    </div>
+    <div style="display:flex; gap:14px; align-items:flex-start; padding:14px; background:#fce8e8; border-radius:10px;">
+      <div style="background:#C75A5A; color:white; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; flex-shrink:0;">2</div>
+      <div>
+        <div style="font-weight:600; color:#1a1a2e;">Cart&rarr;Checkout: 14,9% (2.267 carritos perdidos/mes)</div>
+        <div style="font-size:12px; color:#5a6a7e;">El cuello de botella principal del funnel. Revenue potencial perdido estimado: ~$376M mensuales.</div>
+      </div>
+    </div>
+    <div style="display:flex; gap:14px; align-items:flex-start; padding:14px; background:#fce8e8; border-radius:10px;">
+      <div style="background:#C75A5A; color:white; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; flex-shrink:0;">3</div>
+      <div>
+        <div style="font-weight:600; color:#1a1a2e;">Ticket mobile 42% menor que desktop</div>
+        <div style="font-size:12px; color:#5a6a7e;">Mobile: $107.619 vs Desktop: $187.188. Con la mayor&iacute;a del tr&aacute;fico de Meta entrando por mobile, esto limita el revenue.</div>
+      </div>
+    </div>
+    <div style="display:flex; gap:14px; align-items:flex-start; padding:14px; background:#fce8e8; border-radius:10px;">
+      <div style="background:#C75A5A; color:white; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; flex-shrink:0;">4</div>
+      <div>
+        <div style="font-weight:600; color:#1a1a2e;">Recurrencia 2,78%</div>
+        <div style="font-size:12px; color:#5a6a7e;">Solo 8 de 288 clientes compraron m&aacute;s de una vez. Sin estrategia de retenci&oacute;n ni email marketing aparente.</div>
+      </div>
+    </div>
+    <div style="display:flex; gap:14px; align-items:flex-start; padding:14px; background:#fce8e8; border-radius:10px;">
+      <div style="background:#C75A5A; color:white; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; flex-shrink:0;">5</div>
+      <div>
+        <div style="font-weight:600; color:#1a1a2e;">Revenue cay&oacute; -22,9% vs periodo anterior</div>
+        <div style="font-size:12px; color:#5a6a7e;">De $63,9M a $49,3M. Ca&iacute;da de -94 &oacute;rdenes. Puede haber estacionalidad post-verano, pero la tendencia requiere atenci&oacute;n.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== 18. PLAN DE ACCION ==================== -->
+<div class="section" id="sec-17">
+  <h2><span class="num">17</span> Plan de Acci&oacute;n &mdash; Marzo 2026</h2>
+
+  <div class="action-area meta">
+    <h4>META ADS</h4>
+    <ul class="action-list">
+      <li><span class="badge badge-green">ESCALAR</span> &nbsp;Fotocrom&aacute;tico: crear 3-5 variantes, especialmente Fran + fotocrom&aacute;tico (combina mejor protagonista + mejor &aacute;ngulo)</li>
+      <li><span class="badge badge-green">ESCALAR</span> &nbsp;Cat&aacute;logo: ampliar feeds a incluir fotocrom&aacute;ticos y nuevas colecciones</li>
+      <li><span class="badge badge-green">ESCALAR</span> &nbsp;UGC Fran: crear m&aacute;s contenido con Fran como protagonista (Hook Rate 21%)</li>
+      <li><span class="badge badge-red">PAUSAR</span> &nbsp;Versatilidad &quot;X en 1&quot;: pausar los 8-9 ads con ROAS 1,04x inmediatamente</li>
+      <li><span class="badge badge-red">PAUSAR</span> &nbsp;Gonzalo como protagonista principal: reasignar presupuesto a Fran y cat&aacute;logos</li>
+      <li><span class="badge badge-blue">TESTEAR</span> &nbsp;Ahorro / anti-inflaci&oacute;n: &quot;No gast&eacute;s en 5 anteojos, llev&aacute; 1 clip-on&quot;</li>
+      <li><span class="badge badge-blue">TESTEAR</span> &nbsp;Precio como hook: &quot;Clip-on desde $75.000&quot; directo en thumbnail</li>
+      <li><span class="badge badge-blue">TESTEAR</span> &nbsp;Urgencia / stock: &quot;Quedan X unidades del color X&quot;</li>
+      <li><span class="badge badge-blue">TESTEAR</span> &nbsp;Segmento 40+ progresivos: contenido dirigido, sin UGC joven</li>
+      <li><span class="badge badge-blue">TESTEAR</span> &nbsp;Social proof num&eacute;rico: &quot;+2.000 clip-ons vendidos&quot;</li>
+    </ul>
+  </div>
+
+  <div class="action-area cro">
+    <h4>CRO TIENDA</h4>
+    <ul class="action-list">
+      <li><span class="badge badge-green">IMPLEMENTAR</span> &nbsp;Trust badges en p&aacute;gina de carrito (env&iacute;o, garant&iacute;a, pago seguro)</li>
+      <li><span class="badge badge-green">IMPLEMENTAR</span> &nbsp;Simplificar checkout: reducir campos, autofill, eliminar fricci&oacute;n</li>
+      <li><span class="badge badge-green">IMPLEMENTAR</span> &nbsp;Urgencia en carrito: &quot;X personas viendo este producto&quot; + progress bar de env&iacute;o gratis</li>
+      <li><span class="badge badge-blue">AUDITAR</span> &nbsp;Flujo mobile completo: desde Meta Ad hasta compra, identificar puntos de abandono</li>
+    </ul>
+  </div>
+
+  <div class="action-area ret">
+    <h4>RETENCI&Oacute;N</h4>
+    <ul class="action-list">
+      <li><span class="badge badge-green">IMPLEMENTAR</span> &nbsp;Email d&iacute;a 0 (bienvenida) / d&iacute;a 30 (review) / d&iacute;a 180 (recompra cristales)</li>
+      <li><span class="badge badge-green">IMPLEMENTAR</span> &nbsp;Cross-sell: cristales ↔ clip-on (el top product es cristales a $75K, complementario natural)</li>
+      <li><span class="badge badge-blue">TESTEAR</span> &nbsp;Retargeting Meta a compradores previos con nuevas colecciones</li>
+    </ul>
+  </div>
+
+  <div class="action-area comp">
+    <h4>COMPETENCIA</h4>
+    <ul class="action-list">
+      <li><span class="badge badge-green">IMPLEMENTAR</span> &nbsp;Claim: &quot;Especialistas en clip-on recetado de Argentina&quot; en todos los ads y landing</li>
+      <li><span class="badge badge-green">IMPLEMENTAR</span> &nbsp;Comunicar ventaja de precio vs Lookout ($75K vs $108K = 31% menos)</li>
+      <li><span class="badge badge-blue">MONITOREAR</span> &nbsp;Lookout cada 2 semanas en Ad Library (23 ads activos, &uacute;nica amenaza)</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ==================== 19. PROYECCION MARZO ==================== -->
+<div class="section" id="sec-18">
+  <h2><span class="num">18</span> Proyecci&oacute;n Marzo 2026</h2>
+  <p style="font-size:13px; color:#7a8a9e; margin-bottom:16px;">Basada en la implementaci&oacute;n del plan de acci&oacute;n (reasignaci&oacute;n de presupuesto + mejoras CRO)</p>
+<div class="table-scroll">  <table class="proj-table">
+    <thead>
+      <tr>
+        <th>M&eacute;trica</th>
+        <th class="text-right">Febrero (real)</th>
+        <th class="text-right">Marzo (proy.)</th>
+        <th class="text-right">Delta</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Revenue</td>
+        <td class="text-right">$49.000.000</td>
+        <td class="text-right">$56M &mdash; $62M</td>
+        <td class="text-right delta-pos">+15% a +25%</td>
+      </tr>
+      <tr>
+        <td>ROAS real</td>
+        <td class="text-right">6,89x</td>
+        <td class="text-right">8,0x &mdash; 9,0x</td>
+        <td class="text-right delta-pos">+16% a +30%</td>
+      </tr>
+      <tr>
+        <td>&Oacute;rdenes</td>
+        <td class="text-right">295</td>
+        <td class="text-right">330 &mdash; 360</td>
+        <td class="text-right delta-pos">+12% a +22%</td>
+      </tr>
+      <tr>
+        <td>CVR Cart&rarr;Checkout</td>
+        <td class="text-right">14,9%</td>
+        <td class="text-right">20% &mdash; 22%</td>
+        <td class="text-right delta-pos">+34% a +47%</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+  <div style="margin-top:16px; padding:14px; background:#f0f7ff; border-radius:10px; font-size:13px; color:#5a6a7e;">
+    <strong>Supuestos:</strong> Pausar &aacute;ngulos ROAS &lt;1,5x libera ~40% del presupuesto ECOM para reasignar a fotocrom&aacute;tico + cat&aacute;logo. Trust badges en carrito y simplificaci&oacute;n de checkout recuperan +5pp en CVR Cart&rarr;Checkout. Sin aumento de inversi&oacute;n total.
+  </div>
+</div>
+
+<!-- ==================== 20. FOOTER ==================== -->
+<div style="text-align:center; padding:32px 20px; color:#7a8a9e; font-size:12px; border-top:1px solid #e8ecf1; margin-top:20px;">
+  <p>Informe generado por <strong>EcomClub CRO Platform</strong></p>
+  <p style="margin-top:4px;">Fuentes: TiendaNube API, Meta Ads CSV, Meta Ad Library, Web Research</p>
+  <p style="margin-top:4px;">08/03/2026</p>
+</div>
+
+</div>
+</body>
+</html>

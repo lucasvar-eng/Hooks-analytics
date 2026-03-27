@@ -1,0 +1,2505 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ECOM ANALYTICS - Plataforma</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #080808;
+    --bg-card: #111111;
+    --bg-card-hover: #1a1a1a;
+    --bg-sidebar: #0c0c0c;
+    --bg-header: #0a0a0a;
+    --border: #1e1e1e;
+    --border-light: #2a2a2a;
+    --text: #e0e0e0;
+    --text-secondary: #888888;
+    --text-muted: #555555;
+    --accent: #6366f1;
+    --accent-hover: #818cf8;
+    --green: #22c55e;
+    --green-bg: rgba(34,197,94,0.1);
+    --red: #ef4444;
+    --red-bg: rgba(239,68,68,0.1);
+    --yellow: #eab308;
+    --yellow-bg: rgba(234,179,8,0.1);
+    --blue: #3b82f6;
+    --blue-bg: rgba(59,130,246,0.1);
+    --orange: #f97316;
+    --purple: #a855f7;
+    --cyan: #06b6d4;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* ========== SIDEBAR ========== */
+  .sidebar {
+    width: 240px;
+    min-width: 240px;
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow-y: auto;
+  }
+
+  .sidebar-logo {
+    padding: 20px 20px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .sidebar-logo h1 {
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    color: #fff;
+  }
+
+  .sidebar-logo span {
+    font-size: 10px;
+    font-weight: 400;
+    color: var(--text-muted);
+    letter-spacing: 1px;
+    display: block;
+    margin-top: 2px;
+  }
+
+  .sidebar-nav {
+    flex: 1;
+    padding: 12px 8px;
+  }
+
+  .sidebar-section-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: var(--text-muted);
+    padding: 16px 12px 6px;
+    text-transform: uppercase;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    transition: all 0.15s ease;
+    margin-bottom: 2px;
+  }
+
+  .nav-item:hover {
+    background: var(--bg-card);
+    color: var(--text);
+  }
+
+  .nav-item.active {
+    background: var(--accent);
+    color: #fff;
+    font-weight: 600;
+  }
+
+  .nav-item .nav-icon {
+    font-size: 16px;
+    width: 22px;
+    text-align: center;
+  }
+
+  .sidebar-footer {
+    padding: 12px 8px;
+    border-top: 1px solid var(--border);
+  }
+
+  /* ========== MAIN ========== */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ========== HEADER ========== */
+  .header {
+    height: 56px;
+    min-height: 56px;
+    background: var(--bg-header);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .header-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .store-select, .date-range {
+    background: var(--bg-card);
+    border: 1px solid var(--border-light);
+    color: var(--text);
+    padding: 7px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    outline: none;
+  }
+
+  .store-select:hover, .date-range:hover {
+    border-color: var(--accent);
+  }
+
+  .date-range {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .date-range-icon { font-size: 14px; }
+
+  .header-avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: #fff;
+    cursor: pointer;
+  }
+
+  /* ========== CONTENT ========== */
+  .content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px;
+  }
+
+  .content::-webkit-scrollbar { width: 6px; }
+  .content::-webkit-scrollbar-track { background: transparent; }
+  .content::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 3px; }
+
+  .page { display: none; }
+  .page.active { display: block; }
+
+  .page-header {
+    margin-bottom: 24px;
+  }
+
+  .page-header h2 {
+    font-size: 22px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 4px;
+  }
+
+  .page-header p {
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  /* ========== CARDS / COMPONENTS ========== */
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+  }
+
+  .card-title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .grid-6 { display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; }
+
+  .metric-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+  }
+
+  .metric-card .mc-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+  }
+
+  .metric-card .mc-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  .metric-card .mc-change {
+    font-size: 11px;
+    font-weight: 600;
+    margin-top: 4px;
+  }
+
+  .mc-change.up { color: var(--green); }
+  .mc-change.down { color: var(--red); }
+
+  /* ========== TABLES ========== */
+  .table-wrapper {
+    overflow-x: auto;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+
+  thead th {
+    background: #141414;
+    padding: 10px 12px;
+    text-align: right;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    white-space: nowrap;
+  }
+
+  thead th:first-child { text-align: left; }
+
+  tbody td {
+    padding: 9px 12px;
+    text-align: right;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+
+  tbody td:first-child { text-align: left; font-weight: 500; }
+
+  tbody tr:hover { background: rgba(99,102,241,0.04); }
+
+  tbody tr:last-child td { border-bottom: none; }
+
+  tr.row-total { background: #141414; font-weight: 700; }
+  tr.row-total td { border-top: 2px solid var(--border-light); color: #fff; }
+
+  tr.row-objetivo { background: rgba(34,197,94,0.06); }
+  tr.row-objetivo td { color: var(--green); font-weight: 600; }
+
+  /* ========== BADGES ========== */
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+  }
+
+  .badge-green { background: var(--green-bg); color: var(--green); }
+  .badge-red { background: var(--red-bg); color: var(--red); }
+  .badge-yellow { background: var(--yellow-bg); color: var(--yellow); }
+  .badge-blue { background: var(--blue-bg); color: var(--blue); }
+  .badge-gray { background: rgba(100,100,100,0.15); color: #777; }
+  .badge-purple { background: rgba(168,85,247,0.12); color: var(--purple); }
+  .badge-orange { background: rgba(249,115,22,0.12); color: var(--orange); }
+
+  /* ========== BUTTONS ========== */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    border: none;
+    transition: all 0.15s ease;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+  }
+
+  .btn-primary:hover { background: var(--accent-hover); }
+
+  .btn-secondary {
+    background: var(--bg-card);
+    color: var(--text);
+    border: 1px solid var(--border-light);
+  }
+
+  .btn-secondary:hover { border-color: var(--accent); }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+  }
+
+  .btn-ghost:hover { color: var(--text); border-color: var(--text-muted); }
+
+  /* ========== FORM ELEMENTS ========== */
+  select.form-select {
+    background: var(--bg-card);
+    border: 1px solid var(--border-light);
+    color: var(--text);
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-family: 'Inter', sans-serif;
+    outline: none;
+    cursor: pointer;
+  }
+
+  select.form-select:hover { border-color: var(--accent); }
+
+  /* ========== SPECIFIC: OVERVIEW ========== */
+  .store-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .store-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  }
+
+  .store-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .store-name {
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  .store-status {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+  }
+
+  .store-metrics {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .store-metric .sm-label {
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-bottom: 2px;
+  }
+
+  .store-metric .sm-value {
+    font-size: 15px;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  .store-metric .sm-value.good { color: var(--green); }
+  .store-metric .sm-value.bad { color: var(--red); }
+
+  /* ========== SPECIFIC: SIMULADOR ========== */
+  .slider-group {
+    margin-bottom: 20px;
+  }
+
+  .slider-group label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+  }
+
+  .slider-group label span { color: #fff; font-weight: 700; }
+
+  input[type="range"] {
+    width: 100%;
+    height: 4px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: var(--border-light);
+    border-radius: 2px;
+    outline: none;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    border: 2px solid #fff;
+  }
+
+  /* ========== SCENARIO CARDS ========== */
+  .scenario-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+  }
+
+  .scenario-card .sc-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 8px;
+  }
+
+  .scenario-card .sc-desc {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin-bottom: 12px;
+  }
+
+  .scenario-card .sc-result {
+    display: flex;
+    gap: 16px;
+  }
+
+  .scenario-card .sc-metric {
+    font-size: 10px;
+    color: var(--text-muted);
+  }
+
+  .scenario-card .sc-metric strong {
+    display: block;
+    font-size: 16px;
+    color: #fff;
+    margin-top: 2px;
+  }
+
+  /* ========== SPECIFIC: CREATIVOS / KANBAN ========== */
+  .kanban-board {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+    min-height: 500px;
+  }
+
+  .kanban-col {
+    background: rgba(17,17,17,0.6);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px;
+  }
+
+  .kanban-col-header {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .kanban-col-header .count {
+    background: var(--border-light);
+    padding: 1px 6px;
+    border-radius: 10px;
+    font-size: 10px;
+    color: var(--text-muted);
+  }
+
+  .kanban-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: border-color 0.15s ease;
+  }
+
+  .kanban-card:hover { border-color: var(--accent); }
+
+  .kanban-card .kc-hook {
+    font-size: 11px;
+    color: var(--text);
+    line-height: 1.4;
+    margin-bottom: 8px;
+    font-style: italic;
+  }
+
+  .kanban-card .kc-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    font-size: 10px;
+  }
+
+  .kc-cat-a { border-left: 3px solid var(--green); }
+  .kc-cat-b { border-left: 3px solid var(--blue); }
+  .kc-cat-c { border-left: 3px solid var(--yellow); }
+  .kc-cat-d { border-left: 3px solid var(--orange); }
+  .kc-cat-e { border-left: 3px solid var(--red); }
+
+  /* ========== SPECIFIC: CONTENIDO ========== */
+  .topic-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+  }
+
+  .topic-card .tc-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+
+  .topic-card .tc-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
+  }
+
+  .topic-card .tc-desc {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  .phrase-item {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-bottom: 8px;
+  }
+
+  .phrase-item .pi-text {
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.5;
+    margin-bottom: 8px;
+    font-style: italic;
+  }
+
+  .phrase-item .pi-tags {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  /* ========== FRAMEWORK 3 PREGUNTAS ========== */
+  .framework-3q {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-top: 24px;
+  }
+
+  .q-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+  }
+
+  .q-card .q-num {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+
+  .q-card .q-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 8px;
+  }
+
+  .q-card .q-content {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+
+  /* ========== SPECIFIC: P&L ========== */
+  .pnl-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+  }
+
+  .pnl-row:last-child { border-bottom: none; }
+
+  .pnl-row .pnl-label { color: var(--text-secondary); font-weight: 500; }
+  .pnl-row .pnl-value { font-weight: 700; color: #fff; font-variant-numeric: tabular-nums; }
+  .pnl-row.pnl-negative .pnl-value { color: var(--red); }
+  .pnl-row.pnl-subtotal { background: #141414; border-radius: 6px; margin: 4px 0; }
+  .pnl-row.pnl-subtotal .pnl-label { color: #fff; font-weight: 700; }
+  .pnl-row.pnl-profit { background: rgba(34,197,94,0.08); border-radius: 6px; }
+  .pnl-row.pnl-profit .pnl-value { color: var(--green); font-size: 18px; }
+  .pnl-row.pnl-profit .pnl-label { color: var(--green); font-weight: 700; }
+
+  /* ========== SPECIFIC: REPORTES ========== */
+  .report-preview {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 24px 28px;
+    font-size: 13px;
+    line-height: 1.8;
+    color: var(--text-secondary);
+    max-height: 500px;
+    overflow-y: auto;
+  }
+
+  .report-preview h3 {
+    color: #fff;
+    font-size: 16px;
+    margin: 16px 0 8px;
+  }
+
+  .report-preview h3:first-child { margin-top: 0; }
+
+  .report-preview ul {
+    padding-left: 20px;
+    margin: 8px 0;
+  }
+
+  .report-preview li { margin-bottom: 4px; }
+
+  .report-preview strong { color: var(--text); }
+
+  /* ========== COHORT TABLE ========== */
+  .cohort-table td, .cohort-table th {
+    text-align: center !important;
+  }
+
+  .cohort-table td:first-child, .cohort-table th:first-child {
+    text-align: left !important;
+  }
+
+  .retention-high { color: var(--green); font-weight: 600; }
+  .retention-mid { color: var(--yellow); font-weight: 600; }
+  .retention-low { color: var(--red); font-weight: 600; }
+
+  /* ========== RFM ========== */
+  .rfm-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+  }
+
+  .rfm-segment {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    text-align: center;
+  }
+
+  .rfm-segment .rfm-icon { font-size: 24px; margin-bottom: 6px; }
+  .rfm-segment .rfm-name { font-size: 12px; font-weight: 600; color: #fff; margin-bottom: 4px; }
+  .rfm-segment .rfm-count { font-size: 20px; font-weight: 700; color: #fff; }
+  .rfm-segment .rfm-pct { font-size: 11px; color: var(--text-muted); }
+
+  /* ========== MISC ========== */
+  .spacer-16 { height: 16px; }
+  .spacer-24 { height: 24px; }
+
+  .separator {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 20px 0;
+  }
+
+  .text-green { color: var(--green); }
+  .text-red { color: var(--red); }
+  .text-yellow { color: var(--yellow); }
+  .text-muted { color: var(--text-muted); }
+
+  .sim-result-box {
+    background: linear-gradient(135deg, rgba(99,102,241,0.1), rgba(168,85,247,0.1));
+    border: 1px solid rgba(99,102,241,0.3);
+    border-radius: 12px;
+    padding: 24px;
+    text-align: center;
+  }
+
+  .sim-result-box .sr-label {
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+  }
+
+  .sim-result-box .sr-value {
+    font-size: 32px;
+    font-weight: 800;
+    color: #fff;
+  }
+
+  .analysis-block {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--text-secondary);
+  }
+
+  .analysis-block strong { color: var(--text); }
+
+  .competitor-alert {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  /* Animate sections */
+  .page.active {
+    animation: fadeIn 0.2s ease;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</style>
+</head>
+<body>
+
+<!-- ========== SIDEBAR ========== -->
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <h1>ECOM ANALYTICS</h1>
+    <span>Performance Platform</span>
+  </div>
+
+  <div class="sidebar-nav">
+    <div class="sidebar-section-label">Principal</div>
+    <div class="nav-item active" data-page="overview">
+      <span class="nav-icon">📊</span> Overview
+    </div>
+    <div class="nav-item" data-page="dashboard">
+      <span class="nav-icon">📈</span> Dashboard
+    </div>
+
+    <div class="sidebar-section-label">Negocio</div>
+    <div class="nav-item" data-page="productos">
+      <span class="nav-icon">👟</span> Productos
+    </div>
+    <div class="nav-item" data-page="clientes">
+      <span class="nav-icon">👥</span> Clientes
+    </div>
+    <div class="nav-item" data-page="costos">
+      <span class="nav-icon">💰</span> Costos
+    </div>
+
+    <div class="sidebar-section-label">Estrategia</div>
+    <div class="nav-item" data-page="simulador">
+      <span class="nav-icon">🧮</span> Simulador
+    </div>
+    <div class="nav-item" data-page="creativos">
+      <span class="nav-icon">🎨</span> Creativos
+    </div>
+    <div class="nav-item" data-page="contenido">
+      <span class="nav-icon">✍️</span> Contenido
+    </div>
+
+    <div class="sidebar-section-label">Inteligencia</div>
+    <div class="nav-item" data-page="competencia">
+      <span class="nav-icon">🔍</span> Competencia
+    </div>
+    <div class="nav-item" data-page="reportes">
+      <span class="nav-icon">📋</span> Reportes
+    </div>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="nav-item" data-page="settings">
+      <span class="nav-icon">⚙️</span> Settings
+    </div>
+  </div>
+</nav>
+
+<!-- ========== MAIN ========== -->
+<div class="main">
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-left">
+      <span class="header-title" id="headerTitle">Overview</span>
+    </div>
+    <div class="header-right">
+      <select class="store-select" id="storeSelect">
+        <option value="gerf" selected>🏪 GERF</option>
+        <option value="manguz">🏪 MANGUZ</option>
+        <option value="nomercy">🏪 NOMERCY</option>
+        <option value="arko">🏪 ARKO</option>
+        <option value="babyginos">🏪 BABYGINOS</option>
+      </select>
+      <div class="date-range">
+        <span class="date-range-icon">📅</span>
+        <span>1 Mar - 25 Mar 2026</span>
+        <span style="color:var(--text-muted)">▾</span>
+      </div>
+      <div class="header-avatar">LV</div>
+    </div>
+  </header>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- ==================== 1. OVERVIEW ==================== -->
+    <div class="page active" id="page-overview">
+      <div class="page-header">
+        <h2>Overview</h2>
+        <p>Rendimiento general de todas las tiendas - Marzo 2026</p>
+      </div>
+
+      <!-- Resumen global -->
+      <div class="grid-4" style="margin-bottom:24px">
+        <div class="metric-card">
+          <div class="mc-label">Revenue Total</div>
+          <div class="mc-value">$18.4M</div>
+          <div class="mc-change up">+12.3% vs Feb</div>
+        </div>
+        <div class="metric-card">
+          <div class="mc-label">Ad Spend Total</div>
+          <div class="mc-value">$4.2M</div>
+          <div class="mc-change down">+8.1% vs Feb</div>
+        </div>
+        <div class="metric-card">
+          <div class="mc-label">ROAS Promedio</div>
+          <div class="mc-value" style="color:var(--green)">4.38x</div>
+          <div class="mc-change up">+0.31 vs Feb</div>
+        </div>
+        <div class="metric-card">
+          <div class="mc-label">Compras Totales</div>
+          <div class="mc-value">847</div>
+          <div class="mc-change up">+15.2% vs Feb</div>
+        </div>
+      </div>
+
+      <!-- Cards de tiendas -->
+      <div class="grid-5">
+        <!-- GERF -->
+        <div class="store-card">
+          <div class="store-card-header">
+            <span class="store-name">GERF</span>
+            <span class="store-status"></span>
+          </div>
+          <div class="store-metrics">
+            <div class="store-metric">
+              <div class="sm-label">ROAS</div>
+              <div class="sm-value good">5.2x</div>
+            </div>
+            <div class="store-metric">
+              <div class="sm-label">Revenue</div>
+              <div class="sm-value">$5.8M</div>
+            </div>
+            <div class="store-metric">
+              <div class="sm-label">Spend</div>
+              <div class="sm-value">$1.12M</div>
+            </div>
+            <div class="store-metric">
+              <div class="sm-label">CPA</div>
+              <div class="sm-value good">$11.2K</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- MANGUZ -->
+        <div class="store-card">
+          <div class="store-card-header">
+            <span class="store-name">MANGUZ</span>
+            <span class="store-status"></span>
+          </div>
+          <div class="store-metrics">
+            <div class="store-metric">
+              <div class="sm-label">ROAS</div>
+              <div class="sm-value good">4.8x</div>
+            </div>
+            <div class="store-metric">
+              <div class="sm-label">Revenue</div>
+              <div class="sm-value">$4.1M</div>
+            </div>
+            <div class="store-metric">
+              <div class="sm-label">Spend</div>
+              <div class="sm-value">$854K</div>
+            </div>
+            <div class="store-metric">
+              <div class="sm-label">CPA</div>
+              <div class="sm-value good">$9.8K</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- NOMERCY -->
+        <div class="store-card">
+          <div class="store-card-header">
+            <span class="store-name">NOMERCY</span>
+            <span class="store-status"></span>
+          </div>
+          <div class="store-metrics">
+            <div class="store-metric">
+              <div class="sm-label">ROAS</div>
+              <div class="sm-value good">4.1x</div>
+            </div>
+            <div class="store-metric">
+              <div class="sm-label">Revenue</div>
+              <div class="sm-value">$3.7M</div>
+            </div>
+            <div class="store-metric">
+              <div class="sm-label">Spend</div>
+              <div class="sm-value">$902K</div>
+            </div>
+            <div class="store-metric">
+              <div class="sm-label">CPA</div>
+              <div class="sm-value">$13.5K</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ARKO -->
+        <div class="store-card">
+          <div class="store-card-header">
+            <span class="store-name">ARKO</span>
+            <span class="store-status" style="background:var(--yellow)"></span>
+          </div>
+          <div class="store-metrics">
+            <div class="store-metric">
+              <div class="sm-label">ROAS</div>
+              <div class="sm-value bad">2.9x</div>
+            </div>
+            <div class="store-metric">
+              <div class="sm-label">Revenue</div>
+              <div class="sm-value">$2.4M</div>
+            </div>
+            <div class="store-metric">
+              <div class="sm-label">Spend</div>
+              <div class="sm-value">$828K</div>
+            </div>
+            <div class="store-metric">
+              <div class="sm-label">CPA</div>
+              <div class="sm-value bad">$18.4K</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- BABYGINOS -->
+        <div class="store-card">
+          <div class="store-card-header">
+            <span class="store-name">BABYGINOS</span>
+            <span class="store-status"></span>
+          </div>
+          <div class="store-metrics">
+            <div class="store-metric">
+              <div class="sm-label">ROAS</div>
+              <div class="sm-value good">5.6x</div>
+            </div>
+            <div class="store-metric">
+              <div class="sm-label">Revenue</div>
+              <div class="sm-value">$2.4M</div>
+            </div>
+            <div class="store-metric">
+              <div class="sm-label">Spend</div>
+              <div class="sm-value">$429K</div>
+            </div>
+            <div class="store-metric">
+              <div class="sm-label">CPA</div>
+              <div class="sm-value good">$7.6K</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== 2. DASHBOARD ==================== -->
+    <div class="page" id="page-dashboard">
+      <div class="page-header">
+        <h2>Dashboard</h2>
+        <p>Daily Tracker detallado - GERF - Marzo 2026</p>
+      </div>
+
+      <!-- KPI Cards -->
+      <div class="grid-6" style="margin-bottom:24px">
+        <div class="metric-card">
+          <div class="mc-label">Spend</div>
+          <div class="mc-value">$1.12M</div>
+          <div class="mc-change up">-3.2% vs obj</div>
+        </div>
+        <div class="metric-card">
+          <div class="mc-label">ROAS</div>
+          <div class="mc-value" style="color:var(--green)">5.2x</div>
+          <div class="mc-change up">+0.4 vs obj</div>
+        </div>
+        <div class="metric-card">
+          <div class="mc-label">CPA</div>
+          <div class="mc-value">$11.2K</div>
+          <div class="mc-change up">-8.1% vs obj</div>
+        </div>
+        <div class="metric-card">
+          <div class="mc-label">Compras</div>
+          <div class="mc-value">312</div>
+          <div class="mc-change up">+18.3% vs obj</div>
+        </div>
+        <div class="metric-card">
+          <div class="mc-label">Revenue</div>
+          <div class="mc-value">$5.8M</div>
+          <div class="mc-change up">+22.1% vs obj</div>
+        </div>
+        <div class="metric-card">
+          <div class="mc-label">AOV</div>
+          <div class="mc-value">$18.6K</div>
+          <div class="mc-change up">+3.3% vs obj</div>
+        </div>
+      </div>
+
+      <!-- Tabla Daily Tracker -->
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Dia</th>
+              <th>Spend</th>
+              <th>CPM</th>
+              <th>Alcance</th>
+              <th>Clicks</th>
+              <th>CTR</th>
+              <th>Visitas</th>
+              <th>Add Cart</th>
+              <th>CVR(V-C)</th>
+              <th>Pagos Ini</th>
+              <th>CVR(C-P)</th>
+              <th>Compras</th>
+              <th>CVR(P-Co)</th>
+              <th>CPA</th>
+              <th>ROAS</th>
+              <th>Revenue</th>
+              <th>AOV</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="row-objetivo">
+              <td>OBJETIVO</td>
+              <td>$48.0K</td>
+              <td>$2.800</td>
+              <td>17.143</td>
+              <td>342</td>
+              <td>2.0%</td>
+              <td>548</td>
+              <td>44</td>
+              <td>8.0%</td>
+              <td>22</td>
+              <td>50.0%</td>
+              <td>11</td>
+              <td>50.0%</td>
+              <td>$12.2K</td>
+              <td>4.8x</td>
+              <td>$230K</td>
+              <td>$18.0K</td>
+            </tr>
+            <tr>
+              <td>Lun 1</td>
+              <td>$45.2K</td>
+              <td>$2.650</td>
+              <td>17.057</td>
+              <td>356</td>
+              <td>2.1%</td>
+              <td>571</td>
+              <td>48</td>
+              <td>8.4%</td>
+              <td>24</td>
+              <td>50.0%</td>
+              <td>12</td>
+              <td>50.0%</td>
+              <td>$10.4K</td>
+              <td>5.4x</td>
+              <td>$243K</td>
+              <td>$20.3K</td>
+            </tr>
+            <tr>
+              <td>Mar 2</td>
+              <td>$47.8K</td>
+              <td>$2.720</td>
+              <td>17.574</td>
+              <td>338</td>
+              <td>1.9%</td>
+              <td>542</td>
+              <td>41</td>
+              <td>7.6%</td>
+              <td>20</td>
+              <td>48.8%</td>
+              <td>10</td>
+              <td>50.0%</td>
+              <td>$12.8K</td>
+              <td>4.5x</td>
+              <td>$215K</td>
+              <td>$21.5K</td>
+            </tr>
+            <tr>
+              <td>Mie 3</td>
+              <td>$51.3K</td>
+              <td>$2.890</td>
+              <td>17.751</td>
+              <td>372</td>
+              <td>2.1%</td>
+              <td>596</td>
+              <td>52</td>
+              <td>8.7%</td>
+              <td>27</td>
+              <td>51.9%</td>
+              <td>14</td>
+              <td>51.9%</td>
+              <td>$9.5K</td>
+              <td>5.8x</td>
+              <td>$297K</td>
+              <td>$21.2K</td>
+            </tr>
+            <tr>
+              <td>Jue 4</td>
+              <td>$44.6K</td>
+              <td>$2.580</td>
+              <td>17.287</td>
+              <td>345</td>
+              <td>2.0%</td>
+              <td>553</td>
+              <td>43</td>
+              <td>7.8%</td>
+              <td>21</td>
+              <td>48.8%</td>
+              <td>10</td>
+              <td>47.6%</td>
+              <td>$12.7K</td>
+              <td>4.6x</td>
+              <td>$204K</td>
+              <td>$20.4K</td>
+            </tr>
+            <tr>
+              <td>Vie 5</td>
+              <td>$52.1K</td>
+              <td>$2.950</td>
+              <td>17.661</td>
+              <td>389</td>
+              <td>2.2%</td>
+              <td>624</td>
+              <td>56</td>
+              <td>9.0%</td>
+              <td>29</td>
+              <td>51.8%</td>
+              <td>15</td>
+              <td>51.7%</td>
+              <td>$9.1K</td>
+              <td>6.1x</td>
+              <td>$319K</td>
+              <td>$21.3K</td>
+            </tr>
+            <tr>
+              <td>Sab 6</td>
+              <td>$38.4K</td>
+              <td>$2.420</td>
+              <td>15.868</td>
+              <td>298</td>
+              <td>1.9%</td>
+              <td>478</td>
+              <td>35</td>
+              <td>7.3%</td>
+              <td>16</td>
+              <td>45.7%</td>
+              <td>8</td>
+              <td>50.0%</td>
+              <td>$14.2K</td>
+              <td>3.8x</td>
+              <td>$146K</td>
+              <td>$18.3K</td>
+            </tr>
+            <tr>
+              <td>Dom 7</td>
+              <td>$35.7K</td>
+              <td>$2.380</td>
+              <td>14.996</td>
+              <td>274</td>
+              <td>1.8%</td>
+              <td>439</td>
+              <td>31</td>
+              <td>7.1%</td>
+              <td>14</td>
+              <td>45.2%</td>
+              <td>7</td>
+              <td>50.0%</td>
+              <td>$15.6K</td>
+              <td>3.4x</td>
+              <td>$122K</td>
+              <td>$17.4K</td>
+            </tr>
+            <tr>
+              <td>Lun 8</td>
+              <td>$46.9K</td>
+              <td>$2.710</td>
+              <td>17.306</td>
+              <td>362</td>
+              <td>2.1%</td>
+              <td>580</td>
+              <td>49</td>
+              <td>8.4%</td>
+              <td>25</td>
+              <td>51.0%</td>
+              <td>13</td>
+              <td>52.0%</td>
+              <td>$10.2K</td>
+              <td>5.5x</td>
+              <td>$258K</td>
+              <td>$19.8K</td>
+            </tr>
+            <tr>
+              <td>Mar 9</td>
+              <td>$49.5K</td>
+              <td>$2.810</td>
+              <td>17.616</td>
+              <td>351</td>
+              <td>2.0%</td>
+              <td>563</td>
+              <td>46</td>
+              <td>8.2%</td>
+              <td>23</td>
+              <td>50.0%</td>
+              <td>12</td>
+              <td>52.2%</td>
+              <td>$11.0K</td>
+              <td>5.1x</td>
+              <td>$252K</td>
+              <td>$21.0K</td>
+            </tr>
+            <tr class="row-total">
+              <td>TOTAL</td>
+              <td>$411.5K</td>
+              <td>$2.679</td>
+              <td>153.116</td>
+              <td>3.085</td>
+              <td>2.0%</td>
+              <td>4.946</td>
+              <td>401</td>
+              <td>8.1%</td>
+              <td>199</td>
+              <td>49.6%</td>
+              <td>101</td>
+              <td>50.8%</td>
+              <td>$11.2K</td>
+              <td>5.2x</td>
+              <td>$2.06M</td>
+              <td>$20.1K</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ==================== 3. PRODUCTOS ==================== -->
+    <div class="page" id="page-productos">
+      <div class="page-header">
+        <h2>Productos</h2>
+        <p>Inventario y performance de producto - GERF</p>
+      </div>
+
+      <!-- KPI Cards -->
+      <div class="grid-4" style="margin-bottom:24px">
+        <div class="metric-card">
+          <div class="mc-label">SKUs Activos</div>
+          <div class="mc-value">48</div>
+        </div>
+        <div class="metric-card">
+          <div class="mc-label">Ventas del Mes</div>
+          <div class="mc-value">312</div>
+          <div class="mc-change up">+18% vs Feb</div>
+        </div>
+        <div class="metric-card">
+          <div class="mc-label">Stock Bajo</div>
+          <div class="mc-value" style="color:var(--red)">6</div>
+        </div>
+        <div class="metric-card">
+          <div class="mc-label">Stock Muerto</div>
+          <div class="mc-value" style="color:var(--text-muted)">3</div>
+        </div>
+      </div>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Producto</th>
+              <th>Precio</th>
+              <th>Stock</th>
+              <th>Estado</th>
+              <th>Ventas (mes)</th>
+              <th>Revenue</th>
+              <th>Spend</th>
+              <th>ROAS</th>
+              <th>Vel. (uds/dia)</th>
+              <th>Dias de Stock</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>GERF Runner V3 - Negro</td>
+              <td>$24.900</td>
+              <td>124</td>
+              <td><span class="badge badge-green">OK</span></td>
+              <td>58</td>
+              <td>$1.44M</td>
+              <td>$215K</td>
+              <td style="color:var(--green)">6.7x</td>
+              <td>2.3</td>
+              <td>54</td>
+            </tr>
+            <tr>
+              <td>GERF Runner V3 - Blanco</td>
+              <td>$24.900</td>
+              <td>89</td>
+              <td><span class="badge badge-green">OK</span></td>
+              <td>45</td>
+              <td>$1.12M</td>
+              <td>$182K</td>
+              <td style="color:var(--green)">6.2x</td>
+              <td>1.8</td>
+              <td>49</td>
+            </tr>
+            <tr>
+              <td>GERF Classic Low - Gris</td>
+              <td>$19.900</td>
+              <td>67</td>
+              <td><span class="badge badge-green">OK</span></td>
+              <td>38</td>
+              <td>$756K</td>
+              <td>$148K</td>
+              <td style="color:var(--green)">5.1x</td>
+              <td>1.5</td>
+              <td>45</td>
+            </tr>
+            <tr>
+              <td>GERF Classic Low - Beige</td>
+              <td>$19.900</td>
+              <td>42</td>
+              <td><span class="badge badge-yellow">Medio</span></td>
+              <td>32</td>
+              <td>$637K</td>
+              <td>$134K</td>
+              <td style="color:var(--green)">4.8x</td>
+              <td>1.3</td>
+              <td>32</td>
+            </tr>
+            <tr>
+              <td>GERF Boost High - Negro</td>
+              <td>$29.900</td>
+              <td>8</td>
+              <td><span class="badge badge-red">Stock bajo</span></td>
+              <td>41</td>
+              <td>$1.23M</td>
+              <td>$198K</td>
+              <td style="color:var(--green)">6.2x</td>
+              <td>1.6</td>
+              <td style="color:var(--red); font-weight:700">5</td>
+            </tr>
+            <tr>
+              <td>GERF Boost High - Blanco</td>
+              <td>$29.900</td>
+              <td>12</td>
+              <td><span class="badge badge-red">Stock bajo</span></td>
+              <td>34</td>
+              <td>$1.02M</td>
+              <td>$176K</td>
+              <td style="color:var(--green)">5.8x</td>
+              <td>1.4</td>
+              <td style="color:var(--red); font-weight:700">9</td>
+            </tr>
+            <tr>
+              <td>GERF Slide Comfort</td>
+              <td>$12.900</td>
+              <td>156</td>
+              <td><span class="badge badge-green">OK</span></td>
+              <td>28</td>
+              <td>$361K</td>
+              <td>$95K</td>
+              <td style="color:var(--green)">3.8x</td>
+              <td>1.1</td>
+              <td>142</td>
+            </tr>
+            <tr>
+              <td>GERF Runner V2 - Negro</td>
+              <td>$17.900</td>
+              <td>5</td>
+              <td><span class="badge badge-red">Stock bajo</span></td>
+              <td>22</td>
+              <td>$394K</td>
+              <td>$89K</td>
+              <td style="color:var(--green)">4.4x</td>
+              <td>0.9</td>
+              <td style="color:var(--red); font-weight:700">6</td>
+            </tr>
+            <tr>
+              <td>GERF Trail X - Verde</td>
+              <td>$32.900</td>
+              <td>78</td>
+              <td><span class="badge badge-gray">Muerto</span></td>
+              <td>3</td>
+              <td>$99K</td>
+              <td>$45K</td>
+              <td style="color:var(--red)">2.2x</td>
+              <td>0.1</td>
+              <td style="color:var(--text-muted)">780</td>
+            </tr>
+            <tr>
+              <td>GERF Retro Canvas</td>
+              <td>$14.900</td>
+              <td>92</td>
+              <td><span class="badge badge-gray">Muerto</span></td>
+              <td>5</td>
+              <td>$75K</td>
+              <td>$38K</td>
+              <td style="color:var(--red)">2.0x</td>
+              <td>0.2</td>
+              <td style="color:var(--text-muted)">460</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ==================== 4. CLIENTES ==================== -->
+    <div class="page" id="page-clientes">
+      <div class="page-header">
+        <h2>Clientes</h2>
+        <p>Analisis de base de clientes y retención - GERF</p>
+      </div>
+
+      <!-- KPI Cards -->
+      <div class="grid-4" style="margin-bottom:24px">
+        <div class="metric-card">
+          <div class="mc-label">Total Clientes</div>
+          <div class="mc-value">4.872</div>
+          <div class="mc-change up">Base activa</div>
+        </div>
+        <div class="metric-card">
+          <div class="mc-label">Nuevos (Marzo)</div>
+          <div class="mc-value">286</div>
+          <div class="mc-change up">+12% vs Feb</div>
+        </div>
+        <div class="metric-card">
+          <div class="mc-label">Recurrentes</div>
+          <div class="mc-value" style="color:var(--green)">23.4%</div>
+          <div class="mc-change up">+1.8pp vs Feb</div>
+        </div>
+        <div class="metric-card">
+          <div class="mc-label">LTV Promedio</div>
+          <div class="mc-value">$38.200</div>
+          <div class="mc-change up">+5.2% vs Feb</div>
+        </div>
+      </div>
+
+      <!-- Cohortes -->
+      <div style="margin-bottom:24px">
+        <h3 style="font-size:15px; font-weight:700; color:#fff; margin-bottom:12px;">📊 Tabla de Cohortes</h3>
+        <div class="table-wrapper">
+          <table class="cohort-table">
+            <thead>
+              <tr>
+                <th>Cohorte</th>
+                <th>Clientes</th>
+                <th>Mes 1</th>
+                <th>Mes 2</th>
+                <th>Mes 3</th>
+                <th>Mes 4</th>
+                <th>Mes 5</th>
+                <th>Mes 6</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Oct 2025</td>
+                <td>234</td>
+                <td class="retention-high">28.2%</td>
+                <td class="retention-mid">18.4%</td>
+                <td class="retention-mid">14.1%</td>
+                <td class="retention-low">11.5%</td>
+                <td class="retention-low">9.8%</td>
+                <td class="retention-low">8.1%</td>
+              </tr>
+              <tr>
+                <td>Nov 2025</td>
+                <td>312</td>
+                <td class="retention-high">31.4%</td>
+                <td class="retention-high">21.2%</td>
+                <td class="retention-mid">16.8%</td>
+                <td class="retention-mid">13.2%</td>
+                <td class="retention-low">10.1%</td>
+                <td>-</td>
+              </tr>
+              <tr>
+                <td>Dic 2025</td>
+                <td>456</td>
+                <td class="retention-high">26.5%</td>
+                <td class="retention-mid">17.3%</td>
+                <td class="retention-mid">12.9%</td>
+                <td class="retention-low">9.8%</td>
+                <td>-</td>
+                <td>-</td>
+              </tr>
+              <tr>
+                <td>Ene 2026</td>
+                <td>198</td>
+                <td class="retention-high">24.7%</td>
+                <td class="retention-mid">15.6%</td>
+                <td class="retention-low">11.2%</td>
+                <td>-</td>
+                <td>-</td>
+                <td>-</td>
+              </tr>
+              <tr>
+                <td>Feb 2026</td>
+                <td>256</td>
+                <td class="retention-high">27.3%</td>
+                <td class="retention-mid">16.8%</td>
+                <td>-</td>
+                <td>-</td>
+                <td>-</td>
+                <td>-</td>
+              </tr>
+              <tr>
+                <td>Mar 2026</td>
+                <td>286</td>
+                <td class="retention-high">29.1%</td>
+                <td>-</td>
+                <td>-</td>
+                <td>-</td>
+                <td>-</td>
+                <td>-</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- RFM -->
+      <h3 style="font-size:15px; font-weight:700; color:#fff; margin-bottom:12px;">🎯 Segmentación RFM</h3>
+      <div class="rfm-grid">
+        <div class="rfm-segment" style="border-top:3px solid var(--green)">
+          <div class="rfm-icon">🏆</div>
+          <div class="rfm-name">Champions</div>
+          <div class="rfm-count">487</div>
+          <div class="rfm-pct">10.0% de la base</div>
+        </div>
+        <div class="rfm-segment" style="border-top:3px solid var(--blue)">
+          <div class="rfm-icon">💎</div>
+          <div class="rfm-name">Loyal</div>
+          <div class="rfm-count">731</div>
+          <div class="rfm-pct">15.0% de la base</div>
+        </div>
+        <div class="rfm-segment" style="border-top:3px solid var(--yellow)">
+          <div class="rfm-icon">⚠️</div>
+          <div class="rfm-name">At Risk</div>
+          <div class="rfm-count">924</div>
+          <div class="rfm-pct">19.0% de la base</div>
+        </div>
+        <div class="rfm-segment" style="border-top:3px solid var(--red)">
+          <div class="rfm-icon">💤</div>
+          <div class="rfm-name">Lost</div>
+          <div class="rfm-count">1.461</div>
+          <div class="rfm-pct">30.0% de la base</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== 5. COSTOS ==================== -->
+    <div class="page" id="page-costos">
+      <div class="page-header">
+        <h2>Costos</h2>
+        <p>P&L y estructura de costos - GERF - Marzo 2026</p>
+      </div>
+
+      <div class="grid-2" style="gap:24px">
+        <!-- P&L -->
+        <div>
+          <h3 style="font-size:15px; font-weight:700; color:#fff; margin-bottom:12px;">📊 P&L Simplificado</h3>
+          <div class="card" style="padding:0; overflow:hidden">
+            <div class="pnl-row">
+              <span class="pnl-label">💰 Revenue Bruto</span>
+              <span class="pnl-value">$5.820.000</span>
+            </div>
+            <div class="pnl-row pnl-negative">
+              <span class="pnl-label">📦 Costo de productos (35%)</span>
+              <span class="pnl-value">-$2.037.000</span>
+            </div>
+            <div class="pnl-row pnl-negative">
+              <span class="pnl-label">🚚 Costo de envio</span>
+              <span class="pnl-value">-$436.500</span>
+            </div>
+            <div class="pnl-row pnl-negative">
+              <span class="pnl-label">💳 Comisiones de pago (4.5%)</span>
+              <span class="pnl-value">-$261.900</span>
+            </div>
+            <div class="pnl-row pnl-negative">
+              <span class="pnl-label">📢 Ad Spend</span>
+              <span class="pnl-value">-$1.120.000</span>
+            </div>
+            <div class="pnl-row pnl-subtotal">
+              <span class="pnl-label">= Margen de Contribución</span>
+              <span class="pnl-value" style="color:var(--green)">$1.964.600 <span style="font-size:12px; color:var(--text-muted)">(33.8%)</span></span>
+            </div>
+            <div class="pnl-row pnl-negative">
+              <span class="pnl-label">🏢 Costos fijos (equipo, software, etc)</span>
+              <span class="pnl-value">-$850.000</span>
+            </div>
+            <div class="pnl-row pnl-profit">
+              <span class="pnl-label">= Profit Neto</span>
+              <span class="pnl-value">$1.114.600 <span style="font-size:12px; color:var(--text-muted)">(19.1%)</span></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Panel lateral -->
+        <div>
+          <h3 style="font-size:15px; font-weight:700; color:#fff; margin-bottom:12px;">📁 Gestión de Costos</h3>
+          <div class="card" style="margin-bottom:16px">
+            <div class="card-title">Importar datos de costos</div>
+            <p style="font-size:12px; color:var(--text-secondary); margin-bottom:16px; line-height:1.5">
+              Subi tu planilla de costos (.xlsx o .csv) para actualizar automaticamente el P&L y calcular margenes reales por producto.
+            </p>
+            <button class="btn btn-primary" style="width:100%; justify-content:center;">
+              📤 Subir planilla de costos
+            </button>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Breakdown de costos</div>
+            <div style="margin-top:12px">
+              <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border); font-size:12px">
+                <span style="color:var(--text-secondary)">Costo de productos</span>
+                <span style="font-weight:600">35.0%</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border); font-size:12px">
+                <span style="color:var(--text-secondary)">Ad Spend</span>
+                <span style="font-weight:600">19.2%</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border); font-size:12px">
+                <span style="color:var(--text-secondary)">Costos fijos</span>
+                <span style="font-weight:600">14.6%</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border); font-size:12px">
+                <span style="color:var(--text-secondary)">Envio</span>
+                <span style="font-weight:600">7.5%</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; padding:8px 0; font-size:12px">
+                <span style="color:var(--text-secondary)">Comisiones pago</span>
+                <span style="font-weight:600">4.5%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== 6. SIMULADOR ==================== -->
+    <div class="page" id="page-simulador">
+      <div class="page-header">
+        <h2>Simulador</h2>
+        <p>Modela escenarios y proyecta resultados</p>
+      </div>
+
+      <div class="grid-2" style="gap:24px; margin-bottom:24px">
+        <!-- Sliders -->
+        <div class="card">
+          <div class="card-title">Variables del funnel</div>
+          <div style="margin-top:16px">
+            <div class="slider-group">
+              <label>CPM <span id="cpmVal">$2.800</span></label>
+              <input type="range" id="cpmSlider" min="1500" max="5000" value="2800" step="100">
+            </div>
+            <div class="slider-group">
+              <label>CTR <span id="ctrVal">2.0%</span></label>
+              <input type="range" id="ctrSlider" min="80" max="350" value="200" step="5">
+            </div>
+            <div class="slider-group">
+              <label>CVR (visita a compra) <span id="cvrVal">3.8%</span></label>
+              <input type="range" id="cvrSlider" min="100" max="800" value="380" step="10">
+            </div>
+            <div class="slider-group">
+              <label>AOV <span id="aovVal">$18.600</span></label>
+              <input type="range" id="aovSlider" min="8000" max="40000" value="18600" step="100">
+            </div>
+            <div class="slider-group">
+              <label>Budget diario <span id="budgetVal">$48.000</span></label>
+              <input type="range" id="budgetSlider" min="15000" max="120000" value="48000" step="1000">
+            </div>
+          </div>
+        </div>
+
+        <!-- Resultado -->
+        <div>
+          <div class="sim-result-box" style="margin-bottom:16px">
+            <div style="display:flex; justify-content:center; gap:48px">
+              <div>
+                <div class="sr-label">ROAS Estimado</div>
+                <div class="sr-value" id="simRoas">5.05x</div>
+              </div>
+              <div>
+                <div class="sr-label">CPA Estimado</div>
+                <div class="sr-value" id="simCpa">$11.842</div>
+              </div>
+            </div>
+            <div style="margin-top:16px; display:flex; justify-content:center; gap:32px">
+              <div>
+                <div class="sr-label">Compras/dia</div>
+                <div style="font-size:18px; font-weight:700; color:#fff" id="simCompras">4.1</div>
+              </div>
+              <div>
+                <div class="sr-label">Revenue/dia</div>
+                <div style="font-size:18px; font-weight:700; color:#fff" id="simRevenue">$75.6K</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Escenarios -->
+          <div class="card-title" style="margin-bottom:8px">Escenarios pre-armados</div>
+          <div class="scenario-card" style="margin-bottom:8px; cursor:pointer" onclick="setScenario(2200,2.3,4.2,19500,55000)">
+            <div class="sc-title">🟢 Escenario Optimista</div>
+            <div class="sc-desc">CPM bajo + CTR alto. Tipico de temporada alta con creativos frescos.</div>
+            <div class="sc-result">
+              <div class="sc-metric">ROAS<strong>7.6x</strong></div>
+              <div class="sc-metric">CPA<strong>$7.200</strong></div>
+            </div>
+          </div>
+          <div class="scenario-card" style="margin-bottom:8px; cursor:pointer" onclick="setScenario(2800,2.0,3.8,18600,48000)">
+            <div class="sc-title">🟡 Escenario Base</div>
+            <div class="sc-desc">Métricas actuales proyectadas. Sin cambios significativos.</div>
+            <div class="sc-result">
+              <div class="sc-metric">ROAS<strong>5.1x</strong></div>
+              <div class="sc-metric">CPA<strong>$11.800</strong></div>
+            </div>
+          </div>
+          <div class="scenario-card" style="cursor:pointer" onclick="setScenario(4200,1.5,2.8,17000,48000)">
+            <div class="sc-title">🔴 Escenario Pesimista</div>
+            <div class="sc-desc">Saturación de audiencia + fatiga creativa. CPM alto, CTR bajo.</div>
+            <div class="sc-result">
+              <div class="sc-metric">ROAS<strong>2.4x</strong></div>
+              <div class="sc-metric">CPA<strong>$24.500</strong></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Framework 3 Preguntas -->
+      <h3 style="font-size:15px; font-weight:700; color:#fff; margin-bottom:12px;">🧠 Framework de 3 Preguntas</h3>
+      <div class="framework-3q">
+        <div class="q-card" style="border-top:3px solid var(--blue)">
+          <div class="q-num">PREGUNTA 1</div>
+          <div class="q-title">Qué paso?</div>
+          <div class="q-content">
+            El ROAS cayó de 5.8x a 4.2x en la última semana. El CPM subió 22% pero el CTR se mantuvo estable. La caida viene por el lado del CVR que bajó de 4.1% a 3.2%.
+          </div>
+        </div>
+        <div class="q-card" style="border-top:3px solid var(--yellow)">
+          <div class="q-num">PREGUNTA 2</div>
+          <div class="q-title">Por qué?</div>
+          <div class="q-content">
+            Los creativos principales llevan +45 dias activos (fatiga). La landing del Runner V3 tiene un bounce rate de 68%. El stock del Boost High está generando 404 en variantes agotadas.
+          </div>
+        </div>
+        <div class="q-card" style="border-top:3px solid var(--green)">
+          <div class="q-num">PREGUNTA 3</div>
+          <div class="q-title">Qué hacer?</div>
+          <div class="q-content">
+            1. Rotar 3 creativos nuevos esta semana.<br>
+            2. Ocultar variantes sin stock en la landing.<br>
+            3. Testear audiencia lookalike de compradores Boost High para redirigir a Runner V3.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== 7. CREATIVOS ==================== -->
+    <div class="page" id="page-creativos">
+      <div class="page-header">
+        <h2>Creativos</h2>
+        <p>Pipeline de hooks y performance creativa - GERF</p>
+      </div>
+
+      <!-- KPI Cards -->
+      <div class="grid-4" style="margin-bottom:24px">
+        <div class="metric-card">
+          <div class="mc-label">Hooks Activos</div>
+          <div class="mc-value">12</div>
+        </div>
+        <div class="metric-card">
+          <div class="mc-label">CTR Promedio</div>
+          <div class="mc-value">1.8%</div>
+          <div class="mc-change up">+0.2pp vs Feb</div>
+        </div>
+        <div class="metric-card">
+          <div class="mc-label">Mejor Hook (ROAS)</div>
+          <div class="mc-value" style="color:var(--green); font-size:16px">Ojos pesados</div>
+        </div>
+        <div class="metric-card">
+          <div class="mc-label">Necesitan reemplazo</div>
+          <div class="mc-value" style="color:var(--red)">3</div>
+        </div>
+      </div>
+
+      <!-- Kanban -->
+      <div class="kanban-board">
+        <!-- Draft -->
+        <div class="kanban-col">
+          <div class="kanban-col-header">
+            ✏️ Draft <span class="count">2</span>
+          </div>
+          <div class="kanban-card kc-cat-c">
+            <div class="kc-hook">"Si caminas mas de 10 cuadras por dia, esto te interesa"</div>
+            <div class="kc-meta">
+              <span class="badge badge-yellow">Cat C</span>
+              <span class="badge badge-gray">Nuevo</span>
+            </div>
+          </div>
+          <div class="kanban-card kc-cat-b">
+            <div class="kc-hook">"El secreto de las zapas que usan los que caminan TODO el dia"</div>
+            <div class="kc-meta">
+              <span class="badge badge-blue">Cat B</span>
+              <span class="badge badge-gray">Nuevo</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- En revisión -->
+        <div class="kanban-col">
+          <div class="kanban-col-header">
+            👀 En revisión <span class="count">1</span>
+          </div>
+          <div class="kanban-card kc-cat-b">
+            <div class="kc-hook">"Probé 12 marcas de zapatillas y estas son las que me quedé usando"</div>
+            <div class="kc-meta">
+              <span class="badge badge-blue">Cat B</span>
+              <span class="badge badge-gray">Testing</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Activo -->
+        <div class="kanban-col">
+          <div class="kanban-col-header">
+            🟢 Activo <span class="count">3</span>
+          </div>
+          <div class="kanban-card kc-cat-a">
+            <div class="kc-hook">"A vos también los ojos te pesan después de 5 horas?"</div>
+            <div class="kc-meta">
+              <span class="badge badge-green">Cat A</span>
+              <span class="badge badge-gray">56 dias</span>
+              <span class="badge badge-green">CTR 1.5%</span>
+              <span class="badge badge-green">CPA $12.5K</span>
+            </div>
+          </div>
+          <div class="kanban-card kc-cat-a">
+            <div class="kc-hook">"Mi podologo me dijo que deje de usar zapatillas baratas"</div>
+            <div class="kc-meta">
+              <span class="badge badge-green">Cat A</span>
+              <span class="badge badge-gray">34 dias</span>
+              <span class="badge badge-green">CTR 1.8%</span>
+              <span class="badge badge-green">CPA $10.2K</span>
+            </div>
+          </div>
+          <div class="kanban-card kc-cat-b">
+            <div class="kc-hook">"3 señales de que tus zapatillas te estan arruinando los pies"</div>
+            <div class="kc-meta">
+              <span class="badge badge-blue">Cat B</span>
+              <span class="badge badge-gray">21 dias</span>
+              <span class="badge badge-blue">CTR 1.3%</span>
+              <span class="badge badge-blue">CPA $14.1K</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pausado -->
+        <div class="kanban-col">
+          <div class="kanban-col-header">
+            ⏸️ Pausado <span class="count">1</span>
+          </div>
+          <div class="kanban-card kc-cat-d">
+            <div class="kc-hook">"Las zapatillas mas cómodas de Argentina? Yo creo que si"</div>
+            <div class="kc-meta">
+              <span class="badge badge-orange">Cat D</span>
+              <span class="badge badge-gray">72 dias</span>
+              <span class="badge badge-red">CTR 0.8%</span>
+              <span class="badge badge-red">CPA $22.3K</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Retirado -->
+        <div class="kanban-col">
+          <div class="kanban-col-header">
+            🗄️ Retirado <span class="count">1</span>
+          </div>
+          <div class="kanban-card kc-cat-e">
+            <div class="kc-hook">"GERF: la zapatilla que lo tiene todo"</div>
+            <div class="kc-meta">
+              <span class="badge badge-red">Cat E</span>
+              <span class="badge badge-gray">90 dias</span>
+              <span class="badge badge-red">CTR 0.5%</span>
+              <span class="badge badge-red">CPA $31.4K</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== 8. CONTENIDO ==================== -->
+    <div class="page" id="page-contenido">
+      <div class="page-header">
+        <h2>Contenido</h2>
+        <p>Mapa de tópicos y banco de lenguaje - GERF</p>
+      </div>
+
+      <!-- Mapa de tópicos -->
+      <h3 style="font-size:15px; font-weight:700; color:#fff; margin-bottom:12px;">🗺️ Mapa de Tópicos</h3>
+      <div class="grid-4" style="margin-bottom:32px">
+        <div class="topic-card" style="border-top:3px solid var(--green)">
+          <div class="tc-header">
+            <span class="tc-name">Dolor de pies</span>
+            <span class="badge badge-green">Activo</span>
+          </div>
+          <div class="tc-desc">Problemas comunes: fascitis, juanetes, cansancio. Hook principal del brand. 4 creativos activos, ROAS 5.8x promedio.</div>
+        </div>
+        <div class="topic-card" style="border-top:3px solid var(--green)">
+          <div class="tc-header">
+            <span class="tc-name">Caminar mucho</span>
+            <span class="badge badge-green">Activo</span>
+          </div>
+          <div class="tc-desc">Target: gente que camina +10K pasos/dia. Angulo funcional. 3 creativos activos, ROAS 4.9x promedio.</div>
+        </div>
+        <div class="topic-card" style="border-top:3px solid var(--yellow)">
+          <div class="tc-header">
+            <span class="tc-name">Estilo minimalista</span>
+            <span class="badge badge-yellow">Exploración</span>
+          </div>
+          <div class="tc-desc">Combinación con outfits. Angulo aspiracional. 1 creativo en testing, resultados preliminares CTR 1.1%.</div>
+        </div>
+        <div class="topic-card" style="border-top:3px solid var(--blue)">
+          <div class="tc-header">
+            <span class="tc-name">Sustentabilidad</span>
+            <span class="badge badge-blue">Nuevo</span>
+          </div>
+          <div class="tc-desc">Materiales reciclados, producción local. Sin creativos todavia. Pendiente de producción de contenido.</div>
+        </div>
+      </div>
+
+      <!-- Banco de lenguaje -->
+      <h3 style="font-size:15px; font-weight:700; color:#fff; margin-bottom:12px;">💬 Banco de Lenguaje</h3>
+      <p style="font-size:12px; color:var(--text-secondary); margin-bottom:16px;">Frases reales de clientes recopiladas de reviews, WhatsApp y encuestas post-compra.</p>
+
+      <div class="phrase-item">
+        <div class="pi-text">"Literal me cambiaron la vida, no exagero. Trabajo 10 horas parada y ya no me duelen los pies."</div>
+        <div class="pi-tags">
+          <span class="badge badge-green">Dolor de pies</span>
+          <span class="badge badge-purple">Testimonio</span>
+          <span class="badge badge-blue">Alto impacto</span>
+        </div>
+      </div>
+      <div class="phrase-item">
+        <div class="pi-text">"Las compré para mi viejo que es cartero y se compró otras dos mas."</div>
+        <div class="pi-tags">
+          <span class="badge badge-green">Caminar mucho</span>
+          <span class="badge badge-purple">Testimonio</span>
+          <span class="badge badge-orange">Recompra</span>
+        </div>
+      </div>
+      <div class="phrase-item">
+        <div class="pi-text">"Son feas? Si. Son las zapatillas mas cómodas que tuve en mi vida? También."</div>
+        <div class="pi-tags">
+          <span class="badge badge-yellow">Estilo</span>
+          <span class="badge badge-purple">Testimonio</span>
+          <span class="badge badge-green">Honestidad</span>
+        </div>
+      </div>
+      <div class="phrase-item">
+        <div class="pi-text">"Mi podologo me las recomendó. Pensé que era joda pero son increibles."</div>
+        <div class="pi-tags">
+          <span class="badge badge-green">Dolor de pies</span>
+          <span class="badge badge-blue">Autoridad médica</span>
+          <span class="badge badge-purple">Testimonio</span>
+        </div>
+      </div>
+      <div class="phrase-item">
+        <div class="pi-text">"No entiendo cómo hacen para que pesen tan poco. Son como caminar en nubes."</div>
+        <div class="pi-tags">
+          <span class="badge badge-green">Comodidad</span>
+          <span class="badge badge-purple">Testimonio</span>
+          <span class="badge badge-blue">Producto</span>
+        </div>
+      </div>
+      <div class="phrase-item">
+        <div class="pi-text">"Las uso para entrenar, para laburar y para salir. No me las saco nunca."</div>
+        <div class="pi-tags">
+          <span class="badge badge-green">Versatilidad</span>
+          <span class="badge badge-purple">Testimonio</span>
+          <span class="badge badge-orange">Uso intensivo</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== 9. COMPETENCIA ==================== -->
+    <div class="page" id="page-competencia">
+      <div class="page-header">
+        <h2>Competencia</h2>
+        <p>Analisis competitivo y posicionamiento - GERF</p>
+      </div>
+
+      <!-- Tabla comparativa -->
+      <div class="table-wrapper" style="margin-bottom:24px">
+        <table>
+          <thead>
+            <tr>
+              <th>Competidor</th>
+              <th>Precio Promedio</th>
+              <th>Rango</th>
+              <th>Diferencial</th>
+              <th>Presencia Ads</th>
+              <th>Amenaza</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="font-weight:700; color:var(--accent)">GERF (nosotros)</td>
+              <td>$24.900</td>
+              <td>$12.9K - $32.9K</td>
+              <td>Comodidad + Salud</td>
+              <td><span class="badge badge-green">Alta</span></td>
+              <td>-</td>
+            </tr>
+            <tr>
+              <td>Pampa Tiger</td>
+              <td>$19.500</td>
+              <td>$14K - $28K</td>
+              <td>Precio + Diseño retro</td>
+              <td><span class="badge badge-green">Alta</span></td>
+              <td><span class="badge badge-red">Alta</span></td>
+            </tr>
+            <tr>
+              <td>Mango Shoes</td>
+              <td>$22.000</td>
+              <td>$16K - $31K</td>
+              <td>Moda urbana</td>
+              <td><span class="badge badge-yellow">Media</span></td>
+              <td><span class="badge badge-yellow">Media</span></td>
+            </tr>
+            <tr>
+              <td>Volter</td>
+              <td>$28.500</td>
+              <td>$22K - $38K</td>
+              <td>Premium + Sustentable</td>
+              <td><span class="badge badge-yellow">Media</span></td>
+              <td><span class="badge badge-yellow">Media</span></td>
+            </tr>
+            <tr>
+              <td>Kuru AR</td>
+              <td>$15.900</td>
+              <td>$9K - $22K</td>
+              <td>Precio bajo</td>
+              <td><span class="badge badge-red">Baja</span></td>
+              <td><span class="badge badge-gray">Baja</span></td>
+            </tr>
+            <tr>
+              <td>Flux Walk</td>
+              <td>$31.000</td>
+              <td>$25K - $42K</td>
+              <td>Tecnología + Running</td>
+              <td><span class="badge badge-green">Alta</span></td>
+              <td><span class="badge badge-red">Alta</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Análisis con Claude -->
+      <div class="grid-2" style="gap:24px">
+        <div>
+          <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px">
+            <button class="btn btn-primary">🤖 Analizar con Claude</button>
+            <span style="font-size:11px; color:var(--text-muted)">Ultimo analisis: hace 3 dias</span>
+          </div>
+          <div class="analysis-block">
+            <strong>Analisis competitivo - Generado por Claude:</strong><br><br>
+            <strong>1. Posicionamiento:</strong> GERF ocupa un espacio unico en el mercado argentino al posicionarse en la intersección de <strong>comodidad funcional</strong> y <strong>salud podologica</strong>. Ningun competidor directo ataca este angulo con la misma intensidad.<br><br>
+            <strong>2. Amenaza principal:</strong> Pampa Tiger esta creciendo agresivamente en Meta Ads con un angulo de precio (20% mas barato). Su CTR promedio estimado es alto, lo que sugiere buenos creativos. <strong>Recomendación: no competir en precio, duplicar la apuesta en el angulo salud/comodidad.</strong><br><br>
+            <strong>3. Oportunidad:</strong> Flux Walk esta entrando al mercado con pricing premium ($31K promedio). Esto valida el espacio para subir precios en la linea Boost High sin perder competitividad. Considerar un <strong>aumento de precio del 10-15%</strong> en la proxima temporada.<br><br>
+            <strong>4. Debilidad:</strong> El angulo de <strong>sustentabilidad</strong> esta sin explotar por GERF mientras Volter lo usa como diferencial principal. Si GERF tiene atributos sustentables (producción local, materiales), deberia comenzar a comunicarlos.
+          </div>
+        </div>
+        <div>
+          <h3 style="font-size:15px; font-weight:700; color:#fff; margin-bottom:12px;">📌 Notas rapidas</h3>
+          <div class="card" style="margin-bottom:12px">
+            <div style="font-size:12px; color:var(--text-secondary); line-height:1.6">
+              <strong style="color:var(--red)">🔴 Pampa Tiger:</strong> Lanzó campaña fuerte la semana pasada. Monitoreamos que nuestro CPM subió coincidentemente. Posible overlap de audiencias.
+            </div>
+          </div>
+          <div class="card" style="margin-bottom:12px">
+            <div style="font-size:12px; color:var(--text-secondary); line-height:1.6">
+              <strong style="color:var(--yellow)">🟡 Flux Walk:</strong> Están usando UGC de podologos como estrategia de contenido. Similar a nuestro angulo. Estar atentos a la evolución.
+            </div>
+          </div>
+          <div class="card">
+            <div style="font-size:12px; color:var(--text-secondary); line-height:1.6">
+              <strong style="color:var(--green)">🟢 Oportunidad:</strong> Kuru AR está desapareciendo de ads. Posible oportunidad de capturar su audiencia de precio bajo con la linea Slide Comfort ($12.9K).
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== 10. REPORTES ==================== -->
+    <div class="page" id="page-reportes">
+      <div class="page-header">
+        <h2>Reportes</h2>
+        <p>Generación de reportes automatizados con IA</p>
+      </div>
+
+      <!-- Controls -->
+      <div class="card" style="margin-bottom:24px">
+        <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap">
+          <div>
+            <label style="font-size:10px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; display:block; margin-bottom:4px">Tipo de reporte</label>
+            <select class="form-select">
+              <option>📊 Reporte Semanal</option>
+              <option>📈 Reporte Mensual</option>
+              <option>🎯 Plan de Acción</option>
+              <option>🎨 Analisis Creativo</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:10px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; display:block; margin-bottom:4px">Periodo</label>
+            <select class="form-select">
+              <option>18 Mar - 24 Mar 2026</option>
+              <option>11 Mar - 17 Mar 2026</option>
+              <option>4 Mar - 10 Mar 2026</option>
+              <option>Marzo 2026 (completo)</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:10px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; display:block; margin-bottom:4px">Tienda</label>
+            <select class="form-select">
+              <option>GERF</option>
+              <option>MANGUZ</option>
+              <option>NOMERCY</option>
+              <option>ARKO</option>
+              <option>BABYGINOS</option>
+            </select>
+          </div>
+          <div style="margin-left:auto; display:flex; gap:8px; align-self:flex-end">
+            <button class="btn btn-primary">🤖 Generar con Claude</button>
+            <button class="btn btn-secondary">📋 Copiar contexto para Claude</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Report preview -->
+      <div class="report-preview">
+        <h3>📊 Reporte Semanal - GERF - 18/03 al 24/03/2026</h3>
+
+        <h3>Resumen Ejecutivo</h3>
+        <p>Semana positiva con <strong>ROAS de 5.4x</strong> (objetivo: 4.8x). Revenue de <strong>$1.62M</strong> con un spend de <strong>$298K</strong>. Se superaron todos los KPIs principales excepto AOV que quedó levemente debajo del target.</p>
+
+        <h3>Metricas Clave</h3>
+        <ul>
+          <li><strong>Spend:</strong> $298.400 (-2.1% vs semana anterior)</li>
+          <li><strong>ROAS:</strong> 5.4x (+0.3 vs semana anterior) ✅</li>
+          <li><strong>CPA:</strong> $10.800 (-8.5% vs semana anterior) ✅</li>
+          <li><strong>Compras:</strong> 89 (+12% vs semana anterior) ✅</li>
+          <li><strong>Revenue:</strong> $1.62M (+15% vs semana anterior) ✅</li>
+          <li><strong>AOV:</strong> $18.200 (-2.1% vs semana anterior) ⚠️</li>
+        </ul>
+
+        <h3>Funnel Analysis</h3>
+        <ul>
+          <li><strong>CPM:</strong> $2.680 - estable, sin presiones competitivas significativas esta semana</li>
+          <li><strong>CTR:</strong> 2.1% - mejoró por el lanzamiento del hook "podologo" que está teniendo excelente performance</li>
+          <li><strong>CVR (visita a carrito):</strong> 8.4% - se mantiene saludable, arriba del benchmark</li>
+          <li><strong>CVR (carrito a compra):</strong> 51.2% - recuperó nivel después de la caida de la semana pasada</li>
+        </ul>
+
+        <h3>Acciones realizadas</h3>
+        <ul>
+          <li>Se lanzó hook "Mi podologo me dijo que deje de usar zapatillas baratas" - <strong>CTR 1.8%, CPA $10.2K</strong> (mejor hook activo)</li>
+          <li>Se pausó el hook "Las zapatillas mas cómodas de Argentina" por fatiga (72 dias, CTR cayó a 0.8%)</li>
+          <li>Se ocultaron 3 variantes sin stock del Boost High, reduciendo bounce rate de la landing en 12pp</li>
+        </ul>
+
+        <h3>Plan para la proxima semana</h3>
+        <ul>
+          <li>🎨 Lanzar 2 creativos nuevos con angulo "caminar mucho" para diversificar</li>
+          <li>📦 Coordinar con deposito la reposicion urgente del Runner V2 Negro (5 unidades quedan)</li>
+          <li>💰 Evaluar subir budget un 10% dado que el ROAS se mantiene por encima del objetivo</li>
+          <li>🧪 Testear audiencia de retargeting con ventana de 7 dias (actualmente en 14)</li>
+        </ul>
+
+        <p style="margin-top:20px; color:var(--text-muted); font-size:11px; border-top:1px solid var(--border); padding-top:12px">
+          Generado automaticamente por ECOM ANALYTICS + Claude | 24 Mar 2026 16:42
+        </p>
+      </div>
+    </div>
+
+    <!-- ==================== SETTINGS ==================== -->
+    <div class="page" id="page-settings">
+      <div class="page-header">
+        <h2>Settings</h2>
+        <p>Configuración de la plataforma</p>
+      </div>
+
+      <div class="grid-2" style="gap:24px">
+        <div class="card">
+          <div class="card-title">Tiendas conectadas</div>
+          <div style="margin-top:12px">
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--border)">
+              <div style="display:flex; align-items:center; gap:10px">
+                <span style="width:8px; height:8px; border-radius:50%; background:var(--green)"></span>
+                <span style="font-size:13px; font-weight:600">GERF</span>
+              </div>
+              <span class="badge badge-green">Conectada</span>
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--border)">
+              <div style="display:flex; align-items:center; gap:10px">
+                <span style="width:8px; height:8px; border-radius:50%; background:var(--green)"></span>
+                <span style="font-size:13px; font-weight:600">MANGUZ</span>
+              </div>
+              <span class="badge badge-green">Conectada</span>
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--border)">
+              <div style="display:flex; align-items:center; gap:10px">
+                <span style="width:8px; height:8px; border-radius:50%; background:var(--green)"></span>
+                <span style="font-size:13px; font-weight:600">NOMERCY</span>
+              </div>
+              <span class="badge badge-green">Conectada</span>
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--border)">
+              <div style="display:flex; align-items:center; gap:10px">
+                <span style="width:8px; height:8px; border-radius:50%; background:var(--yellow)"></span>
+                <span style="font-size:13px; font-weight:600">ARKO</span>
+              </div>
+              <span class="badge badge-yellow">Reconectar</span>
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 0">
+              <div style="display:flex; align-items:center; gap:10px">
+                <span style="width:8px; height:8px; border-radius:50%; background:var(--green)"></span>
+                <span style="font-size:13px; font-weight:600">BABYGINOS</span>
+              </div>
+              <span class="badge badge-green">Conectada</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Integraciones</div>
+          <div style="margin-top:12px">
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--border)">
+              <span style="font-size:13px">📊 Meta Ads</span>
+              <span class="badge badge-green">Activa</span>
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--border)">
+              <span style="font-size:13px">🛒 Tiendanube</span>
+              <span class="badge badge-green">Activa</span>
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--border)">
+              <span style="font-size:13px">📈 Google Analytics</span>
+              <span class="badge badge-green">Activa</span>
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--border)">
+              <span style="font-size:13px">🤖 Claude API</span>
+              <span class="badge badge-green">Activa</span>
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 0">
+              <span style="font-size:13px">📊 Google Sheets</span>
+              <span class="badge badge-gray">Pendiente</span>
+            </div>
+          </div>
+          <button class="btn btn-secondary" style="margin-top:16px; width:100%; justify-content:center">+ Agregar integración</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<script>
+  // ===== NAVIGATION =====
+  const navItems = document.querySelectorAll('.nav-item');
+  const pages = document.querySelectorAll('.page');
+  const headerTitle = document.getElementById('headerTitle');
+
+  const pageTitles = {
+    'overview': 'Overview',
+    'dashboard': 'Dashboard - Daily Tracker',
+    'productos': 'Productos',
+    'clientes': 'Clientes',
+    'costos': 'Costos & P&L',
+    'simulador': 'Simulador',
+    'creativos': 'Creativos',
+    'contenido': 'Contenido',
+    'competencia': 'Competencia',
+    'reportes': 'Reportes',
+    'settings': 'Settings'
+  };
+
+  navItems.forEach(item => {
+    item.addEventListener('click', () => {
+      const targetPage = item.dataset.page;
+
+      // Update nav
+      navItems.forEach(n => n.classList.remove('active'));
+      item.classList.add('active');
+
+      // Update pages
+      pages.forEach(p => p.classList.remove('active'));
+      document.getElementById('page-' + targetPage).classList.add('active');
+
+      // Update header
+      headerTitle.textContent = pageTitles[targetPage] || targetPage;
+    });
+  });
+
+  // ===== SIMULATOR =====
+  const cpmSlider = document.getElementById('cpmSlider');
+  const ctrSlider = document.getElementById('ctrSlider');
+  const cvrSlider = document.getElementById('cvrSlider');
+  const aovSlider = document.getElementById('aovSlider');
+  const budgetSlider = document.getElementById('budgetSlider');
+
+  // -- Utility --
+  function formatARS(n) {
+    if (n >= 1000000) return '$' + (n / 1000000).toFixed(1) + 'M';
+    if (n >= 1000) return '$' + (n / 1000).toFixed(1) + 'K';
+    return '$' + Math.round(n).toLocaleString('es-AR');
+  }
+
+  // -- Core calculation --
+  function updateSimulator() {
+    const cpm = parseInt(cpmSlider.value);
+    const ctr = parseInt(ctrSlider.value) / 100;  // percentage
+    const cvr = parseInt(cvrSlider.value) / 100;  // percentage (visit to purchase)
+    const aov = parseInt(aovSlider.value);
+    const budget = parseInt(budgetSlider.value);
+
+    document.getElementById('cpmVal').textContent = '$' + cpm.toLocaleString('es-AR');
+    document.getElementById('ctrVal').textContent = (ctr).toFixed(1) + '%';
+    document.getElementById('cvrVal').textContent = (cvr).toFixed(1) + '%';
+    document.getElementById('aovVal').textContent = '$' + aov.toLocaleString('es-AR');
+    document.getElementById('budgetVal').textContent = '$' + budget.toLocaleString('es-AR');
+
+    // Calculate
+    const impressions = (budget / cpm) * 1000;
+    const clicks = impressions * (ctr / 100);
+    const visits = clicks * 0.82; // 82% click to visit
+    const purchases = visits * (cvr / 100);
+    const revenue = purchases * aov;
+    const roas = revenue / budget;
+    const cpa = purchases > 0 ? budget / purchases : 0;
+
+    document.getElementById('simRoas').textContent = roas.toFixed(2) + 'x';
+    document.getElementById('simRoas').style.color = roas >= 4.8 ? 'var(--green)' : roas >= 3 ? 'var(--yellow)' : 'var(--red)';
+    document.getElementById('simCpa').textContent = formatARS(cpa);
+    document.getElementById('simCompras').textContent = purchases.toFixed(1);
+    document.getElementById('simRevenue').textContent = formatARS(revenue);
+  }
+
+  // -- Scenario presets --
+  function setScenario(cpm, ctr, cvr, aov, budget) {
+    cpmSlider.value = cpm;
+    ctrSlider.value = ctr * 100;
+    cvrSlider.value = cvr * 100;
+    aovSlider.value = aov;
+    budgetSlider.value = budget;
+    updateSimulator();
+  }
+
+  // -- Event listeners --
+  cpmSlider.addEventListener('input', updateSimulator);
+  ctrSlider.addEventListener('input', updateSimulator);
+  cvrSlider.addEventListener('input', updateSimulator);
+  aovSlider.addEventListener('input', updateSimulator);
+  budgetSlider.addEventListener('input', updateSimulator);
+
+  // Init simulator
+  updateSimulator();
+</script>
+
+</body>
+</html>

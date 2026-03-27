@@ -1,0 +1,2102 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NOMERCY — Master de Comunicación</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #080808;
+    color: #e0e0e0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 15px;
+    line-height: 1.75;
+    padding: 48px 24px;
+  }
+  .container { max-width: 940px; margin: 0 auto; }
+
+  /* ── HEADER ── */
+  .header { margin-bottom: 72px; padding-bottom: 48px; border-bottom: 1px solid #161616; }
+  .doc-label { font-size: 10px; letter-spacing: 4px; text-transform: uppercase; color: #f5a623; margin-bottom: 16px; }
+  h1 { font-size: 40px; font-weight: 900; color: #fff; line-height: 1.1; letter-spacing: -0.5px; }
+  .header-version { display: inline-block; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; background: #111; border: 1px solid #1e1e1e; color: #555; padding: 4px 10px; border-radius: 4px; margin-top: 14px; }
+  .header-meta { display: flex; gap: 28px; margin-top: 18px; flex-wrap: wrap; }
+  .header-meta span { font-size: 12px; color: #383838; }
+  .header-meta strong { color: #555; }
+
+  /* ── REGLA DE ORO ── */
+  .golden-rule { background: #0d0900; border: 1px solid #2a1a00; border-radius: 12px; padding: 28px 32px; margin-bottom: 64px; }
+  .golden-rule .label { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: #f5a623; margin-bottom: 12px; }
+  .golden-rule .text { font-size: 18px; font-weight: 700; color: #fff; line-height: 1.5; }
+  .golden-rule .sub { font-size: 14px; color: #776040; margin-top: 10px; line-height: 1.6; }
+
+  /* ── TOC ── */
+  .toc { background: #0c0c0c; border: 1px solid #181818; border-radius: 10px; padding: 28px 32px; margin-bottom: 72px; }
+  .toc-title { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #383838; margin-bottom: 18px; }
+  .toc-list { list-style: none; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 40px; }
+  @media (max-width: 600px) { .toc-list { grid-template-columns: 1fr; } }
+  .toc-list li a { color: #555; text-decoration: none; font-size: 13px; display: flex; align-items: center; gap: 10px; }
+  .toc-list li a:hover { color: #f5a623; }
+  .toc-num { font-size: 10px; color: #282828; font-weight: 700; min-width: 18px; }
+
+  /* ── SECTIONS ── */
+  .section { margin-bottom: 80px; scroll-margin-top: 32px; }
+  .section-header { margin-bottom: 32px; }
+  .section-eyebrow {
+    font-size: 10px; letter-spacing: 4px; text-transform: uppercase;
+    color: #f5a623; margin-bottom: 10px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .section-eyebrow::after { content: ''; flex: 1; height: 1px; background: #141414; }
+  h2 { font-size: 22px; font-weight: 700; color: #fff; }
+  h3 { font-size: 13px; font-weight: 700; color: #f5a623; letter-spacing: 0.5px; text-transform: uppercase; margin: 36px 0 12px; }
+  h4 { font-size: 14px; font-weight: 700; color: #e0e0e0; margin: 22px 0 10px; }
+  p { color: #999; margin-bottom: 14px; }
+  p strong { color: #ddd; }
+  ul, ol { color: #999; padding-left: 20px; margin-bottom: 14px; }
+  li { margin-bottom: 6px; }
+  li strong { color: #ddd; }
+
+  /* ── TABLES ── */
+  .table-wrap { overflow-x: auto; margin-bottom: 28px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { background: #0f0f0f; color: #666; font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; padding: 10px 14px; text-align: left; border-bottom: 1px solid #1a1a1a; }
+  td { padding: 12px 14px; color: #999; border-bottom: 1px solid #111; vertical-align: top; }
+  td strong { color: #ddd; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #0b0b0b; }
+
+  /* ── PRODUCTO CARDS (3 lentes) ── */
+  .lente-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 28px; }
+  @media (max-width: 700px) { .lente-grid { grid-template-columns: 1fr; } }
+
+  .lente-card { border-radius: 12px; padding: 26px; }
+  .lente-amarillo { background: #0d0c00; border: 1px solid #2a2200; }
+  .lente-naranja { background: #0d0700; border: 1px solid #2e1400; }
+  .lente-rojo { background: #0d0000; border: 1px solid #280000; }
+
+  .lente-tag { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px; }
+  .lente-amarillo .lente-tag { color: #a88c10; }
+  .lente-naranja .lente-tag { color: #c87020; }
+  .lente-rojo .lente-tag { color: #c04040; }
+
+  .lente-card h3 { font-size: 18px; font-weight: 800; text-transform: none; letter-spacing: 0; margin: 0 0 6px; }
+  .lente-amarillo h3 { color: #ffe348; }
+  .lente-naranja h3 { color: #ffb060; }
+  .lente-rojo h3 { color: #ff8080; }
+
+  .lente-cuando { font-size: 12px; margin-bottom: 14px; }
+  .lente-amarillo .lente-cuando { color: #5a4e10; }
+  .lente-naranja .lente-cuando { color: #5a3010; }
+  .lente-rojo .lente-cuando { color: #5a2020; }
+
+  .lente-card p { font-size: 13px; color: #666; margin-bottom: 10px; }
+  .lente-card p:last-child { margin-bottom: 0; }
+  .lente-stat { font-size: 22px; font-weight: 800; margin: 12px 0 4px; }
+  .lente-amarillo .lente-stat { color: #ffe348; }
+  .lente-naranja .lente-stat { color: #ffb060; }
+  .lente-rojo .lente-stat { color: #ff8080; }
+
+  .lente-personas { margin-top: 12px; padding-top: 12px; border-top: 1px solid #1a1a1a; }
+  .lente-personas .label { font-size: 10px; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; }
+  .lente-amarillo .lente-personas .label { color: #5a4e10; }
+  .lente-naranja .lente-personas .label { color: #5a3010; }
+  .lente-rojo .lente-personas .label { color: #5a2020; }
+  .lente-personas ul { list-style: none; padding: 0; margin: 0; }
+  .lente-personas li { font-size: 12px; color: #666; margin-bottom: 4px; padding-left: 10px; position: relative; }
+  .lente-personas li::before { content: '→'; position: absolute; left: 0; opacity: 0.4; }
+
+  /* ── AVATAR CARDS ── */
+  .avatar-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 28px; }
+  @media (max-width: 700px) { .avatar-grid { grid-template-columns: 1fr; } }
+
+  .avatar-card { background: #0c0c0c; border: 1px solid #181818; border-radius: 12px; padding: 24px; }
+  .avatar-lente { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px; font-weight: 700; }
+  .av-amarillo .avatar-lente { color: #a88c10; }
+  .av-naranja .avatar-lente { color: #c87020; }
+  .av-rojo .avatar-lente { color: #c04040; }
+
+  .avatar-card h4 { font-size: 16px; font-weight: 700; color: #fff; margin: 0 0 14px; }
+  .dolor-list { list-style: none; padding: 0; margin: 0; }
+  .dolor-list li { font-size: 13px; color: #888; padding: 7px 0; border-bottom: 1px solid #121212; line-height: 1.5; }
+  .dolor-list li:last-child { border-bottom: none; }
+  .dolor-list li strong { color: #bbb; display: block; font-size: 11px; letter-spacing: 0.3px; margin-bottom: 2px; }
+
+  /* ── SÍNTOMAS RANKING ── */
+  .sintoma-row { display: flex; align-items: center; gap: 16px; padding: 12px 16px; background: #0c0c0c; border: 1px solid #161616; border-radius: 8px; margin-bottom: 8px; }
+  .sintoma-num { font-size: 12px; font-weight: 800; color: #333; min-width: 24px; }
+  .sintoma-text { font-size: 14px; color: #ccc; flex: 1; }
+  .sintoma-badge { font-size: 10px; padding: 2px 8px; border-radius: 3px; font-weight: 700; letter-spacing: 0.5px; }
+  .sb-max { background: #1a0a00; color: #f5a623; }
+  .sb-high { background: #100a00; color: #c87020; }
+  .sb-med { background: #0a0a0a; color: #666; }
+
+  /* ── SÍNTOMAS MURAL ── */
+  .mural-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+  .mural-chip { border-radius: 8px; padding: 10px 14px; font-size: 12px; line-height: 1.4; min-width: 0; flex: 0 0 auto; max-width: 220px; }
+  .mural-chip strong { display: block; font-size: 13px; margin-bottom: 2px; }
+
+  .mc-max { background: #0d0700; border: 1px solid #2e1400; }
+  .mc-max strong { color: #ffb060; }
+  .mc-max { color: #6a4020; }
+
+  .mc-high { background: #0d0c00; border: 1px solid #2a2200; }
+  .mc-high strong { color: #ffe348; }
+  .mc-high { color: #5a4e10; }
+
+  .mc-med { background: #0c0c0c; border: 1px solid #1e1e1e; }
+  .mc-med strong { color: #ccc; }
+  .mc-med { color: #555; }
+
+  .mc-sensation { background: #080a0e; border: 1px solid #141a2a; }
+  .mc-sensation strong { color: #80a0cc; }
+  .mc-sensation { color: #3a4a60; }
+
+  .mural-label { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; font-weight: 700; margin: 24px 0 10px; }
+  .ml-max { color: #f5a623; }
+  .ml-high { color: #c8a820; }
+  .ml-med { color: #666; }
+  .ml-sensation { color: #5a7aaa; }
+
+  /* ── HIGHLIGHT BLOCKS ── */
+  .highlight { background: #0c0c0c; border-left: 3px solid #f5a623; border-radius: 0 8px 8px 0; padding: 20px 24px; margin-bottom: 20px; }
+  .highlight p { margin-bottom: 0; color: #aaa; font-size: 14px; line-height: 1.7; }
+  .highlight p + p { margin-top: 10px; }
+  .highlight p strong { color: #ddd; }
+
+  .alert { background: #0e0800; border: 1px solid #2e1800; border-radius: 8px; padding: 18px 22px; margin-bottom: 20px; }
+  .alert-title { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #f5a623; margin-bottom: 8px; }
+  .alert p { color: #7a5030; font-size: 13px; margin-bottom: 0; }
+  .alert p + p { margin-top: 8px; }
+  .alert p strong { color: #c87020; }
+
+  .success { background: #080e0b; border: 1px solid #142a1e; border-radius: 8px; padding: 18px 22px; margin-bottom: 20px; }
+  .success-title { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #4a9a6a; margin-bottom: 8px; }
+  .success p { color: #3a6a50; font-size: 13px; margin-bottom: 0; }
+
+  .warning { background: #0d0c00; border: 1px solid #2a2800; border-radius: 8px; padding: 18px 22px; margin-bottom: 20px; }
+  .warning-title { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #d4c020; margin-bottom: 8px; }
+  .warning p { color: #6a6020; font-size: 13px; margin-bottom: 0; }
+
+  /* ── VOZ ── */
+  .voz-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 28px; }
+  @media (max-width: 600px) { .voz-grid { grid-template-columns: 1fr; } }
+  .voz-card { border-radius: 10px; padding: 20px; }
+  .voz-si { background: #080e0b; border: 1px solid #142a1e; }
+  .voz-no { background: #0e0808; border: 1px solid #2a1414; }
+  .voz-label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px; font-weight: 700; }
+  .voz-si .voz-label { color: #4a9a6a; }
+  .voz-no .voz-label { color: #9a4a4a; }
+  .voz-card ul { list-style: none; padding: 0; margin: 0; }
+  .voz-card li { font-size: 13px; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.04); color: #888; }
+  .voz-card li:last-child { border-bottom: none; }
+
+  /* ── HOOKS TABLE ── */
+  .hook-table td:first-child { width: 28px; font-size: 11px; color: #383838; }
+  .hook-table td:nth-child(2) { width: 90px; }
+  .hook-badge { font-size: 10px; padding: 2px 6px; border-radius: 3px; font-weight: 600; }
+  .hb-amarillo { background: #1a1400; color: #c8a820; }
+  .hb-naranja { background: #1a0800; color: #d07020; }
+  .hb-rojo { background: #1a0000; color: #c04040; }
+  .hb-todos { background: #101010; color: #555; }
+  .hook-text { font-size: 14px; color: #ccc; font-weight: 500; }
+  .hook-days { font-size: 11px; color: #4a9a6a; font-weight: 700; }
+  .hook-visual { font-size: 12px; color: #555; font-style: italic; }
+
+  /* ── OBJECIONES ── */
+  .obj-list { }
+  .obj-item { background: #0c0c0c; border: 1px solid #181818; border-radius: 10px; padding: 20px 24px; margin-bottom: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 600px) { .obj-item { grid-template-columns: 1fr; } }
+  .obj-q { font-size: 14px; color: #777; font-style: italic; }
+  .obj-q::before { content: '"'; color: #444; }
+  .obj-q::after { content: '"'; color: #444; }
+  .obj-a { font-size: 13px; color: #999; line-height: 1.6; }
+  .obj-a strong { color: #ddd; }
+
+  /* ── PERFORMANCE ── */
+  .metric-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+  @media (max-width: 600px) { .metric-row { grid-template-columns: repeat(2, 1fr); } }
+  .metric-box { background: #0c0c0c; border: 1px solid #181818; border-radius: 8px; padding: 16px; text-align: center; }
+  .metric-val { font-size: 26px; font-weight: 900; color: #fff; }
+  .metric-label { font-size: 11px; color: #383838; margin-top: 4px; }
+
+  /* ── ERRORES ── */
+  .error-list { list-style: none; padding: 0; }
+  .error-list li { padding: 11px 16px; background: #0c0606; border: 1px solid #240808; border-radius: 6px; margin-bottom: 7px; color: #9a5050; font-size: 13px; }
+  .error-list li strong { color: #c04040; }
+  .nogo-list { list-style: none; padding: 0; }
+  .nogo-list li { padding: 9px 16px; background: #0c0c0c; border-left: 2px solid #1e1e1e; margin-bottom: 5px; color: #555; font-size: 13px; }
+  .nogo-list li::before { content: '✕  '; color: #333; }
+
+  /* ── ÁNGULOS ── */
+  .angulo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 28px; }
+  @media (max-width: 700px) { .angulo-grid { grid-template-columns: 1fr 1fr; } }
+  .angulo-card { background: #0c0c0c; border: 1px solid #181818; border-radius: 10px; padding: 20px; }
+  .angulo-icon { font-size: 22px; margin-bottom: 10px; }
+  .angulo-card h4 { font-size: 14px; color: #ddd; text-transform: none; letter-spacing: 0; margin: 0 0 8px; }
+  .angulo-card p { font-size: 12px; color: #666; margin: 0; }
+
+  /* ── FOUNDER ── */
+  .crudo-block { background: #0a0a0a; border: 1px solid #161616; border-radius: 10px; padding: 30px; font-family: Georgia, serif; font-size: 15px; color: #aaa; line-height: 1.9; white-space: pre-wrap; margin-bottom: 16px; }
+  .crudo-label { font-size: 11px; color: #383838; font-style: italic; margin-bottom: 12px; font-family: 'Inter', sans-serif; }
+
+  blockquote { border-left: 2px solid #f5a623; padding: 14px 20px; margin: 20px 0; background: #0a0800; border-radius: 0 8px 8px 0; }
+  blockquote p { color: #bbb; font-size: 16px; font-weight: 600; line-height: 1.5; margin: 0; }
+
+  /* ── COMPETENCIA ── */
+  .comp-ours td { color: #4a7a5a !important; }
+  .comp-ours td strong { color: #5aaa7a !important; }
+  .comp-ours { background: #080e0b !important; }
+
+  /* ── SEP ── */
+  .sep { height: 1px; background: #0f0f0f; margin: 72px 0; }
+
+  /* ── TÓPICOS MURAL ── */
+  .topico-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 28px; }
+  @media (max-width: 700px) { .topico-grid { grid-template-columns: 1fr 1fr; } }
+  .topico-card { border-radius: 12px; padding: 22px; position: relative; overflow: hidden; }
+  .topico-card .topico-icon { font-size: 28px; margin-bottom: 10px; }
+  .topico-card h4 { font-size: 15px; font-weight: 800; margin: 0 0 4px; text-transform: none; letter-spacing: 0; }
+  .topico-card .topico-lente { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 10px; font-weight: 700; }
+  .topico-card p { font-size: 12px; margin: 0 0 8px; line-height: 1.5; }
+  .topico-card .topico-estado { font-size: 10px; font-weight: 700; letter-spacing: 0.5px; padding: 2px 8px; border-radius: 3px; display: inline-block; }
+  .topico-card .topico-hooks { font-size: 11px; margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.05); }
+
+  .tc-fire { background: #0d0700; border: 1px solid #2e1400; }
+  .tc-fire h4 { color: #ffb060; }
+  .tc-fire .topico-lente { color: #c87020; }
+  .tc-fire p { color: #6a4020; }
+  .tc-fire .topico-estado { background: #1a0a00; color: #f5a623; }
+  .tc-fire .topico-hooks { color: #5a3010; }
+
+  .tc-active { background: #0c0c00; border: 1px solid #2a2200; }
+  .tc-active h4 { color: #ffe348; }
+  .tc-active .topico-lente { color: #a88c10; }
+  .tc-active p { color: #5a4e10; }
+  .tc-active .topico-estado { background: #1a1400; color: #c8a820; }
+  .tc-active .topico-hooks { color: #4a3e10; }
+
+  .tc-explore { background: #0c0c0c; border: 1px solid #1e1e1e; }
+  .tc-explore h4 { color: #ccc; }
+  .tc-explore .topico-lente { color: #555; }
+  .tc-explore p { color: #555; }
+  .tc-explore .topico-estado { background: #151515; color: #666; }
+  .tc-explore .topico-hooks { color: #444; }
+
+  .tc-new { background: #080e0b; border: 1px solid #142a1e; }
+  .tc-new h4 { color: #7aca9a; }
+  .tc-new .topico-lente { color: #4a7a5a; }
+  .tc-new p { color: #3a5a4a; }
+  .tc-new .topico-estado { background: #0a1a10; color: #4a9a6a; }
+  .tc-new .topico-hooks { color: #3a5a4a; }
+
+  /* ── CATALOGACIÓN ── */
+  .cat-grid { display: grid; grid-template-columns: 1fr; gap: 16px; margin-bottom: 28px; }
+  .cat-card { border-radius: 12px; padding: 28px; position: relative; }
+  .cat-letter { font-size: 42px; font-weight: 900; position: absolute; top: 20px; right: 24px; opacity: 0.12; line-height: 1; }
+  .cat-card .cat-tag { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; font-weight: 700; margin-bottom: 6px; }
+  .cat-card h4 { font-size: 18px; font-weight: 800; margin: 0 0 4px; text-transform: none; letter-spacing: 0; }
+  .cat-card .cat-pct { font-size: 13px; font-weight: 700; margin-bottom: 14px; }
+  .cat-card p { font-size: 13px; line-height: 1.6; }
+  .cat-card .cat-sub { font-size: 12px; margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.05); }
+  .cat-card .cat-sub strong { display: block; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; }
+
+  .cat-a { background: #0d0700; border: 1px solid #2e1400; }
+  .cat-a .cat-tag, .cat-a .cat-pct { color: #f5a623; }
+  .cat-a h4 { color: #ffb060; }
+  .cat-a .cat-letter { color: #f5a623; }
+  .cat-a p { color: #7a5530; }
+  .cat-a .cat-sub { color: #6a4520; border-top-color: #1e1000; }
+  .cat-a .cat-sub strong { color: #c87020; }
+
+  .cat-b { background: #0a0a10; border: 1px solid #1a1a30; }
+  .cat-b .cat-tag, .cat-b .cat-pct { color: #7090d0; }
+  .cat-b h4 { color: #90b0f0; }
+  .cat-b .cat-letter { color: #7090d0; }
+  .cat-b p { color: #4a5a7a; }
+  .cat-b .cat-sub { color: #3a4a6a; border-top-color: #141420; }
+  .cat-b .cat-sub strong { color: #7090d0; }
+
+  .cat-c { background: #080e0b; border: 1px solid #142a1e; }
+  .cat-c .cat-tag, .cat-c .cat-pct { color: #4a9a6a; }
+  .cat-c h4 { color: #7aca9a; }
+  .cat-c .cat-letter { color: #4a9a6a; }
+  .cat-c p { color: #3a6a50; }
+  .cat-c .cat-sub { color: #2a5a40; border-top-color: #0e1a14; }
+  .cat-c .cat-sub strong { color: #4a9a6a; }
+
+  .cat-d { background: #0d0c00; border: 1px solid #2a2800; }
+  .cat-d .cat-tag, .cat-d .cat-pct { color: #d4c020; }
+  .cat-d h4 { color: #ffe348; }
+  .cat-d .cat-letter { color: #d4c020; }
+  .cat-d p { color: #6a6020; }
+  .cat-d .cat-sub { color: #5a5020; border-top-color: #1a1800; }
+  .cat-d .cat-sub strong { color: #d4c020; }
+
+  .cat-e { background: #0e0810; border: 1px solid #2a1830; }
+  .cat-e .cat-tag, .cat-e .cat-pct { color: #b070d0; }
+  .cat-e h4 { color: #d0a0f0; }
+  .cat-e .cat-letter { color: #b070d0; }
+  .cat-e p { color: #6a4a7a; }
+  .cat-e .cat-sub { color: #5a3a6a; border-top-color: #1a1020; }
+  .cat-e .cat-sub strong { color: #b070d0; }
+
+  /* ── FOOTER ── */
+  .footer { margin-top: 72px; padding-top: 36px; border-top: 1px solid #111; text-align: center; }
+  .footer p { font-size: 12px; color: #2a2a2a; }
+  .footer p + p { margin-top: 6px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ══════════════════════════════════════════════════════ -->
+  <!-- HEADER -->
+  <!-- ══════════════════════════════════════════════════════ -->
+  <div class="header">
+    <div class="doc-label">Master de Comunicación · v2.2</div>
+    <h1>NOMERCY</h1>
+    <div class="header-version">Síntesis: Core v1 + Core v2 + Comentarios Ads + Catalogación · 17 Mar 2026</div>
+    <div class="header-meta">
+      <span><strong>Uso:</strong> Briefing creativo · Hooks · Copy · Ads · Dirección de marca</span>
+      <span><strong>Fuentes:</strong> Biblia · Análisis Competitivo · Analytics Jan-Feb 2026 · Founder Story · Mapa Conductores</span>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════ -->
+  <!-- REGLA DE ORO -->
+  <!-- ══════════════════════════════════════════════════════ -->
+  <div class="golden-rule">
+    <div class="label">Regla de oro</div>
+    <div class="text">Primero el síntoma. Después la solución.</div>
+    <div class="sub">El target es de baja consciencia — no sabe que los anteojos de luz azul existen. Si arrancás hablando del producto, perdiste. Si arrancás hablando de su dolor cotidiano, te escucha. La marca, el mecanismo y el producto aparecen como consecuencia — nunca como punto de partida.</div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════ -->
+  <!-- TOC -->
+  <!-- ══════════════════════════════════════════════════════ -->
+  <div class="toc">
+    <div class="toc-title">Contenido</div>
+    <ul class="toc-list">
+      <li><a href="#topicos"><span class="toc-num">00</span> Tópicos — Mapa de Ángulos</a></li>
+      <li><a href="#productos"><span class="toc-num">01</span> Los 3 Productos</a></li>
+      <li><a href="#avatares"><span class="toc-num">02</span> Avatares por Lente</a></li>
+      <li><a href="#sintomas"><span class="toc-num">03</span> Mural de Síntomas y Sensaciones</a></li>
+      <li><a href="#objeciones"><span class="toc-num">04</span> Objeciones + Respuestas</a></li>
+      <li><a href="#angulos"><span class="toc-num">05</span> Ángulos que Funcionan</a></li>
+      <li><a href="#performance"><span class="toc-num">06</span> Performance & Datos</a></li>
+      <li><a href="#competencia"><span class="toc-num">07</span> Mapa de Competencia</a></li>
+      <li><a href="#hooks"><span class="toc-num">08</span> Hooks Master</a></li>
+      <li><a href="#alma"><span class="toc-num">09</span> Alma de Marca</a></li>
+      <li><a href="#voz"><span class="toc-num">10</span> Voz de Marca</a></li>
+      <li><a href="#errores"><span class="toc-num">11</span> Errores a Evitar</a></li>
+      <li><a href="#founder"><span class="toc-num">12</span> Historia del Founder</a></li>
+      <li><a href="#producto-conversion"><span class="toc-num">13</span> El Producto por Dentro</a></li>
+      <li><a href="#banco-lenguaje"><span class="toc-num">14</span> Banco de Lenguaje Real</a></li>
+      <li><a href="#catalogacion"><span class="toc-num">15</span> Catalogación de Anuncios</a></li>
+    </ul>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════ -->
+  <!-- 00 — TÓPICOS — MAPA DE ÁNGULOS -->
+  <!-- ══════════════════════════════════════════════════════ -->
+  <div class="section" id="topicos">
+    <div class="section-header">
+      <div class="section-eyebrow">00</div>
+      <h2>Tópicos — Mapa de Ángulos</h2>
+    </div>
+
+    <p style="margin-bottom:24px;">Vista rápida de todos los territorios de comunicación de NOMERCY. Cada tópico es un universo de contenido con su propio dolor, su lente, sus hooks y su estado actual. Usar como mural de referencia para planificar creatives y detectar huecos.</p>
+
+    <div class="topico-grid">
+
+      <div class="topico-card tc-fire">
+        <div class="topico-icon">🚗</div>
+        <div class="topico-lente">AMARILLO</div>
+        <h4>Manejo nocturno</h4>
+        <p>Encandilamiento de faros LED. El ciclo oscuridad-destello-oscuridad. Ojos destruidos al final del turno. Miedo a quedarse dormido al volante.</p>
+        <div class="topico-estado">★ EL MÁS FUERTE</div>
+        <div class="topico-hooks">Avatares: Conductor nocturno · Uber/remis · Camioneros<br>Hooks activos: #08-15, N3, N7</div>
+      </div>
+
+      <div class="topico-card tc-active">
+        <div class="topico-icon">💻</div>
+        <div class="topico-lente">AMARILLO</div>
+        <h4>Pantallas / trabajo digital</h4>
+        <p>Fatiga ocular después de 6+ horas. Dolor de cabeza de las 4-5PM. El ibuprofeno en el cajón. Probó modo oscuro y bajar brillo — no cambió nada.</p>
+        <div class="topico-estado">✅ ACTIVO</div>
+        <div class="topico-hooks">Avatar: Trabajador digital<br>Hooks activos: #01-07 · Hook #01 = 56 días (el más longevo)</div>
+      </div>
+
+      <div class="topico-card tc-active">
+        <div class="topico-icon">🎮</div>
+        <div class="topico-lente">NARANJA</div>
+        <h4>Gaming nocturno</h4>
+        <p>Sesiones de 3-5 horas. Ojos secos que arden. El dolor detrás de las cejas. Termina de jugar y la mente sigue corriendo — tarda 45-60 min en dormirse.</p>
+        <div class="topico-estado">✅ ACTIVO</div>
+        <div class="topico-hooks">Avatar: Gamer nocturno<br>Hooks activos: #20 · Foco actual del naranja</div>
+      </div>
+
+      <div class="topico-card tc-explore">
+        <div class="topico-icon">😴</div>
+        <div class="topico-lente">ROJO</div>
+        <h4>Insomnio / scroll nocturno</h4>
+        <p>"Me meto 5 minutos y son las 3AM." Apaga el celu y se queda mirando el techo. Se despierta cansado aunque haya dormido. El cerebro no se desconecta.</p>
+        <div class="topico-estado">🔄 EN EXPLORACIÓN</div>
+        <div class="topico-hooks">Avatar: Scrolleador nocturno<br>Hooks: #25-27 · Funciona pero no se sabe qué format rinde mejor</div>
+      </div>
+
+      <div class="topico-card tc-explore">
+        <div class="topico-icon">📚</div>
+        <div class="topico-lente">NARANJA / ROJO</div>
+        <h4>Estudio / parciales</h4>
+        <p>Los ojos se cierran solos después de las 11PM. Lee el mismo párrafo cuatro veces. Presión ocular que se vuelve craneal. El parcial es mañana y no puede parar.</p>
+        <div class="topico-estado">🔄 EN EXPLORACIÓN</div>
+        <div class="topico-hooks">Avatares: Estudiante nocturno · Estudiante de madrugada<br>Hooks: #24 · Ángulo rendimiento académico</div>
+      </div>
+
+      <div class="topico-card tc-active">
+        <div class="topico-icon">🔬</div>
+        <div class="topico-lente">TODOS</div>
+        <h4>El test real / honestidad</h4>
+        <p>El test del láser violeta es humo. El foco RGB azul es la prueba real. NOMERCY bloquea todo, el transparente deja pasar. Cochrane desacreditó los claros, no los tintados.</p>
+        <div class="topico-estado">✅ ACTIVO</div>
+        <div class="topico-hooks">Hooks: #28-35 · Video "el test que las marcas no quieren que hagas"<br>Destructor de categoría de lentes claros</div>
+      </div>
+
+      <div class="topico-card tc-active">
+        <div class="topico-icon">🧠</div>
+        <div class="topico-lente">TODOS</div>
+        <h4>Dolor de cabeza / ojos que arden</h4>
+        <p>El síntoma que más duele y más moviliza. Top de funnel. La cabeza explota, los ojos como tomates, se frota los ojos constantemente. El ibuprofeno como ritual.</p>
+        <div class="topico-estado">✅ ACTIVO</div>
+        <div class="topico-hooks">Transversal a todos los avatares<br>Hooks: #01, #02, #05 · Los que más duran</div>
+      </div>
+
+      <div class="topico-card tc-active">
+        <div class="topico-icon">😴</div>
+        <div class="topico-lente">NARANJA / ROJO</div>
+        <h4>Sueño / las mañanas</h4>
+        <p>"Lo que hacés esta noche decide cómo te despertás mañana." Dormís 8 horas y te levantás arrastrado. La melatonina suprimida degrada el sueño profundo.</p>
+        <div class="topico-estado">✅ ACTIVO</div>
+        <div class="topico-hooks">Hooks: #19, #22, #23<br>Funciona como beneficio final, no como hook de entrada (excepto gamers)</div>
+      </div>
+
+      <div class="topico-card tc-active">
+        <div class="topico-icon">🏷️</div>
+        <div class="topico-lente">TODOS</div>
+        <h4>El tinte como evidencia</h4>
+        <p>Si podés ver el mundo en colores normales, no te están protegiendo. El naranja no es un defecto estético — es la prueba visible de que funciona.</p>
+        <div class="topico-estado">✅ PRINCIPAL</div>
+        <div class="topico-hooks">Hook: #30 · Funciona en todas las etapas del funnel<br>El argumento más propio de NOMERCY</div>
+      </div>
+
+      <div class="topico-card tc-new">
+        <div class="topico-icon">🌧️</div>
+        <div class="topico-lente">AMARILLO</div>
+        <h4>Días nublados / lluvia</h4>
+        <p>Ruta gris, todo plano y sin contraste. El amarillo levanta el contraste y "hace el día menos triste". Validado por compradores reales.</p>
+        <div class="topico-estado">🆕 NUEVO — SIN COMUNICAR</div>
+        <div class="topico-hooks">Detectado en comentarios: jose.morchio, oyarzabalhe1938<br>Hook nuevo: N4</div>
+      </div>
+
+      <div class="topico-card tc-new">
+        <div class="topico-icon">🏁</div>
+        <div class="topico-lente">AMARILLO</div>
+        <h4>Pilotos de rally</h4>
+        <p>Los pilotos de rally usan lentes amarillos hace décadas. Validación técnica y aspiracional al mismo tiempo. "Lo aprendí de los pilotos de rally."</p>
+        <div class="topico-estado">🆕 NUEVO — SIN COMUNICAR</div>
+        <div class="topico-hooks">Detectado en comentarios: sebal081<br>Hook nuevo: N1</div>
+      </div>
+
+      <div class="topico-card tc-new">
+        <div class="topico-icon">👁️</div>
+        <div class="topico-lente">AMARILLO</div>
+        <h4>Astigmatismo</h4>
+        <p>El encandilamiento multiplicado. Los halos de luz de los LED se expanden más, duran más, cubren más campo visual. Sub-segmento con dolor amplificado.</p>
+        <div class="topico-estado">🆕 NUEVO — SIN COMUNICAR</div>
+        <div class="topico-hooks">Detectado en comentarios: ribbavicky, pablomartinet<br>Hook nuevo: N2</div>
+      </div>
+
+      <div class="topico-card tc-explore">
+        <div class="topico-icon">🏥</div>
+        <div class="topico-lente">AMARILLO</div>
+        <h4>Médicos de guardia</h4>
+        <p>Horas bajo luz LED blanca hospitalaria. Fotosensibilidad acumulada. Mencionado en la historia del founder como caso de uso.</p>
+        <div class="topico-estado">🔄 MENCIONADO — SIN CONTENIDO</div>
+        <div class="topico-hooks">En el relato del founder pero sin hooks ni contenido específico</div>
+      </div>
+
+      <div class="topico-card tc-explore">
+        <div class="topico-icon">🚛</div>
+        <div class="topico-lente">AMARILLO</div>
+        <h4>Camioneros</h4>
+        <p>Cruzan el país de noche. El ciclo oscuridad-destello es más largo y más intenso. Sub-segmento del ángulo manejo con dolor extremo.</p>
+        <div class="topico-estado">🔄 DENTRO DE MANEJO — SIN CONTENIDO PROPIO</div>
+        <div class="topico-hooks">Cubierto por los hooks de manejo pero sin targeteo específico</div>
+      </div>
+
+      <div class="topico-card tc-explore">
+        <div class="topico-icon">👤</div>
+        <div class="topico-lente">TODOS</div>
+        <h4>Founder — Agustín</h4>
+        <p>"Busqué este producto en Argentina y no existía. Lo hice yo." Desde Tucumán al país. La historia personal como ancla de marca.</p>
+        <div class="topico-estado">⚠️ PENDIENTE — SIN FILMAR</div>
+        <div class="topico-hooks">La historia existe escrita. Falta producirla en video.<br>Formato: founder ad, podcast, day-in-the-life</div>
+      </div>
+
+      <div class="topico-card tc-explore">
+        <div class="topico-icon">👩‍💼</div>
+        <div class="topico-lente">NARANJA</div>
+        <h4>Mujeres trabajadoras</h4>
+        <p>"Rendís todo el día. Tu sueño también merece cuidado." Reseña clave: migrañosa/fotosensible que trabaja todo el día en compu.</p>
+        <div class="topico-estado">⚠️ SIN TRABAJAR — OPORTUNIDAD</div>
+        <div class="topico-hooks">Una reseña de 5★ ya valida el ángulo. Sin hooks ni contenido.</div>
+      </div>
+
+      <div class="topico-card tc-new">
+        <div class="topico-icon">🎁</div>
+        <div class="topico-lente">TODOS</div>
+        <h4>Como regalo</h4>
+        <p>"Buenísimos para hacer un regalo." ¿Conocés a alguien que maneja de noche? ¿Que se queja de los ojos? Entrada por empatía, no por dolor propio.</p>
+        <div class="topico-estado">🆕 NUEVO — SIN COMUNICAR</div>
+        <div class="topico-hooks">Detectado en reseñas MeLi. Sin hooks ni contenido.</div>
+      </div>
+
+      <div class="topico-card tc-active">
+        <div class="topico-icon">🏷️</div>
+        <div class="topico-lente">TODOS</div>
+        <h4>Precio / calidad / vs óptica</h4>
+        <p>Frameo contra la óptica ($150K por genéricos) no contra MeLi berreta. Livianos, cómodos, cambio notorio desde el primer día. CR-39 de laboratorio argentino.</p>
+        <div class="topico-estado">✅ ACTIVO</div>
+        <div class="topico-hooks">Objeciones: precio, Aliexpress, calidad percibida<br>Hook: N5 · Contenido de conversión</div>
+      </div>
+
+      <div class="topico-card tc-new">
+        <div class="topico-icon">🪩</div>
+        <div class="topico-lente">NARANJA</div>
+        <h4>Fiestas / electrónica / boliches</h4>
+        <p>Luces estroboscópicas azules y blancas directo a los ojos durante horas. Salís con los ojos destrozados. Doble ángulo: protección real + el naranja en una fiesta electrónica se ve bien estéticamente. Es de los pocos contextos donde el tinte suma en vez de restar.</p>
+        <div class="topico-estado">🆕 NUEVO — SIN COMUNICAR</div>
+        <div class="topico-hooks">Avatar: el que va a fiestas electrónicas seguido y al otro día no puede ni abrir los ojos<br>Sin hooks. Potencial visual altísimo para Reels/TikTok.</div>
+      </div>
+
+      <div class="topico-card tc-new">
+        <div class="topico-icon">🏍️</div>
+        <div class="topico-lente">AMARILLO</div>
+        <h4>Motociclistas</h4>
+        <p>Mismo encandilamiento que el conductor pero sin parabrisas. El LED pega directo, sin vidrio que atenue. Dolor amplificado. Comunidad muy activa en redes, muy leal a marcas que los entienden.</p>
+        <div class="topico-estado">🆕 NUEVO — SIN COMUNICAR</div>
+        <div class="topico-hooks">Sub-segmento del ángulo manejo con dolor extremo<br>Sin hooks. Comunidad organizada = distribución orgánica.</div>
+      </div>
+
+      <div class="topico-card tc-new">
+        <div class="topico-icon">📹</div>
+        <div class="topico-lente">AMARILLO / NARANJA</div>
+        <h4>Streaming / creadores de contenido</h4>
+        <p>Ring light + pantalla = doble impacto lumínico. Horas grabando con un aro de luz blanca en la cara más la pantalla de edición. Y al terminar tienen que dormir. Amarillo para la sesión, naranja para después.</p>
+        <div class="topico-estado">🆕 NUEVO — SIN COMUNICAR</div>
+        <div class="topico-hooks">Sin hooks. Potencial de collab/seeding con streamers.<br>El streamer usando NOMERCY en vivo = publicidad orgánica.</div>
+      </div>
+
+      <div class="topico-card tc-new">
+        <div class="topico-icon">🤕</div>
+        <div class="topico-lente">AMARILLO</div>
+        <h4>Fotosensibilidad / migrañas</h4>
+        <p>Gente que sufre con cualquier luz fuerte. Se ponen lentes de sol adentro de un shopping. Evitan salir. Dolor extremo, poca oferta en el mercado. Ya validado por una compradora migrañosa/fotosensible en reseña de 5★.</p>
+        <div class="topico-estado">🆕 NUEVO — SIN COMUNICAR</div>
+        <div class="topico-hooks">Reseña clave: "soy bastante migrañosa/fotosensible, posiblemente por el exceso de compu"<br>Segmento con dolor extremo y alta disposición a pagar.</div>
+      </div>
+
+      <div class="topico-card tc-new">
+        <div class="topico-icon">🏟️</div>
+        <div class="topico-lente">AMARILLO</div>
+        <h4>Eventos / estadios</h4>
+        <p>Reflectores LED en canchas, recitales, stands de ferias. Horas bajo iluminación brutal. El que va a la cancha de noche y vuelve con los ojos fritos.</p>
+        <div class="topico-estado">🆕 NUEVO — SIN COMUNICAR</div>
+        <div class="topico-hooks">Sin hooks. Momento de uso estacional (partidos nocturnos, recitales de verano).<br>Potencial para contenido situacional.</div>
+      </div>
+
+      <div class="topico-card tc-new">
+        <div class="topico-icon">🌙</div>
+        <div class="topico-lente">TODOS</div>
+        <h4>Turnos nocturnos generales</h4>
+        <p>Seguridad privada, fábricas, logística, call centers nocturnos. Viven bajo luz LED blanca toda la noche y después tienen que dormir de día. El rojo para forzar la melatonina antes de dormir a las 7AM.</p>
+        <div class="topico-estado">🆕 NUEVO — SIN COMUNICAR</div>
+        <div class="topico-hooks">Extensión natural del avatar médico de guardia<br>Sin hooks. Dolor real: el cuerpo no puede dormir de día.</div>
+      </div>
+
+      <div class="topico-card tc-new">
+        <div class="topico-icon">✈️</div>
+        <div class="topico-lente">NARANJA / ROJO</div>
+        <h4>Viajes en micro / avión</h4>
+        <p>Luz interior del micro/avión que no te deja dormir. Naranja o rojo para forzar la melatonina en un vuelo nocturno o un viaje de 12 horas. Uso puntual pero dolor agudo.</p>
+        <div class="topico-estado">🆕 NUEVO — SIN COMUNICAR</div>
+        <div class="topico-hooks">Sin hooks. Potencial estacional (vacaciones, feriados largos).<br>"¿Viajás en micro de noche y no podés dormir?"</div>
+      </div>
+
+      <div class="topico-card tc-new">
+        <div class="topico-icon">📊</div>
+        <div class="topico-lente">AMARILLO</div>
+        <h4>Traders / multi-pantalla</h4>
+        <p>3-4 monitores, horarios de mercado internacional, a veces de madrugada. Fatiga concentrada en pocas horas de alta intensidad. Comunidad que gasta en herramientas sin pestañear.</p>
+        <div class="topico-estado">🆕 NUEVO — SIN COMUNICAR</div>
+        <div class="topico-hooks">Extensión del avatar trabajador digital pero más intenso<br>Sin hooks. Alta disposición a pagar, bajo volumen.</div>
+      </div>
+
+    </div>
+
+    <div class="highlight">
+      <p><strong>Cómo leer el mural:</strong> 🟠 <strong>★ EL MÁS FUERTE</strong> = manejo, donde poner la mayor fuerza. 🟡 <strong>ACTIVO</strong> = funcionando, mantener y rotar creatives. ⬜ <strong>EN EXPLORACIÓN</strong> = funciona pero todavía no se sabe qué format rinde mejor. 🟢 <strong>NUEVO</strong> = detectado en comentarios/reseñas, sin comunicar todavía. ⚠️ <strong>PENDIENTE</strong> = oportunidad identificada sin producción.</p>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════ -->
+  <!-- 01 — LOS 3 PRODUCTOS -->
+  <!-- ══════════════════════════════════════════════════════ -->
+  <div class="section" id="productos">
+    <div class="section-header">
+      <div class="section-eyebrow">01</div>
+      <h2>Los 3 Productos</h2>
+    </div>
+
+    <div class="lente-grid">
+
+      <div class="lente-card lente-amarillo">
+        <div class="lente-tag">Lente 1 · Todo el día</div>
+        <h3>AMARILLO</h3>
+        <div class="lente-stat">50-70%</div>
+        <p style="color:#4a3e0e;font-size:11px;margin-bottom:14px;">Bloqueo · 400-480nm · CR-39</p>
+        <div class="lente-cuando">⚡ Trabajo diurno con pantallas<br>🚗 <strong style="color:#ffe348;">Manejo — uso principal del amarillo</strong><br>🌧️ Días nublados / lluviosos — mejora contraste</div>
+        <p><strong style="color:#c8a820;">Para qué:</strong> Reduce fatiga ocular, dolores de cabeza, glare de pantalla. En manejo: baja la violencia lumínica de los LED, reduce el encandilamiento de faros, protege en el ciclo oscuridad-destello-oscuridad.</p>
+        <div class="lente-personas">
+          <div class="label">Para quién</div>
+          <ul>
+            <li>Conductores Uber/remis/viajantes — foco principal</li>
+            <li>Trabajadores 6-10 horas frente a pantalla</li>
+            <li>Camioneros — manejo diurno y nocturno</li>
+            <li>Gamers diurnos</li>
+            <li>Médicos de guardia bajo luces LED</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="lente-card lente-naranja">
+        <div class="lente-tag">Lente 2 · EL ESENCIAL · Gaming nocturno</div>
+        <h3>NARANJA</h3>
+        <div class="lente-stat">95-99%</div>
+        <p style="color:#5a2e0e;font-size:11px;margin-bottom:14px;">Bloqueo · 400-500nm · CR-39</p>
+        <div class="lente-cuando">🎮 Gaming nocturno — foco actual<br>🌙 Noche con pantallas · 1-2 horas antes de dormir</div>
+        <p><strong style="color:#f5a623;">Para qué:</strong> Bloquea los 460-484nm que activan la melanopsina y suprimen la melatonina. Permite que el ciclo circadiano inicie la producción de melatonina aunque estés en pantalla.</p>
+        <div class="lente-personas">
+          <div class="label">Para quién</div>
+          <ul>
+            <li>Gamers nocturnos — sesiones largas</li>
+            <li>Estudiantes nocturnos</li>
+            <li>Trabajadores nocturnos / freelancers</li>
+            <li>Scrolleadores: "me meto 5 minutos y son las 3AM"</li>
+            <li>Cualquiera que tarde en dormirse</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="lente-card lente-rojo">
+        <div class="lente-tag">Lente 3 · Insomnio / scroll nocturno</div>
+        <h3>ROJO</h3>
+        <div class="lente-stat">99%+</div>
+        <p style="color:#5a1e1e;font-size:11px;margin-bottom:14px;">Bloqueo · 400-570nm (incluye verde) · CR-39</p>
+        <div class="lente-cuando">🔴 Insomnio · Scroll en la cama · Última hora antes de dormir</div>
+        <p><strong style="color:#ff8080;">Para qué:</strong> Bloqueo máximo, incluye espectro verde. Para apagar el cerebro antes de dormir — scrolleadores que no pueden soltar el celu, gente que no puede dormirse, biohackers que quieren el protocolo completo. Todavía en exploración — funciona pero no se sabe bien qué ángulo rinde más.</p>
+        <div class="lente-personas">
+          <div class="label">Para quién</div>
+          <ul>
+            <li>Scrolleadores — madrugada en cama</li>
+            <li>Estudiantes que terminan de madrugada</li>
+            <li>Biohackers / optimizadores de sueño</li>
+            <li>Trabajadores nocturnos que duermen de día</li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="highlight">
+      <p><strong>El sistema completo:</strong> Amarillo (pantallas + manejo) → Naranja (gaming nocturno) → Rojo (insomnio / scroll en la cama). Cada lente tiene un momento específico. No se necesitan los tres para empezar. <strong>Foco actual de comunicación:</strong> Manejo es el ángulo más fuerte por lejos. Naranja → gaming. Rojo → insomnio/scroll. Todavía en exploración qué funciona mejor para naranja y rojo.</p>
+    </div>
+
+    <div class="warning">
+      <div class="warning-title">El amarillo NO protege el sueño</div>
+      <p>El amarillo es para fatiga ocular diurna y para manejo — no bloquea el espectro de 460-484nm que suprime la melatonina. Para sueño: naranja mínimo. Nunca comunicar el amarillo como solución de sueño.</p>
+    </div>
+
+    <h3>El tinte como evidencia</h3>
+    <div class="highlight">
+      <p>Esta es la idea más poderosa de NOMERCY: <strong>el tinte naranja no es un defecto estético, es la evidencia de que funciona.</strong> Si podés ver los colores del mundo con normalidad con los lentes puestos, la melatonina no está protegida. Es una prueba visible e inmediata. El amarillo "da medio miedo" al principio — puestos, los conductores no lo perciben como rareza, lo perciben como alivio.</p>
+      <p><strong>El test definitivo:</strong> poné el cristal NOMERCY frente a un foco RGB en azul. No pasa nada de luz. Cero. Hacé lo mismo con un lente "blue blocker" transparente y el azul pasa entero. Esto es replicable por cualquier cliente que tenga una tira LED o un foco inteligente en la casa — y cierra la discusión de "funciona o no funciona" de un saque.</p>
+    </div>
+
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════ -->
+  <!-- 02 — AVATARES POR LENTE -->
+  <!-- ══════════════════════════════════════════════════════ -->
+  <div class="section" id="avatares">
+    <div class="section-header">
+      <div class="section-eyebrow">02</div>
+      <h2>Avatares por Lente</h2>
+    </div>
+
+    <div class="avatar-grid">
+
+      <!-- AMARILLO 1 -->
+      <div class="avatar-card av-amarillo">
+        <div class="avatar-lente">AMARILLO · Avatar 1</div>
+        <h4>Conductor nocturno</h4>
+        <ul class="dolor-list">
+          <li>
+            <strong>Dolor 1 — Encandilamiento</strong>
+            Cada auto de frente lo encandila. Las SUVs y camionetas tienen los faros a la altura de sus ojos. Está en baja y no importa: el LED penetra igual.
+          </li>
+          <li>
+            <strong>Dolor 2 — El ciclo que destruye</strong>
+            Oscuridad → destello → oscuridad → destello. Las pupilas se abren y se cierran sin parar. Después de 3 horas los ojos están destruidos.
+          </li>
+          <li>
+            <strong>Dolor 3 — El espejo como arma</strong>
+            El auto de atrás también encandila — la luz rebota en el retrovisor y pega directo. Tiene que mover el espejo y pierde visibilidad trasera.
+          </li>
+          <li>
+            <strong>Dolor 4 — El final del turno</strong>
+            Se mira al espejo del baño y no se reconoce los ojos. Rojos, hinchados. Lo normaliza como parte del trabajo. No lo es.
+          </li>
+          <li>
+            <strong>Dolor 5 — Llega destruido y no puede dormir</strong>
+            El estrés visual acumulado mantiene el sistema nervioso activo. Termina el turno agotado pero no puede bajar. Miedo real a quedarse dormido al volante en el próximo turno.
+          </li>
+        </ul>
+      </div>
+
+      <!-- AMARILLO 2 -->
+      <div class="avatar-card av-amarillo">
+        <div class="avatar-lente">AMARILLO · Avatar 2</div>
+        <h4>Trabajador digital</h4>
+        <ul class="dolor-list">
+          <li>
+            <strong>Dolor 1 — Las 4-5PM</strong>
+            6-10 horas de pantalla por día. A partir de las 4-5 de la tarde los ojos pesan, la pantalla se ve "más brillante de lo que debería". Le quedan 2-3 horas más de trabajo.
+          </li>
+          <li>
+            <strong>Dolor 2 — El ibuprofeno en el cajón</strong>
+            Dolor de cabeza recurrente que aparece todos los días a la misma hora. Lo toma como parte del trabajo. Tiene la caja en el cajón del escritorio.
+          </li>
+          <li>
+            <strong>Dolor 3 — Probó todo</strong>
+            Modo oscuro: no cambió nada. Night mode: no cambió nada. Bajar el brillo: menos visibilidad, mismo dolor. El problema no es el brillo — es la composición de la luz.
+          </li>
+          <li>
+            <strong>Dolor 4 — La vergüenza del naranja</strong>
+            Cuando ve los lentes amarillos piensa: ¿cómo llego a una videollamada con esto? Necesita ver que los amarillos se ven "normales" puestos — el filtro es casi transparente.
+          </li>
+        </ul>
+      </div>
+
+      <!-- NARANJA 1 -->
+      <div class="avatar-card av-naranja">
+        <div class="avatar-lente">NARANJA · Avatar 3</div>
+        <h4>Gamer nocturno</h4>
+        <ul class="dolor-list">
+          <li>
+            <strong>Dolor 1 — Ojos secos que arden</strong>
+            Sesiones de 3-5 horas. Los ojos se secan con el AC. Empiezan a arder. A las 2 horas ya los está frotando pero no para de jugar.
+          </li>
+          <li>
+            <strong>Dolor 2 — El dolor detrás de las cejas</strong>
+            Dolor de cabeza difuso que no es agudo sino constante — presión detrás de los ojos y las cejas.
+          </li>
+          <li>
+            <strong>Dolor 3 — El cerebro sigue corriendo</strong>
+            Termina de jugar, se acuesta y la mente sigue corriendo. Estrategias, jugadas, la partida de antes. No puede desconectar. Tarda 45-60 minutos en dormirse.
+          </li>
+          <li>
+            <strong>Dolor 4 — Ve el juego con los ojos cerrados</strong>
+            Después de 4+ horas con la pantalla se acuesta y ve el juego proyectado. Los bastones de la retina están saturados. El sueño cuando llega es de peor calidad.
+          </li>
+        </ul>
+      </div>
+
+      <!-- NARANJA 2 -->
+      <div class="avatar-card av-naranja">
+        <div class="avatar-lente">NARANJA · Avatar 4</div>
+        <h4>Estudiante nocturno</h4>
+        <ul class="dolor-list">
+          <li>
+            <strong>Dolor 1 — Los ojos se cierran solos</strong>
+            Después de cierto punto (generalmente después de las 11-12PM) los ojos simplemente no quieren seguir. Los cierra sin querer, se despierta de golpe. Estudiar se vuelve luchar contra el cuerpo.
+          </li>
+          <li>
+            <strong>Dolor 2 — "No me entra nada"</strong>
+            Lee el mismo párrafo cuatro veces y no procesa nada. La pantalla ya no entrega información — la saturación visual bloquea la concentración.
+          </li>
+          <li>
+            <strong>Dolor 3 — La cabeza le explota</strong>
+            Presión ocular que se convierte en presión craneal. El contenido de la pantalla se vuelve "pesado" visualmente — contraste, parpadeo, blanco que quema.
+          </li>
+          <li>
+            <strong>Dolor 4 — El parcial es mañana</strong>
+            No puede darse el lujo de rendirse. Tiene que llegar. El estrés amplifica la fatiga. A esa hora ya no retiene pero tampoco puede parar.
+          </li>
+        </ul>
+      </div>
+
+      <!-- ROJO 1 -->
+      <div class="avatar-card av-rojo">
+        <div class="avatar-lente">ROJO · Avatar 5</div>
+        <h4>Estudiante de madrugada</h4>
+        <ul class="dolor-list">
+          <li>
+            <strong>Dolor 1 — Termina de estudiar a las 4AM</strong>
+            El parcial es en 3 horas. No tiene sentido irse a dormir. Se tira a la cama pero la cabeza no para — repasa, recita, clasifica información.
+          </li>
+          <li>
+            <strong>Dolor 2 — La alarma suena y no durmió nada</strong>
+            O durmió 1 hora. El cuerpo se levantó pero la mente no. Llega al parcial con la cara de haber dormido mal y la cabeza vacía — todo lo que estudió se fue.
+          </li>
+          <li>
+            <strong>Trigger de compra:</strong> "Con el rojo me hubiera dormido esa hora y media. El parcial hubiera salido mejor."
+          </li>
+        </ul>
+      </div>
+
+      <!-- ROJO 2 -->
+      <div class="avatar-card av-rojo">
+        <div class="avatar-lente">ROJO · Avatar 6</div>
+        <h4>Scrolleador nocturno</h4>
+        <ul class="dolor-list">
+          <li>
+            <strong>Dolor 1 — "Me meto 5 minutos y son las 3AM"</strong>
+            Sabe que tiene que dormir. "Un video más." "Un post más." El scroll es automático, sin intención. A las 3 mira el reloj y no lo puede creer.
+          </li>
+          <li>
+            <strong>Dolor 2 — Apaga el celu y se queda mirando el techo</strong>
+            Finalmente lo apaga pero el cerebro no se desconectó. El sueño no llega. Está destruido pero activo.
+          </li>
+          <li>
+            <strong>Dolor 3 — Se despierta cansado aunque haya dormido</strong>
+            Durmió 6-7 horas pero el sueño fue de mala calidad — la melatonina que se suprimió las horas antes degradó las fases de sueño profundo.
+          </li>
+          <li>
+            <strong>Insight clave:</strong> No va a dejar el scroll. No le pidas que lo deje. Dále algo que le permita seguir scrolleando sin pagar el costo.
+          </li>
+        </ul>
+      </div>
+
+    </div>
+
+    <h3>Deep-dive — El conductor nocturno (el avatar más nuevo)</h3>
+    <div class="highlight">
+      <p><strong>Lo que le pasa físicamente:</strong> El ciclo oscuridad-destello-oscuridad no es solo una molestia estética. A 60 km/h, los 2-3 segundos de ceguera momentánea después de un destello LED equivalen a 50 metros manejando sin ver. Los bastones de la retina — responsables de la visión nocturna — necesitan rodopsina para funcionar. Los LED azulados destruyen la rodopsina. Cada destello resetea el proceso. Después de 4 horas de turno, el ojo ya no tiene rodopsina para regenerar y la visión nocturna está comprometida de manera real.</p>
+      <p><strong>Lo que le pasa emocionalmente:</strong> Normaliza los ojos destruidos al final del turno. No lo conecta con el encandilamiento — lo atribuye al cansancio general, al horario, a "la edad". No sabe que hay algo que lo proteja. Cuando alguien le explica el mecanismo (LED azul → destruye rodopsina → ceguera momentánea → fatiga ocular acumulada), le hace sentido inmediato. No es misterio — es física.</p>
+      <p><strong>El trigger de compra:</strong> Un destello especialmente agresivo que lo asustó. Un momento en que se dio cuenta de que no vio bien por unos segundos. O un compañero de trabajo que ya los usa y le contó. El miedo a quedarse dormido al volante — eso moviliza. La fatiga ocular crónica está naturalizada. El riesgo de seguridad real no.</p>
+      <p><strong>Amplificador — astigmatismo:</strong> Los conductores con astigmatismo sufren el encandilamiento multiplicado. Los halos de luz de los LED se expanden más, duran más, y cubren más campo visual. Es un sub-segmento con dolor amplificado que responde más rápido al hook de manejo. Detectado en comentarios de ads (Mar 2026).</p>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════ -->
+  <!-- 03 — SÍNTOMAS POR POTENCIA -->
+  <!-- ══════════════════════════════════════════════════════ -->
+  <div class="section" id="sintomas">
+    <div class="section-header">
+      <div class="section-eyebrow">03</div>
+      <h2>Mural de Síntomas y Sensaciones</h2>
+    </div>
+
+    <p style="margin-bottom:24px;">Todo lo que el target siente, dice y experimenta con la luz. Ordenado por potencia para generar acción. Los de arriba son los que más duelen, más movilizan y más se conectan con el producto de manera inmediata. Las sensaciones son lo que le pasa al cuerpo — no siempre las identifica como problema.</p>
+
+    <div class="mural-label ml-max">Máxima potencia — moviliza compra inmediata</div>
+    <div class="mural-grid">
+      <div class="mural-chip mc-max"><strong>"La cabeza me explota"</strong>Dolor de cabeza recurrente post-pantalla</div>
+      <div class="mural-chip mc-max"><strong>Ojos que arden</strong>"Los ojos como tomates"</div>
+      <div class="mural-chip mc-max"><strong>Encandilamiento</strong>Quedás viendo manchas de los faros</div>
+      <div class="mural-chip mc-max"><strong>Ibuprofeno ritual</strong>La caja en el cajón del escritorio</div>
+      <div class="mural-chip mc-max"><strong>Miedo al volante</strong>Miedo a quedarte dormido manejando</div>
+      <div class="mural-chip mc-max"><strong>Ojos destruidos</strong>Fin de turno: rojos, hinchados</div>
+      <div class="mural-chip mc-max"><strong>Migraña / fotosensibilidad</strong>Cualquier luz fuerte = dolor agudo</div>
+    </div>
+
+    <div class="mural-label ml-high">Alta potencia — identifica el problema rápido</div>
+    <div class="mural-grid">
+      <div class="mural-chip mc-high"><strong>No puede dormirse</strong>Destruido pero la cabeza no para</div>
+      <div class="mural-chip mc-high"><strong>"No me entra nada"</strong>Lee 4 veces el mismo párrafo</div>
+      <div class="mural-chip mc-high"><strong>Ojos que se cierran solos</strong>Estudiando o trabajando</div>
+      <div class="mural-chip mc-high"><strong>Presión detrás de las cejas</strong>Dolor constante, no agudo</div>
+      <div class="mural-chip mc-high"><strong>A las 4-5PM no da más</strong>La pantalla "brilla de más"</div>
+      <div class="mural-chip mc-high"><strong>El scroll infinito</strong>"5 minutos" → son las 3AM</div>
+      <div class="mural-chip mc-high"><strong>Halos con astigmatismo</strong>Los LED se expanden en anillos</div>
+      <div class="mural-chip mc-high"><strong>El cerebro sigue corriendo</strong>Post-gaming, post-estudio, post-scroll</div>
+    </div>
+
+    <div class="mural-label ml-med">Media potencia — lo normaliza pero lo sufre</div>
+    <div class="mural-grid">
+      <div class="mural-chip mc-med"><strong>Ver manchas / flashazos</strong>Después de pantalla o manejo</div>
+      <div class="mural-chip mc-med"><strong>Despertarse cansado</strong>Durmió 7-8hs pero no rindieron</div>
+      <div class="mural-chip mc-med"><strong>Ojos secos</strong>Se frota los ojos todo el día</div>
+      <div class="mural-chip mc-med"><strong>Lagrimeo involuntario</strong>Los ojos se defienden solos</div>
+      <div class="mural-chip mc-med"><strong>Achicar los ojos</strong>Entrecierra para ver de noche</div>
+      <div class="mural-chip mc-med"><strong>"Probé todo"</strong>Dark mode, night shift, bajar brillo</div>
+      <div class="mural-chip mc-med"><strong>Mover el espejo retrovisor</strong>La luz de atrás rebota y pega</div>
+      <div class="mural-chip mc-med"><strong>Snooze infinito</strong>La alarma suena, el cuerpo no responde</div>
+      <div class="mural-chip mc-med"><strong>Visión "pesada"</strong>La pantalla se siente densa, opaca</div>
+    </div>
+
+    <div class="mural-label ml-sensation">Sensaciones — lo que la luz le hace al cuerpo</div>
+    <div class="mural-grid">
+      <div class="mural-chip mc-sensation"><strong>Pupilas que no paran</strong>Se abren y cierran con cada faro</div>
+      <div class="mural-chip mc-sensation"><strong>Retina saturada</strong>Ve el juego/la pantalla con los ojos cerrados</div>
+      <div class="mural-chip mc-sensation"><strong>Ceguera momentánea</strong>2-3 seg sin ver después de un destello</div>
+      <div class="mural-chip mc-sensation"><strong>El blanco que quema</strong>Hojas, pantalla, paredes blancas bajo LED</div>
+      <div class="mural-chip mc-sensation"><strong>Presión craneal</strong>De los ojos sube a la frente y las sienes</div>
+      <div class="mural-chip mc-sensation"><strong>Cerebro "encendido"</strong>La melatonina no arranca — estás activo</div>
+      <div class="mural-chip mc-sensation"><strong>El rebote del LED</strong>Pisos, techos, espejos devuelven la luz</div>
+      <div class="mural-chip mc-sensation"><strong>Parpadeo forzado</strong>Los ojos parpadean de más intentando protegerse</div>
+      <div class="mural-chip mc-sensation"><strong>Vista borrosa temporal</strong>Después de horas de foco cercano</div>
+      <div class="mural-chip mc-sensation"><strong>"Violencia lumínica"</strong>La agresividad acumulada del entorno LED</div>
+      <div class="mural-chip mc-sensation"><strong>Contraste muerto</strong>Días nublados, ruta gris, todo plano</div>
+      <div class="mural-chip mc-sensation"><strong>El ciclo que destruye</strong>Oscuridad → destello → oscuridad → destello</div>
+      <div class="mural-chip mc-sensation"><strong>Estroboscopia</strong>Luces de boliche/fiesta que taladran los ojos</div>
+      <div class="mural-chip mc-sensation"><strong>Luz sin escapatoria</strong>Micro, avión, hospital — no podés apagar</div>
+      <div class="mural-chip mc-sensation"><strong>Ring light en la cara</strong>Luz directa durante horas para streaming</div>
+      <div class="mural-chip mc-sensation"><strong>El brillo del celu en la oscuridad</strong>La pantalla es la única fuente de luz</div>
+      <div class="mural-chip mc-sensation"><strong>Reflector de estadio</strong>LED industrial directo durante horas</div>
+      <div class="mural-chip mc-sensation"><strong>Multi-pantalla</strong>3-4 monitores irradiando al mismo tiempo</div>
+    </div>
+
+    <div class="success">
+      <div class="success-title">Patrón de los hooks que más duran</div>
+      <p>Los hooks que superan los 40 días de corrida son los que nombran el dolor físico concreto: ojos que pesan, ibuprofeno, horas de pantalla. El sueño funciona como beneficio final, no como hook de entrada. La excepción: en el avatar gamer/nocturno, "no poder dormirse" es el hook directo porque el dolor ya es obvio para ellos.</p>
+    </div>
+
+    <div class="highlight">
+      <p><strong>Cómo usar este mural:</strong> Cada chip es un posible hook de entrada, una escena filmable, o un ángulo de copy. Los de máxima potencia van primero en el guion. Las sensaciones son para contenido educativo y remarketing — explicar POR QUÉ les pasa lo que les pasa. Un buen guion arranca con un síntoma de arriba y explica la sensación que lo causa.</p>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════ -->
+  <!-- 04 — OBJECIONES -->
+  <!-- ══════════════════════════════════════════════════════ -->
+  <div class="section" id="objeciones">
+    <div class="section-header">
+      <div class="section-eyebrow">04</div>
+      <h2>Objeciones + Respuestas</h2>
+    </div>
+
+    <div class="obj-list">
+      <div class="obj-item">
+        <div class="obj-q">Parecen anteojos de juguete / se ven raros</div>
+        <div class="obj-a">Se ven normales puestos — el amarillo especialmente. El naranja tiene color, sí: <strong>ese color es el filtro</strong>. Un lente transparente que dice filtrar luz azul no está haciendo nada para la melatonina. La rareza visual es la evidencia de que funciona.</div>
+      </div>
+      <div class="obj-item">
+        <div class="obj-q">¿Funciona o es marketing?</div>
+        <div class="obj-a"><strong>3.900 vendidos. 4.7 estrellas.</strong> Laboratorio argentino. Cristal CR-39 con filtro real, no coating. El mecanismo es fisiología básica: la melanopsina del ojo responde a los 460-484nm. El tinte los bloquea. No es especulación. <strong>Test casero:</strong> poné el cristal frente a un foco RGB en azul — no pasa nada de luz. Hacé lo mismo con un "blue blocker" transparente y el azul pasa entero. La diferencia es visible e inmediata.</div>
+      </div>
+      <div class="obj-item">
+        <div class="obj-q">Son caros</div>
+        <div class="obj-a"><strong>3 cuotas sin interés.</strong> ¿Cuánto gastás en ibuprofeno al mes? ¿Cuánto vale para vos rendir bien en el trabajo, en el parcial, en el turno? El costo de no usarlos es mayor — es solo invisible.</div>
+      </div>
+      <div class="obj-item">
+        <div class="obj-q">¿Para qué 3 colores? ¿No con uno alcanza?</div>
+        <div class="obj-a">Cada uno para un momento del día y un nivel de filtro. <strong>No necesitás los tres para empezar.</strong> Si el problema es el manejo o el trabajo → Amarillo. Si el problema es dormirte → Naranja. Si querés el máximo → Rojo. Un lente, el que resuelve tu problema específico.</div>
+      </div>
+      <div class="obj-item">
+        <div class="obj-q">¿Afecta los colores que ves?</div>
+        <div class="obj-a">Un poco, especialmente el naranja. El ojo se adapta en minutos. Y esa adaptación es la señal de que el filtro es real — si no cambia nada, no está haciendo nada. El amarillo en manejo se adapta tan rápido que a los 10 minutos no lo notás.</div>
+      </div>
+      <div class="obj-item">
+        <div class="obj-q">Tengo el modo nocturno activado</div>
+        <div class="obj-a">El modo nocturno reduce brillo pero <strong>no elimina los 460-484nm</strong> que activan la melanopsina. Es una solución parcial. Los lentes naranja hacen lo que el modo nocturno no puede. Para manejo, el modo nocturno del celu no hace absolutamente nada.</div>
+      </div>
+      <div class="obj-item">
+        <div class="obj-q">Vi un estudio que dice que son un scam</div>
+        <div class="obj-a">Ese estudio (Cochrane Review 2023) habló de lentes <strong>transparentes para fatiga ocular</strong>. No de lentes naranja/rojo para el sueño. Son categorías distintas. Los lentes claros probablemente son un scam — los tintados son diferente ciencia. NOMERCY puede apropiarse de esa controversia. <strong>El test del foco RGB azul lo demuestra en 5 segundos:</strong> el transparente deja pasar el azul, el NOMERCY lo bloquea todo.</div>
+      </div>
+
+      <h3>Objeciones nuevas — detectadas en comentarios de ads (Mar 2026)</h3>
+
+      <div class="obj-item">
+        <div class="obj-q">¿Vienen con graduación / aumento / receta?</div>
+        <div class="obj-a"><strong>La objeción #1 por volumen.</strong> Aparece 20+ veces en cada post. <strong>No, NOMERCY no viene con graduación ni aumento.</strong> Respuesta estándar para comentarios: "No vienen con graduación, son lentes de protección lumínica sin aumento." Directo, sin rodeos. Es barrera de compra para una porción del target pero no es algo que se vaya a resolver — el producto es este.</div>
+      </div>
+      <div class="obj-item">
+        <div class="obj-q">Se ve oscuro / todo amarillo / no me gusta ver la vida en amarillo</div>
+        <div class="obj-a">El ojo se adapta en 5-10 minutos — el cerebro recalibra los colores. Es como cuando entrás a una habitación con luz cálida: al principio se ve amarillo, a los minutos se ve normal. <strong>Puestos, los conductores no perciben el amarillo como rareza. Lo perciben como alivio.</strong> La clave: videos de "antes/después" con cámara a través del lente para mostrar que no es una lámina opaca.</div>
+      </div>
+      <div class="obj-item">
+        <div class="obj-q">El problema no son los autos nuevos — son los que ponen LED en ópticas viejas</div>
+        <div class="obj-a">Tienen razón técnicamente. Los faros LED de fábrica vienen con ópticas diseñadas para esa luz. El problema masivo son los LED aftermarket en ópticas de halógeno que desparraman luz sin control. <strong>Acción para comunicación:</strong> no decir "autos nuevos" como generalización. Decir "las luces LED que te vienen de frente" o "los faros que encandilan" — sin atribuirlo a un tipo de auto. El dolor es universal, el enemigo es la luz, no el auto.</div>
+      </div>
+      <div class="obj-item">
+        <div class="obj-q">La solución es prohibir los LED, no comprar lentes</div>
+        <div class="obj-a">No es una objeción de producto — es una postura ideológica. <strong>No discutir.</strong> Respuesta: "Ojalá. Mientras tanto, esto te protege hoy." Posicionar NOMERCY como solución práctica mientras la regulación no existe. La frustración con los LED es un aliado — amplifica el dolor. No combatirla, montarla.</div>
+      </div>
+      <div class="obj-item">
+        <div class="obj-q">Son caros / 120 lucas por unos anteojos</div>
+        <div class="obj-a">Ya estaba parcialmente cubierta. Refuerzo desde los comentarios: la comparación con óptica es clave. Angela Maldonado: "Lo compras en una óptica y vienen 4 tonos y los pague 150.000." NOMERCY tiene que posicionarse vs la óptica, no vs MeLi genérico. <strong>Frameo:</strong> "en una óptica te cobran $150K por un lente genérico sin marca. NOMERCY con cristal CR-39 de laboratorio argentino + envío gratis + 3 cuotas."</div>
+      </div>
+      <div class="obj-item">
+        <div class="obj-q">Parece publicidad de Llama Ya / no es un comercio serio / revenden Aliexpress</div>
+        <div class="obj-a"><strong>Riesgo de percepción real.</strong> Cristian Falcón marcó que el ad usó "destello" en vez de "encandilamiento" y "frecuencia" en vez de "longitud de onda". <strong>Acción:</strong> usar el vocabulario correcto siempre. "Encandilamiento" es la palabra del cliente. Los ads tienen que sonar como alguien que sabe, no como alguien que leyó una ficha técnica mal traducida. El tono del founder (rioplatense auténtico) + datos precisos = credibilidad. El tono clickbait + errores técnicos = pérdida de confianza.</div>
+      </div>
+      <div class="obj-item">
+        <div class="obj-q">Tengo astigmatismo — lo sufro peor</div>
+        <div class="obj-a">El astigmatismo amplifica el efecto del encandilamiento porque los halos de luz se expanden más. NOMERCY filtra la frecuencia que genera esos halos. <strong>Oportunidad de sub-segmento:</strong> personas con astigmatismo son un avatar con dolor amplificado. Un hook específico para ellos puede funcionar muy bien: "Si tenés astigmatismo, los faros LED son todavía peores para vos."</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════ -->
+  <!-- 05 — ÁNGULOS -->
+  <!-- ══════════════════════════════════════════════════════ -->
+  <div class="section" id="angulos">
+    <div class="section-header">
+      <div class="section-eyebrow">05</div>
+      <h2>Ángulos que Funcionan</h2>
+    </div>
+
+    <div class="angulo-grid">
+      <div class="angulo-card">
+        <div class="angulo-icon">🚗</div>
+        <h4>Seguridad en manejo ★</h4>
+        <p><strong>El ángulo más fuerte por lejos.</strong> Manejás de noche sin miedo al encandilamiento. Los LED no te destruyen los ojos. El miedo a quedarse dormido al volante — moviliza más que la fatiga. Amarillo como solución.</p>
+      </div>
+      <div class="angulo-card">
+        <div class="angulo-icon">⚡</div>
+        <h4>Productividad / Pantallas</h4>
+        <p>Trabajás más horas sin que el cuerpo te diga basta. Los ojos no te limitan a las 4PM. Para el avatar trabajador digital. Amarillo.</p>
+      </div>
+      <div class="angulo-card">
+        <div class="angulo-icon">🎮</div>
+        <h4>Gaming nocturno</h4>
+        <p>Terminás la sesión sin los ojos destruidos. Podés seguir jugando más tiempo. Y cuando terminás, el sueño llega. Naranja como lente principal.</p>
+      </div>
+      <div class="angulo-card">
+        <div class="angulo-icon">🧠</div>
+        <h4>Alivio de dolor</h4>
+        <p>La cabeza no explota, los ojos no arden. El ibuprofeno en el cajón. El síntoma que más duele y más moviliza. Top de funnel.</p>
+      </div>
+      <div class="angulo-card">
+        <div class="angulo-icon">😴</div>
+        <h4>Insomnio / Scroll nocturno</h4>
+        <p>Para el que se acuesta y el cerebro no para. El rojo como cierre de noche. Todavía en exploración — el ángulo funciona pero no se sabe bien qué format rinde mejor.</p>
+      </div>
+      <div class="angulo-card">
+        <div class="angulo-icon">📚</div>
+        <h4>Rendimiento académico</h4>
+        <p>Llegás al parcial con todo adentro. Los ojos no te traicionan a las 2AM. El rojo para bajar el cerebro antes de dormir las últimas horas.</p>
+      </div>
+    </div>
+
+    <h3>Ángulos prioritarios por ángulo de entrada</h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Ángulo</th><th>Hook de entrada</th><th>Producto</th><th>Estado</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Manejo nocturno / seguridad</strong></td>
+            <td>"¿Los faros te encandilan y quedás viendo manchas?"</td>
+            <td>Amarillo</td>
+            <td>✅ <strong>El más fuerte</strong></td>
+          </tr>
+          <tr>
+            <td><strong>El tinte como evidencia</strong></td>
+            <td>"Si podés ver el mundo en colores normales con los lentes puestos, no te están protegiendo."</td>
+            <td>Todos</td>
+            <td>✅ Principal</td>
+          </tr>
+          <tr>
+            <td><strong>Las mañanas</strong></td>
+            <td>"Lo que hacés esta noche decide cómo te despertás mañana."</td>
+            <td>Naranja / Rojo</td>
+            <td>✅ Principal</td>
+          </tr>
+          <tr>
+            <td><strong>La honestidad / Cochrane / el test real</strong></td>
+            <td>"El test del láser que usan todas las marcas es humo. Esto es lo que pasa con un foco azul de verdad."</td>
+            <td>Todos</td>
+            <td>✅ Principal — reforzado con test RGB</td>
+          </tr>
+          <tr>
+            <td><strong>Pioneros en Argentina</strong></td>
+            <td>"Lo que Huberman recomienda, disponible en Argentina."</td>
+            <td>Todos</td>
+            <td>✅ Credibilidad</td>
+          </tr>
+          <tr>
+            <td><strong>Mujeres trabajadoras</strong></td>
+            <td>"Rendís todo el día. Tu sueño también merece cuidado."</td>
+            <td>Naranja</td>
+            <td>⚠️ Sin trabajar — oportunidad</td>
+          </tr>
+          <tr>
+            <td><strong>El founder — Agustín</strong></td>
+            <td>"Busqué este producto en Argentina y no existía. Lo hice yo."</td>
+            <td>Todos</td>
+            <td>⚠️ Sin trabajar — pendiente filmar</td>
+          </tr>
+          <tr>
+            <td><strong>Pilotos de rally</strong></td>
+            <td>"Los pilotos de rally usan lentes amarillos hace décadas. ¿Sabés por qué?"</td>
+            <td>Amarillo</td>
+            <td>⚠️ Nuevo — detectado en comentarios</td>
+          </tr>
+          <tr>
+            <td><strong>Astigmatismo amplificado</strong></td>
+            <td>"Si tenés astigmatismo, los faros LED son todavía peores para vos."</td>
+            <td>Amarillo</td>
+            <td>⚠️ Nuevo — sub-segmento con dolor mayor</td>
+          </tr>
+          <tr>
+            <td><strong>Días nublados / lluvia</strong></td>
+            <td>"Ruta gris, día nublado. Todo plano. El amarillo levanta el contraste."</td>
+            <td>Amarillo</td>
+            <td>⚠️ Nuevo — momento de uso no comunicado</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════ -->
+  <!-- 06 — PERFORMANCE & DATOS -->
+  <!-- ══════════════════════════════════════════════════════ -->
+  <div class="section" id="performance">
+    <div class="section-header">
+      <div class="section-eyebrow">06</div>
+      <h2>Performance &amp; Datos</h2>
+    </div>
+
+    <div class="metric-row">
+      <div class="metric-box"><div class="metric-val">3.900+</div><div class="metric-label">Unidades vendidas</div></div>
+      <div class="metric-box"><div class="metric-val">4.7★</div><div class="metric-label">Rating promedio</div></div>
+      <div class="metric-box"><div class="metric-val">$174K</div><div class="metric-label">AOV enero 2026</div></div>
+      <div class="metric-box"><div class="metric-val">56 días</div><div class="metric-label">Hook más longevo</div></div>
+    </div>
+
+    <h3>Hooks longevos — los que no fatigan</h3>
+    <div class="table-wrap">
+      <table class="hook-table">
+        <thead>
+          <tr><th>#</th><th>Lente</th><th>Hook</th><th>Días</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1</td>
+            <td><span class="hook-badge hb-amarillo">AMARILLO</span></td>
+            <td class="hook-text">"¿A vos también los ojos te pesan después de 5 horas de pantalla?"</td>
+            <td class="hook-days">56 días</td>
+          </tr>
+          <tr>
+            <td>2</td>
+            <td><span class="hook-badge hb-amarillo">AMARILLO</span></td>
+            <td class="hook-text">"¿Tomás ibuprofeno seguido por el dolor de cabeza?"</td>
+            <td class="hook-days">49 días</td>
+          </tr>
+          <tr>
+            <td>3</td>
+            <td><span class="hook-badge hb-amarillo">AMARILLO</span></td>
+            <td class="hook-text">"Si trabajás más de 6 horas en la compu, te tengo que contar esto."</td>
+            <td class="hook-days">49 días</td>
+          </tr>
+          <tr>
+            <td>4</td>
+            <td><span class="hook-badge hb-todos">TODOS</span></td>
+            <td class="hook-text">"Si sos como yo que laburo un montón de horas de noche frente a la computadora..."</td>
+            <td class="hook-days">28 días</td>
+          </tr>
+          <tr>
+            <td>5</td>
+            <td><span class="hook-badge hb-amarillo">AMARILLO</span></td>
+            <td class="hook-text">"¿Manejás de noche y cada auto que viene de frente te pega un destello en los ojos?"</td>
+            <td class="hook-days">17 días</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Diagnóstico activo — bugs a resolver</h3>
+    <div class="alert">
+      <div class="alert-title">Bug AOV — Bundle "40% OFF"</div>
+      <p>El bundle dice "40% OFF" pero es 40% en la segunda unidad = ~20% efectivo sobre el par. El buyer frío espera $143K y el carrito dice $192K. <strong>54% compra 1 solo.</strong> Fix: cambiar copy o cambiar la mecánica. Este es el lever de AOV más grande disponible sin tocar el tráfico.</p>
+    </div>
+    <div class="alert">
+      <div class="alert-title">Mismatch — Manejo nocturno</div>
+      <p>Los hooks de manejo mandan tráfico al PDP de "Trabajá más horas". Las 2 landing pages de manejo existen y reciben solo 4% del tráfico. <strong>Acción:</strong> redirigir todas las campañas de manejo a sus landings específicas.</p>
+    </div>
+    <div class="alert">
+      <div class="alert-title">Typos activos en PDP</div>
+      <p><strong>TUCOMPRAINCLIUYE.png:</strong> "INCLIUYE" → "INCLUYE" · <strong>2_4.jpg:</strong> "casancio visual" → "cansancio visual" · <strong>CELEBRIDADES.jpg:</strong> usa fotos sin endoso real — riesgo de ban en Meta.</p>
+    </div>
+
+    <h3>Mix de ventas — Enero 2026</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Pack</th><th>%</th><th>Lente</th><th>Insight</th></tr></thead>
+        <tbody>
+          <tr><td>Amarillo</td><td><strong>47%</strong></td><td>Solo</td><td>El más vendido. El ángulo manejo puede mover más.</td></tr>
+          <tr><td>Naranja</td><td><strong>24%</strong></td><td>Solo</td><td>El esencial para sueño. Sub-comunicado en el mix de ads.</td></tr>
+          <tr><td>Rojo</td><td><strong>22%</strong></td><td>Solo</td><td>Sorprendentemente alto — hay demanda del protocolo máximo.</td></tr>
+          <tr><td>1 lente solo</td><td><strong>54%</strong></td><td>—</td><td>Mayor lever de AOV. Fix del bundle puede moverlo.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="highlight">
+      <p><strong>La "inestabilidad" no es problema de producto ni de landing.</strong> Es fatiga de creative — ciclos de 2-3 semanas. Creative nueva → buen performance → satura → caída → necesita nueva. El proceso de reemplazo tiene que ser proactivo: hacer variaciones del hook de 56 días ANTES de que muera, no después de que caiga.</p>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════ -->
+  <!-- 07 — COMPETENCIA -->
+  <!-- ══════════════════════════════════════════════════════ -->
+  <div class="section" id="competencia">
+    <div class="section-header">
+      <div class="section-eyebrow">07</div>
+      <h2>Mapa de Competencia</h2>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Marca</th><th>Ángulo</th><th>Qué no hacen</th><th>Amenaza</th></tr></thead>
+        <tbody>
+          <tr class="comp-ours">
+            <td><strong>NOMERCY</strong></td>
+            <td>Sistema 3 lentes · ciencia en español · tinte como evidencia · sueño + fatiga + manejo · accesible · argentino</td>
+            <td>—</td>
+            <td>—</td>
+          </tr>
+          <tr>
+            <td><strong>Lentes genéricos MeLi</strong></td>
+            <td>Precio bajo</td>
+            <td>Sin ciencia, sin tinte real, sin brand. No compiten en el mismo plano.</td>
+            <td>Alta en precio</td>
+          </tr>
+          <tr>
+            <td><strong>Swanwick Sleep</strong></td>
+            <td>Sueño, naranja/amber, "fall asleep faster"</td>
+            <td>Sin español, sin LATAM, no hacen la war de claros vs tintados, no tienen el ángulo de manejo.</td>
+            <td>Media si llegan a LATAM</td>
+          </tr>
+          <tr>
+            <td><strong>TrueDark</strong></td>
+            <td>Sistema 3 lentes, biohacking, Dave Asprey</td>
+            <td>Ultra-nicho, precio prohibitivo, sin LATAM, todo técnico — sin ángulo emocional ni manejo.</td>
+            <td>Baja</td>
+          </tr>
+          <tr>
+            <td><strong>Felix Gray</strong></td>
+            <td>Lifestyle premium, fatiga ocular, moda</td>
+            <td>Nunca hablan de sueño. No tienen naranja/rojo. Sin LATAM. Sin manejo.</td>
+            <td>Baja</td>
+          </tr>
+          <tr>
+            <td><strong>Gunnar</strong></td>
+            <td>Gaming, performance en pantalla</td>
+            <td>No hablan de sueño nunca. Sin LATAM. Sin manejo.</td>
+            <td>Baja (nicho distinto)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="success">
+      <div class="success-title">El espacio libre</div>
+      <p>Nadie en LATAM tiene: sistema 3 lentes + ciencia en rioplatense + precio accesible + ángulo de manejo nocturno + tinte como prueba visible + presencia argentina real. El riesgo es que llegue competencia seria antes de que NOMERCY consolide la posición. Urgente consolidar con el ángulo manejo como diferencial adicional al sueño.</p>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════ -->
+  <!-- 08 — HOOKS MASTER -->
+  <!-- ══════════════════════════════════════════════════════ -->
+  <div class="section" id="hooks">
+    <div class="section-header">
+      <div class="section-eyebrow">08</div>
+      <h2>Hooks Master</h2>
+    </div>
+
+    <h3>Amarillo — Fatiga / Trabajo</h3>
+    <div class="table-wrap">
+      <table class="hook-table">
+        <thead><tr><th>#</th><th>Lente</th><th>Hook</th><th>Visual sugerido</th></tr></thead>
+        <tbody>
+          <tr><td>01</td><td><span class="hook-badge hb-amarillo">AMARILLO</span></td><td class="hook-text">¿A vos también los ojos te pesan después de 5 horas de pantalla?</td><td class="hook-visual">Persona frotándose los ojos, 4PM, monitor</td></tr>
+          <tr><td>02</td><td><span class="hook-badge hb-amarillo">AMARILLO</span></td><td class="hook-text">¿Tomás ibuprofeno seguido por el dolor de cabeza?</td><td class="hook-visual">Cajón de escritorio, caja de ibuprofeno entre cables</td></tr>
+          <tr><td>03</td><td><span class="hook-badge hb-amarillo">AMARILLO</span></td><td class="hook-text">Si trabajás más de 6 horas en la compu, te tengo que contar esto.</td><td class="hook-visual">Texto en pantalla + persona en escritorio</td></tr>
+          <tr><td>04</td><td><span class="hook-badge hb-amarillo">AMARILLO</span></td><td class="hook-text">A las 4 de la tarde ya no aguanto más la pantalla. Hasta que cambié esto.</td><td class="hook-visual">Reloj marcando 16:00, pantalla de PC</td></tr>
+          <tr><td>05</td><td><span class="hook-badge hb-amarillo">AMARILLO</span></td><td class="hook-text">Tengo la caja de ibuprofeno en el cajón del escritorio como si fuera un utensilio de trabajo más.</td><td class="hook-visual">Plano cajón: cables, biromes, ibuprofeno</td></tr>
+          <tr><td>06</td><td><span class="hook-badge hb-amarillo">AMARILLO</span></td><td class="hook-text">Probé modo oscuro, probé bajar el brillo. Los dolores de cabeza seguían. Hasta que entendí por qué.</td><td class="hook-visual">Configuración de pantalla, después lentes amarillos</td></tr>
+          <tr><td>07</td><td><span class="hook-badge hb-amarillo">AMARILLO</span></td><td class="hook-text">Los ojos no te dicen basta a las 5PM porque sos sensible. Te lo dicen porque la luz artificial hace eso.</td><td class="hook-visual">Comparativa: luz natural vs luz LED</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Amarillo — Manejo nocturno</h3>
+    <div class="table-wrap">
+      <table class="hook-table">
+        <thead><tr><th>#</th><th>Lente</th><th>Hook</th><th>Visual sugerido</th></tr></thead>
+        <tbody>
+          <tr><td>08</td><td><span class="hook-badge hb-amarillo">AMARILLO</span></td><td class="hook-text">¿Manejás de noche y cada auto que viene de frente te pega un destello en los ojos?</td><td class="hook-visual">POV conductor, auto de frente, luces LED</td></tr>
+          <tr><td>09</td><td><span class="hook-badge hb-amarillo">AMARILLO</span></td><td class="hook-text">¿Los faros de los autos te pegan en los ojos y quedás viendo manchas?</td><td class="hook-visual">Manchas de luz persistiendo, ojos entrecerrados</td></tr>
+          <tr><td>10</td><td><span class="hook-badge hb-amarillo">AMARILLO</span></td><td class="hook-text">Manejás un auto normal y cada camioneta te pega los faros directo en la cara. Están en baja. Te encandilan igual.</td><td class="hook-visual">Sedán vs SUV, diferencia de altura de faros</td></tr>
+          <tr><td>11</td><td><span class="hook-badge hb-amarillo">AMARILLO</span></td><td class="hook-text">Terminás el turno y los ojos te dicen basta. Rojos, hinchados. No tiene por qué ser así.</td><td class="hook-visual">Espejo de baño, ojos destruidos, fin de turno</td></tr>
+          <tr><td>12</td><td><span class="hook-badge hb-amarillo">AMARILLO</span></td><td class="hook-text">Los faros de antes tenían 1.000 lúmenes. Los LED de ahora tienen 4.000. Tus ojos no evolucionaron para eso.</td><td class="hook-visual">Dato en pantalla + faro LED moderno</td></tr>
+          <tr><td>13</td><td><span class="hook-badge hb-amarillo">AMARILLO</span></td><td class="hook-text">Oscuridad. Destello. Oscuridad. Destello. Así son tus noches manejando. Esto lo protege.</td><td class="hook-visual">Secuencia oscuridad → flash → oscuridad</td></tr>
+          <tr><td>14</td><td><span class="hook-badge hb-amarillo">AMARILLO</span></td><td class="hook-text">El cansancio no llega de a poco cuando manejás de noche. Llega de golpe. Y empieza por los ojos.</td><td class="hook-visual">Conductor a las 11PM vs a las 3AM</td></tr>
+          <tr><td>15</td><td><span class="hook-badge hb-amarillo">AMARILLO</span></td><td class="hook-text">¿Te pasa que a partir de las 7 de la tarde tenés que achicar los ojos para ver bien?</td><td class="hook-visual">Atardecer, conductor entrecerando ojos</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Naranja — Sueño / Noche</h3>
+    <div class="table-wrap">
+      <table class="hook-table">
+        <thead><tr><th>#</th><th>Lente</th><th>Hook</th><th>Visual sugerido</th></tr></thead>
+        <tbody>
+          <tr><td>16</td><td><span class="hook-badge hb-naranja">NARANJA</span></td><td class="hook-text">Tardo 40 minutos en dormirme aunque esté destruido. Hasta que cambié una sola cosa.</td><td class="hook-visual">Persona en cama, celu iluminando el techo, 00:30</td></tr>
+          <tr><td>17</td><td><span class="hook-badge hb-naranja">NARANJA</span></td><td class="hook-text">¿Cuánto tardás en dormirte? Si son más de 20 minutos, esto es para vos.</td><td class="hook-visual">Texto en pantalla: "20 minutos"</td></tr>
+          <tr><td>18</td><td><span class="hook-badge hb-naranja">NARANJA</span></td><td class="hook-text">Sé que el celu antes de dormir es malo. No puedo no mirarlo. Esto resuelve el dilema.</td><td class="hook-visual">Celu en la oscuridad, lentes naranja al lado</td></tr>
+          <tr><td>19</td><td><span class="hook-badge hb-naranja">NARANJA</span></td><td class="hook-text">Dormís 8 horas y te levantás arrastrado. No es pereza, es calidad del sueño.</td><td class="hook-visual">Alarma sonando, persona aplastando el snooze</td></tr>
+          <tr><td>20</td><td><span class="hook-badge hb-naranja">NARANJA</span></td><td class="hook-text">Terminás de jugar a las 2AM y la cabeza sigue corriendo. Hay una razón biológica para eso.</td><td class="hook-visual">Setup gaming, reloj 2:00AM, persona activa en cama</td></tr>
+          <tr><td>21</td><td><span class="hook-badge hb-naranja">NARANJA</span></td><td class="hook-text">El modo nocturno no te está protegiendo el sueño. Esto sí.</td><td class="hook-visual">Night mode en pantalla vs lente naranja</td></tr>
+          <tr><td>22</td><td><span class="hook-badge hb-naranja">NARANJA</span></td><td class="hook-text">Cambié una cosa antes de dormir. Mis mañanas cambiaron completamente.</td><td class="hook-visual">Antes/después de la mañana</td></tr>
+          <tr><td>23</td><td><span class="hook-badge hb-naranja">NARANJA</span></td><td class="hook-text">Primera vez en años que me desperté antes de la alarma sin querer matar a nadie.</td><td class="hook-visual">Persona despertándose, sol entrando, sin alarma</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Rojo — Madrugada / Apagar el cerebro</h3>
+    <div class="table-wrap">
+      <table class="hook-table">
+        <thead><tr><th>#</th><th>Lente</th><th>Hook</th><th>Visual sugerido</th></tr></thead>
+        <tbody>
+          <tr><td>24</td><td><span class="hook-badge hb-rojo">ROJO</span></td><td class="hook-text">Terminé de estudiar a las 4AM. Parcial en 3 horas. Me tiré a la cama y la cabeza no paraba.</td><td class="hook-visual">Apuntes, reloj 4AM, cama sin dormir</td></tr>
+          <tr><td>25</td><td><span class="hook-badge hb-rojo">ROJO</span></td><td class="hook-text">"Me meto 5 minutos y son las 3AM." El scroll no termina solo. Hay algo que sí puede terminar.</td><td class="hook-visual">TikTok en la oscuridad, reloj 3AM</td></tr>
+          <tr><td>26</td><td><span class="hook-badge hb-rojo">ROJO</span></td><td class="hook-text">Apagás el celu y se queda mirando el techo. El cerebro no se desconectó. Esto lo desconecta.</td><td class="hook-visual">Techo en la oscuridad, ojos abiertos</td></tr>
+          <tr><td>27</td><td><span class="hook-badge hb-rojo">ROJO</span></td><td class="hook-text">No le pido que dejes el celu. Te pido que te pongas los rojos y sigas. El resto pasa solo.</td><td class="hook-visual">Persona con lentes rojos, celu en mano, cama</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Honestidad / Todos los lentes</h3>
+    <div class="table-wrap">
+      <table class="hook-table">
+        <thead><tr><th>#</th><th>Lente</th><th>Hook</th><th>Visual sugerido</th></tr></thead>
+        <tbody>
+          <tr><td>28</td><td><span class="hook-badge hb-todos">TODOS</span></td><td class="hook-text">Salió un estudio diciendo que los lentes de luz azul son un scam. Tienen razón. Los claros, sí.</td><td class="hook-visual">Titular artículo → lente naranja como contraste</td></tr>
+          <tr><td>29</td><td><span class="hook-badge hb-todos">TODOS</span></td><td class="hook-text">El 90% de los lentes de luz azul no hacen nada. Esto explica cuáles sí sirven.</td><td class="hook-visual">Lente transparente vs naranja, side by side</td></tr>
+          <tr><td>30</td><td><span class="hook-badge hb-todos">TODOS</span></td><td class="hook-text">Si tu lente de luz azul es transparente y podés ver el mundo igual con ellos puestos, no te protegen.</td><td class="hook-visual">Persona con lente transparente → cambio al naranja</td></tr>
+          <tr><td>31</td><td><span class="hook-badge hb-todos">TODOS</span></td><td class="hook-text">Lo que Huberman recomienda, disponible en Argentina por primera vez.</td><td class="hook-visual">Fragmento de podcast + caja NOMERCY</td></tr>
+          <tr><td>32</td><td><span class="hook-badge hb-todos">TODOS</span></td><td class="hook-text">Si sos como yo que laburo todo el día con la computadora y también manejás de noche, esto es para vos.</td><td class="hook-visual">Persona en PC → luego manejando de noche</td></tr>
+          <tr><td>33</td><td><span class="hook-badge hb-todos">TODOS</span></td><td class="hook-text">El test del láser que usan todas las marcas es humo. Te muestro qué pasa con un foco azul de verdad.</td><td class="hook-visual">Láser violeta "pasando" el test con genérico → foco RGB azul donde NOMERCY bloquea todo</td></tr>
+          <tr><td>34</td><td><span class="hook-badge hb-todos">TODOS</span></td><td class="hook-text">Puse mis cristales frente a un foco azul. No pasa nada de luz. Hacé lo mismo con tus "blue blockers" y fijate.</td><td class="hook-visual">POV: mano sosteniendo cristal frente a RGB azul → negro total vs transparente que deja pasar</td></tr>
+          <tr><td>35</td><td><span class="hook-badge hb-todos">TODOS</span></td><td class="hook-text">Si tu marca de lentes te muestra el test del láser violeta, te está mintiendo. Ese láser es UV, no luz azul.</td><td class="hook-visual">Puntero violeta → "esto es 405nm, no 460nm" → foco RGB como test real</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Variaciones del hook #1 — antes de que muera</h3>
+    <div class="table-wrap">
+      <table class="hook-table">
+        <thead><tr><th>V</th><th>Hook</th><th>Cambio</th></tr></thead>
+        <tbody>
+          <tr><td>V1</td><td class="hook-text">¿A vos también te duelen los ojos después de 6 horas de pantalla?</td><td class="hook-visual">Cambia "pesan" por "duelen", sube las horas</td></tr>
+          <tr><td>V2</td><td class="hook-text">¿A vos también los ojos se te ponen rojos cuando terminás de trabajar?</td><td class="hook-visual">Síntoma visual: ojos rojos (filmable)</td></tr>
+          <tr><td>V3</td><td class="hook-text">¿A vos también te lagrimean los ojos después de un día entero en la compu?</td><td class="hook-visual">Síntoma: lagrimeo</td></tr>
+          <tr><td>V4</td><td class="hook-text">¿A vos también te duele la cabeza cuando terminás de trabajar frente a la pantalla?</td><td class="hook-visual">Conecta con hook del ibuprofeno</td></tr>
+          <tr><td>V5</td><td class="hook-text">¿A vos también te pesa la vista al final del laburo?</td><td class="hook-visual">"laburo" en vez de "pantalla", más coloquial</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════ -->
+  <!-- 09 — ALMA DE MARCA -->
+  <!-- ══════════════════════════════════════════════════════ -->
+  <div class="section" id="alma">
+    <div class="section-header">
+      <div class="section-eyebrow">09</div>
+      <h2>Alma de Marca</h2>
+    </div>
+
+    <h3>El nombre</h3>
+    <div class="highlight">
+      <p>NO MERCY no es un nombre de marca inventado. Es una expresión que Agustín usa con su primo cuando hacen deporte. Cuando van ganando y no bajan la cadencia. Cuando están perdiendo y se dan cuenta de que estaban jugando sin convicción. NO MERCY significa no bajar la intensidad. Ir sin piedad a descubrir qué hay del otro lado.</p>
+      <p>En el trabajo significa lo mismo: noches largas, concentración total, ese estado donde estás creando cosas que realmente importan. El nombre no fue elegido por una agencia — fue trasladado de la cancha al producto.</p>
+    </div>
+
+    <h3>La convicción central</h3>
+    <blockquote>
+      <p>"NOMERCY ayuda a ponerse de compañero entre tu objetivo y las situaciones externas que te quieren sacar de eso."</p>
+    </blockquote>
+    <p style="font-size:13px;color:#444;margin-top:-10px;margin-bottom:28px;">Esto lo dijo Agustín. No hay copy que lo mejore. Es el claim de marca más verdadero que existe. Toda la comunicación de NOMERCY puede anclarse acá.</p>
+
+    <h3>Para quién es la marca — el perfil de convicción</h3>
+    <p>NOMERCY no es para quien quiere "mejorar su bienestar". Es para quien está en medio de algo que le importa de verdad y las condiciones externas le juegan en contra.</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Situación</th><th>La situación externa que lo quiere sacar</th></tr></thead>
+        <tbody>
+          <tr><td>Emprendedor en sesión de trabajo nocturna</td><td>La luz de la pantalla a las 3AM que le caga el sueño de la noche</td></tr>
+          <tr><td>Conductor Uber terminando el turno</td><td>Cuatro horas de faros LED en los ojos que le destruyen la visión</td></tr>
+          <tr><td>Estudiante en semana de parciales</td><td>La pantalla que le roba el sueño profundo donde el cerebro fija lo que aprendió</td></tr>
+          <tr><td>Programador que está armando algo propio</td><td>El dolor de cabeza de las 4 de la tarde que le corta el hilo</td></tr>
+          <tr><td>Médico de guardia bajo luz LED</td><td>La fotosensibilidad que se acumula después de horas bajo iluminación blanca</td></tr>
+          <tr><td>Camionero cruzando el país de noche</td><td>El ciclo oscuridad-destello-oscuridad que destruye la adaptación visual</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Lo que NOMERCY nunca dice</h3>
+    <div class="alert">
+      <div class="alert-title">Prohibido en toda la comunicación</div>
+      <p>NOMERCY no es una marca de bienestar. No es un accesorio de estilo de vida. No mejora tu "wellness". No "potencia tu productividad". No es para quien quiere "verse bien mientras trabaja".</p>
+      <p><strong>NOMERCY es una herramienta para quien está en movimiento y no puede darse el lujo de parar.</strong></p>
+    </div>
+
+    <h3>La filosofía del producto — calidad sin vueltas</h3>
+    <p>Agustín tiene lentes de contacto desde los 8 años. Entiende lo que es depender de algo para ver bien. Por eso la calidad del producto no fue negociable: cristal CR-39, antirreflex real, UV400, filtro verificable a simple vista por el tinte. No hay versión barata de NOMERCY. No hay plan B en el producto.</p>
+    <p>La misma lógica que usa para elegir sus herramientas de trabajo — gasta más en lo que dura, en lo que funciona, en lo que no le hace dudar — la aplicó al hacer el producto.</p>
+
+    <h3>La posición en el mercado — no "luz azul"</h3>
+    <div class="highlight">
+      <p><strong>No somos una marca de "luz azul".</strong> Esa categoría está contaminada por décadas de lentes transparentes que no hacen nada. Los estudios de Cochrane que desacreditaron esa categoría aplican a lentes claros — no a lentes tintados con bloqueo real.</p>
+      <p>NOMERCY no pelea esa batalla defensivamente. Ocupa un territorio diferente: <strong>protección lumínica real, verificable, con filtro visible.</strong> El tinte es la señal. No hay marketing que lo reemplace.</p>
+    </div>
+
+    <h3>Origen geográfico — Tucumán al país</h3>
+    <p>Agustín lo dijo claro: "dios atiende en Buenos Aires". En Tucumán, todo llega más tarde. Las marcas buenas eran importadas. Las ópticas locales vendían lo que no servía. Esa restricción geográfica fue el motor: si no está acá, lo hago acá. El orgullo de haber resuelto algo desde el interior para todo el país es parte de la identidad de la marca.</p>
+
+    <h3>La frase que resume todo</h3>
+    <div class="golden-rule" style="margin-bottom:0;">
+      <div class="label">Alma de marca</div>
+      <div class="text">Estás en algo que te importa.<br>Las condiciones externas te quieren sacar.<br>NOMERCY está de tu lado.</div>
+      <div class="sub">Esta es la única pregunta que importa antes de escribir cualquier copy: ¿qué situación externa está tratando de sacarle el hilo a este avatar en este momento? Esa es la entrada. NOMERCY es la solución. En ese orden, siempre.</div>
+    </div>
+
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════ -->
+  <!-- 10 — VOZ DE MARCA -->
+  <!-- ══════════════════════════════════════════════════════ -->
+  <div class="section" id="voz">
+    <div class="section-header">
+      <div class="section-eyebrow">10</div>
+      <h2>Voz de Marca</h2>
+    </div>
+
+    <div class="voz-grid">
+      <div class="voz-card voz-si">
+        <div class="voz-label">SÍ decir</div>
+        <ul>
+          <li>vos, laburo, compu, parcial, destruido, celu</li>
+          <li>"¿A vos también...?" / "Si sos como yo..."</li>
+          <li>"Esto lo hice para mí y funcionó, te lo cuento"</li>
+          <li>"fijate" / "mirá" / "dale" / "en serio"</li>
+          <li>melatonina — la palabra que el cliente ya conoce</li>
+          <li>"3.900 personas ya lo probaron en Argentina"</li>
+          <li>"El tinte es la señal de que funciona"</li>
+          <li>"No te pido que dejes el celu — ponete los lentes"</li>
+          <li>Dolor físico primero, causa después</li>
+          <li>"encandilamiento" — la palabra exacta del target (no "destello")</li>
+          <li>"manejás más calmado" — experiencia sensorial > descripción técnica</li>
+          <li>"pilotos de rally" — validación técnica y aspiracional</li>
+        </ul>
+      </div>
+      <div class="voz-card voz-no">
+        <div class="voz-label">NUNCA decir</div>
+        <ul>
+          <li>"luz azul" como término aislado</li>
+          <li>"ritmo circadiano" en ads de entrada</li>
+          <li>"longitud de onda" / "nanómetros" en top de funnel</li>
+          <li>"sensores del ojo" / "melanopsina" en frío</li>
+          <li>Empezar hablando del producto</li>
+          <li>Copy estilo ChatGPT o traducción del inglés</li>
+          <li>"tú" / formalidades / lenguaje corporativo</li>
+          <li>"propuesta de valor" / "diferencial competitivo"</li>
+          <li>"cura el insomnio" / "garantizado que dormís mejor"</li>
+          <li>"¡No te pierdas esta oportunidad única!"</li>
+          <li>"destello" como palabra principal — usar "encandilamiento"</li>
+          <li>"los autos nuevos" como generalización — la gente se enoja y corrige</li>
+          <li>"frecuencia" cuando querés decir "longitud de onda"</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>Tono en una frase</h3>
+    <blockquote>
+      <p>"Esto lo hice para mí y funcionó. Te lo cuento. Sin arrogancia, sin tecnicismos. Rioplatense auténtico."</p>
+    </blockquote>
+
+    <h3>Reglas de copy</h3>
+    <ul>
+      <li><strong>Dolor físico concreto primero.</strong> "A las 4 de la tarde los ojos ya no dan más" va antes que "mejora tu productividad".</li>
+      <li><strong>Escenas filmables.</strong> Cada dolor tiene que poder filmarse en un Reel de 30 segundos. Si no lo podés imaginar como imagen, no sirve como copy.</li>
+      <li><strong>Causa como descubrimiento.</strong> El mecanismo (melanopsina, frecuencias, rodopsina) no arranca el guion — aparece como revelación después del dolor. "Hasta que entendí por qué."</li>
+      <li><strong>CTAs conversacionales.</strong> "Si ya te pasó esto, fijate. Link en bio." NO "¡Comprá ahora y transformá tu sueño!"</li>
+      <li><strong>Triggers son momentos.</strong> "Se le rompió el espejo retrovisor saliendo del turno" es un trigger. "Quiere mejorar su rendimiento" no lo es.</li>
+      <li><strong>Guiones en cadena causal.</strong> Cada oración es consecuencia de la anterior. Dolor → causa → solución → producto. Si hay un salto, está mal.</li>
+    </ul>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════ -->
+  <!-- 11 — ERRORES A EVITAR -->
+  <!-- ══════════════════════════════════════════════════════ -->
+  <div class="section" id="errores">
+    <div class="section-header">
+      <div class="section-eyebrow">11</div>
+      <h2>Errores a Evitar</h2>
+    </div>
+
+    <h3>Errores técnicos activos — resolver AHORA</h3>
+    <ul class="error-list">
+      <li><strong>Typo PDP:</strong> TUCOMPRAINCLIUYE.png dice "INCLIUYE" → reemplazar por "INCLUYE"</li>
+      <li><strong>Typo PDP:</strong> 2_4.jpg dice "casancio visual" → reemplazar por "cansancio visual"</li>
+      <li><strong>Riesgo ban Meta:</strong> CELEBRIDADES.jpg usa fotos de Haaland, Morata, Huberman sin endoso real → eliminar</li>
+      <li><strong>Bug bundle:</strong> Copy "40% OFF" pero la mecánica es 40% en la 2da unidad = ~20% efectivo → el carrito frustra al buyer frío → cambiar copy o mecánica</li>
+      <li><strong>Mismatch landing:</strong> Hooks de manejo nocturno → PDP de "Trabajá más horas" → las landings de manejo reciben 4% del tráfico → redirigir</li>
+    </ul>
+
+    <h3>Errores de posicionamiento</h3>
+    <ul class="nogo-list">
+      <li>Arrancar el video desde el producto: "NOMERCY son los anteojos que..." — el target no escucha</li>
+      <li>Comunicar el amarillo solo como "trabajo digital" — su caso de uso principal es el manejo</li>
+      <li>Vender el naranja/rojo para "mejorar el estilo de vida" — el dolor tiene que ser concreto</li>
+      <li>Hablar de melanopsina/nm en ads de tráfico frío — es para remarketing o contenido educativo</li>
+      <li>Usar el naranja como diferencial estético ("el tinte se ve cool") — es funcional, no de moda</li>
+      <li>CTAs genéricos: "No te pierdas esta oportunidad" / "Comprá ahora" — matan la conversión</li>
+      <li>Atacar marcas por nombre — atacar la categoría de lentes claros como clase</li>
+    </ul>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════ -->
+  <!-- 12 — HISTORIA DEL FOUNDER -->
+  <!-- ══════════════════════════════════════════════════════ -->
+  <div class="section" id="founder">
+    <div class="section-header">
+      <div class="section-eyebrow">12</div>
+      <h2>Historia del Founder</h2>
+    </div>
+
+    <p style="margin-bottom:24px;">Archivo base para guiones de founder ads, podcast format, meet-the-founder y contenido de marca de largo plazo.</p>
+
+    <h3>El crudo — exactamente como lo contó Agustín</h3>
+    <div class="crudo-label">Texto original sin editar. Preservar para referencia de tono, palabras exactas y forma de narrar.</div>
+    <div class="crudo-block">Como bien sabes, tengo una consultora de ecommerce y me dedico a crear sistemas y procesos hace muchos años, cuando uno dice "mi vida son las pantallas" me parece una verga de expresión remil genérica, yo me refiero literalmente a que no me despego de la computadora, y si no estoy con la computadora, estoy con el celular contestando cosas, haciéndome concha los ojos básicamente.
+
+Esto es hace AÑOS, ahora, hace un año empecé a usar lentes de contacto y eso sumó más a mi sensibilidad de ojos, resulta que existe algo llamado luz azul, pero MÁS ALLÁ simplemente de la luz azul, yo mismo me doy cuenta usando mi producto CR-39 Blue Light (amarillo naranja y rojo) que también me sirve en el día a día. Para manejar, con las luces fuertes y blancas, a bajar un poco la violencia lumínica, la fotosensibilidad, que el sol de la mañana no me haga concha los ojos.
+
+Ahora, sobre el producto, para mi es muy importante la calidad y la durabilidad, de la misma manera que gasto un poco más en cosas apple porque duran y son un caño, pasa lo mismo con mis accesorios y herramientas. Mi billetera, mi reloj, mis anteojos. Entonces me asocié con un laboratorio argentino que cuida cada aspecto de eso.
+
+Cuando largué NOMERCY tenía miedo de ser solamente yo quien le pasaba esto, pero siempre que hago productos y procesos los pienso desde solucionar un problema personal pensando en "Estoy SEGURO" que a alguien más le pasa. Entonces, me puse en campaña de desarrollar un producto que NO había.
+
+También, parte del origen. Yo soy de Tucumán y dios atiende en Buenos Aires, entonces acá todo llega más tarde. Desde la necesidad personal me encontré con dos cosas:
+
+Las marcas buenas eran de afuera, las marcas de Argentina eran un clavo y si me iba a una óptica de Tucumán un tipo me dijo "naa eso no sirve es lo mismo que unos anteojos de sol" semejante boludo, otro me dijo "eso no existe acá solo afuera", y me quiso clavar unos blue transparentes que no sirven de un choto.
+
+En fin, te vas dando cuenta que la historia es de una cuestión personal.
+
+Ahora, el nombre. NOMERCY, qué significa. Viene de la expresión NO MERCY, sin piedad en español, que en realidad viene de cuando hacemos deporte con mi primo. Generalmente cuando vamos ganando y no queremos bajar la cadencia o cuando estamos perdiendo y nos damos cuenta de que es el resultado de que estamos jugando sin ganas ni convicción. Nomercy significa ir más fuerte, ir sin piedad a descubrir qué hay del otro lado, y en mi trabajo es igual. Significa noches largas, significa sacrificio, significa concentración en lo que estoy haciendo, ese estado mental donde REALMENTE estás creando cosas muy copadas y locas.
+
+Eso es lo que quise transmitir. Entonces, NOMERCY fue el nombre que le puse a mi producto, a la herramienta que quiero que todos los emprendedores de Argentina tengan, que todas las ópticas vendan, que esté en las manos y entre los ojos y las responsabilidades de absolutamente todas las personas que están amando lo que hacen.
+
+¿Estás en un evento y las luces son muy fuertes? ¿Estás de guardia médica y las luces blancas te matan? ¿Tenés que estudiar de noche y estás cansado de que la lámpara rebote en el blanco de las hojas y te haga doler la cabeza? ¿Estás tarde con algo del laburo? ¿Estás programando una aplicación que creés que te va a cambiar la vida a las 3 de la mañana? Todas esas situaciones van a ser mejores con unos NOMERCY puestos. ¿Trabajás de Uber de noche? ¿Manejás todos los días como viajante? ¿Cruzás el país como camionero? NOMERCY ayuda a ponerse de compañero entre tu objetivo Y LAS SITUACIONES EXTERNAS que te quieren sacar de eso.
+
+Tengo MUCHO orgullo sobre mis accesorios, los llevo a todos lados, me vuelvo a buscarlos si me los olvido, los cuido un montón pero también los cago a palos.
+
+Quiero que esté en las manos de todos los argentinos.
+
+Por eso también cuidamos la calidad del producto, creamos un cristal de la concha de la lora, más nítido, de mejor calidad, con Antirreflex y UV400, con un montón de cualidades para que tengas los ojos cuidados.
+
+Todo eso quiero transmitir con NOMERCY.</div>
+
+    <h3>La historia en orden cronológico</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th style="width:140px">Momento</th><th>Qué pasó</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Hace años</strong></td><td>Consultora de e-commerce en Tucumán. Vida entera frente a pantalla — no como metáfora, literalmente. Si no es la compu, es el celu. Los ojos absorben todo eso sin que sepa bien cuánto.</td></tr>
+          <tr><td><strong>Hace ~1 año</strong></td><td>Empieza a usar lentes de contacto. Los ojos se vuelven más sensibles. El cansancio que ya existía se amplifica. El problema tolerable se vuelve concreto.</td></tr>
+          <tr><td><strong>La búsqueda</strong></td><td>Va a una óptica en Tucumán. "Eso no existe acá, solo afuera." Otro le quiere vender lentes transparentes que no hacen nada. Las marcas con filtro real son todas importadas. El mercado local no tiene lo que necesita.</td></tr>
+          <tr><td><strong>La decisión</strong></td><td>Misma lógica de siempre: si yo lo necesito y no existe, alguien más lo necesita también. Se asocia con un laboratorio argentino. Cristal CR-39, antirreflex real, UV400, filtro de verdad en tres intensidades.</td></tr>
+          <tr><td><strong>El nombre</strong></td><td>NO MERCY viene de hacer deporte con su primo. Cuando van ganando y no quieren bajar la cadencia, o cuando están perdiendo y se dan cuenta de que están jugando sin convicción. No bajar la intensidad. En el trabajo es ese mismo estado: noches largas, concentración total.</td></tr>
+          <tr><td><strong>El uso real</strong></td><td>Lo que empezó como solución para la pantalla termina siendo para todo: manejar de noche con los faros en la cara, eventos con iluminación fuerte, el sol de la mañana. <strong>La "violencia lumínica" del día a día.</strong> Los lleva a todos lados. Se vuelve a buscarlos si se los olvida.</td></tr>
+          <tr><td><strong>Hoy</strong></td><td>+3.900 vendidos. 4.7 estrellas. Desde Tucumán, para todo el país. Quiere que esté en las manos de todos los argentinos que aman lo que hacen: el emprendedor, el médico de guardia, el estudiante de noche, el camionero, el programador a las 3 de la mañana.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <blockquote>
+      <p>"NOMERCY ayuda a ponerse de compañero entre tu objetivo y las situaciones externas que te quieren sacar de eso."</p>
+    </blockquote>
+    <p style="font-size:13px;color:#444;margin-top:-10px;margin-bottom:28px;">Esto lo dijo Agustín. No hay copy que lo mejore. Es el claim de marca más verdadero que existe.</p>
+
+    <h3>Reglas del founder content</h3>
+    <div class="highlight">
+      <p><strong>Arrancar desde Agustín, no desde el producto.</strong> Arrancar desde el producto = marketing. Arrancar desde Agustín = marca. El producto no es el punto de partida — es la conclusión lógica. Si el producto aparece antes de la historia, se rompió el mecanismo.</p>
+      <p><strong>Formatos disponibles:</strong> Founder ads 15-60s · Podcast/conversación con Maxi · Day-in-the-life · Meet-the-founder para la home/PDP · Behind the scenes del laboratorio · Contenido de convicción puro (sin mencionar producto — la marca como filosofía).</p>
+    </div>
+
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════ -->
+  <!-- 13 — EL PRODUCTO POR DENTRO -->
+  <!-- ══════════════════════════════════════════════════════ -->
+  <div class="section" id="producto-conversion">
+    <div class="section-header">
+      <div class="section-eyebrow">13</div>
+      <h2>El Producto por Dentro</h2>
+    </div>
+
+    <p style="margin-bottom:24px;">Pilar de conversión. Para contenido de fondo de funnel, PDP, remarketing, y respuesta a objeciones en comentarios. Acá no vendemos el dolor — mostramos por qué ESTE producto es la solución correcta.</p>
+
+    <h3>Calidad verificable — lo que tiene adentro</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Atributo</th><th>Qué es</th><th>Por qué importa para el copy</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Cristal CR-39</strong></td><td>El material óptico estándar de la industria — no acrílico, no policarbonato genérico</td><td>Es el mismo material que usan las ópticas serias. Separador de NOMERCY vs genéricos de MeLi. "Cristal de laboratorio" es la frase.</td></tr>
+          <tr><td><strong>Antirreflex real</strong></td><td>Coating multicapa que elimina reflejos fantasma en el lente</td><td>No es estético — mejora la nitidez. Especialmente importante de noche cuando los reflejos internos compiten con la visión.</td></tr>
+          <tr><td><strong>UV400</strong></td><td>Bloqueo total de ultravioleta hasta 400nm</td><td>Protección base que cualquier lente decente debe tener. Es el piso, no el diferencial — pero muchos genéricos no lo cumplen.</td></tr>
+          <tr><td><strong>Filtro por tinte en masa</strong></td><td>El color está EN el cristal, no es un coating sobre la superficie</td><td>No se raya, no se pela, no se degrada. Esto es lo que separa un filtro real de un coating decorativo. "El tinte es la evidencia."</td></tr>
+          <tr><td><strong>Laboratorio argentino</strong></td><td>Producido en Argentina, no importado de fábrica genérica</td><td>Control de calidad local. Respuesta rápida a problemas. No es Aliexpress reempacado. Para el target, "hecho acá" suma credibilidad.</td></tr>
+          <tr><td><strong>Bloqueo espectral validado</strong></td><td>98-99% de bloqueo en el pico 460-480nm (naranja)</td><td>Para contenido de remarketing y respuestas técnicas. No para tráfico frío.</td></tr>
+          <tr><td><strong>Livianos</strong></td><td>Peso bajo que sorprende positivamente al usarlos</td><td><strong>Lo que más repiten los compradores.</strong> "Liviano" + "cómodo" aparece en casi todas las reseñas positivas. Comunicarlo activamente — es un atributo que solo se percibe en mano.</td></tr>
+          <tr><td><strong>Cobertura amplia</strong></td><td>El lente cubre más ángulo visual del esperado</td><td>"Cubren más de lo que pensaba." El cliente esperaba menos — mostrar la cobertura en fotos laterales y videos POV.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Cómo se testean — y por qué el test del láser es humo</h3>
+    <div class="alert">
+      <div class="alert-title">El test del puntero láser violeta no sirve</div>
+      <p>El puntero láser que usan todas las marcas para "demostrar" que bloquean luz azul es de <strong>~405nm — rango violeta/UV cercano</strong>. Cualquier lente con UV400, incluso los transparentes berreta que no hacen nada por la melatonina, lo bloquea. Lo único que demuestra es que tiene coating UV básico. <strong>No dice absolutamente nada sobre lo que pasa en los 450-480nm</strong>, que es donde la melanopsina responde y donde se juega la protección real.</p>
+      <p>Si una marca te muestra el test del láser violeta como prueba, te está mostrando humo. Es como demostrar que un paraguas funciona tirándole agua con un gotero.</p>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Test</th><th>Qué prueba</th><th>Nivel</th><th>Para qué usarlo</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Puntero láser violeta (~405nm)</strong></td><td>Bloqueo UV básico — lo pasa CUALQUIER lente con UV400</td><td>❌ Inútil</td><td>NUNCA. No usarlo. Destruye credibilidad con quien sabe.</td></tr>
+          <tr><td><strong>Foco/tira RGB en azul</strong></td><td>Bloqueo real del espectro azul visible (~450-480nm)</td><td>✅ Casero pero real</td><td><strong>El mejor test filmable.</strong> Ponés el cristal frente a un foco RGB en azul y no pasa NADA de luz. Hacelo con un "blue blocker" transparente y el azul pasa intacto. La diferencia es brutal y se ve en cámara.</td></tr>
+          <tr><td><strong>Pantalla azul pura</strong></td><td>Bloqueo del espectro que emite tu monitor en 460-480nm</td><td>✅ Casero y directo</td><td>Imagen azul pura en el monitor → mirás a través del lente. Naranja NOMERCY: el azul se ve oscuro/negro. Transparente genérico: el azul pasa clarito. Filmable para Reels.</td></tr>
+          <tr><td><strong>Puntero láser azul (450-460nm)</strong></td><td>Bloqueo en el rango exacto de la melanopsina</td><td>✅ Preciso</td><td>Menos común que el violeta pero se consigue. Testea en el rango correcto. Para contenido más técnico/educativo.</td></tr>
+          <tr><td><strong>Espectrofotómetro de laboratorio</strong></td><td>Curva de transmitancia completa a cada longitud de onda</td><td>✅✅ El definitivo</td><td>Los datos reales: 98-99% de bloqueo en 460-480nm. Es lo que tiene NOMERCY validado. Para remarketing, respuestas técnicas, y como cierre en videos comparativos.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="success">
+      <div class="success-title">Validación propia — test con foco RGB</div>
+      <p>Agustín puso los cristales NOMERCY frente a un foco RGB en modo azul. <strong>No pasa nada de luz.</strong> Cero. Esto es verificable por cualquiera que tenga una tira LED RGB o un foco inteligente. Es el test más poderoso para contenido porque es replicable: el cliente puede hacerlo en su casa después de comprar y confirmar que funciona.</p>
+    </div>
+
+    <h3>Idea de contenido — "El test que las marcas no quieren que hagas"</h3>
+    <div class="highlight">
+      <p><strong>Video de destrucción de categoría.</strong> Tres actos: (1) Mostrás el test del láser violeta con un lente transparente genérico — "pasa la prueba". (2) Hacés el test del foco RGB azul con ese mismo lente — el azul pasa entero. "¿Ves? El test del láser no sirve." (3) Ponés el cristal NOMERCY naranja frente al mismo foco RGB: negro total. "Esto es bloqueo real." Cierre con el dato del espectrofotómetro: 98-99% en 460-480nm. <strong>Este video posiciona a NOMERCY como el que sabe y destruye a toda la categoría de lentes claros de un saque.</strong></p>
+    </div>
+
+    <h3>Qué esperar — los primeros 10 minutos</h3>
+    <div class="highlight">
+      <p><strong>Amarillo:</strong> Se pone y sí, todo se ve ligeramente amarillo. En 5-10 minutos el cerebro recalibra y lo deja de percibir. Es exactamente como cuando entrás a una habitación con luz cálida: la ves amarilla 30 segundos, después la ves normal. En manejo de noche, la percepción es de <strong>alivio inmediato</strong> — los faros bajan de intensidad visible, el contraste de la ruta mejora, y los halos se reducen.</p>
+      <p><strong>Naranja:</strong> El cambio de color es más notorio. El mundo se ve anaranjado. Eso es la señal de que está bloqueando los 460-484nm que matan la melatonina. El cerebro también recalibra pero tarda un poco más (~15 min). Para pantalla de noche es donde mejor se nota: la agresividad visual baja radicalmente.</p>
+      <p><strong>Rojo:</strong> El más intenso visualmente. Todo se ve rojo. Uso: última hora antes de dormir. No es para trabajar — es para preparar el cerebro para apagar. La experiencia es de "cierre": el mundo visual baja de intensidad y el cuerpo empieza a soltar.</p>
+    </div>
+
+    <h3>Guía de uso — cuándo ponérselos y cuándo sacarlos</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Lente</th><th>Poné</th><th>Sacá</th><th>NO usar para</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Amarillo</strong></td><td>Al sentarte a trabajar / al subir al auto de noche</td><td>Cuando terminás la sesión o llegás a destino</td><td>No es para dormir. No protege la melatonina.</td></tr>
+          <tr><td><strong>Naranja</strong></td><td>2 horas antes de dormir / al arrancar la sesión nocturna</td><td>Al acostarte</td><td>No es necesario durante el día. No es para manejar (reduce visibilidad nocturna periférica).</td></tr>
+          <tr><td><strong>Rojo</strong></td><td>Última hora antes de dormir</td><td>Al cerrar los ojos</td><td>No manejar. No trabajar con documentos que requieran color preciso.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>La pregunta de la graduación</h3>
+    <div class="alert">
+      <div class="alert-title">Respuesta definitiva — No vienen con graduación</div>
+      <p>En cada post, 15-25% de los comentarios preguntan si vienen con aumento, receta o graduación. <strong>La respuesta es no.</strong> NOMERCY no viene con graduación, no se planifica ofrecerlo, y no hay variante con aumento. Son lentes de protección lumínica sin corrección visual.</p>
+      <p><strong>Respuesta estándar para comentarios:</strong> "No vienen con graduación. Son lentes de protección lumínica — filtran el espectro que causa fatiga y encandilamiento. Si usás anteojos de aumento podés probar usarlos por encima."</p>
+      <p>No prometer opciones futuras. No dar vueltas. Responder rápido y pasar al siguiente.</p>
+    </div>
+
+    <h3>Contenido de conversión — formatos que funcionan</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Formato</th><th>Qué muestra</th><th>Cuándo usarlo</th></tr></thead>
+        <tbody>
+          <tr><td><strong>POV a través del lente</strong></td><td>Cámara filmando ruta/pantalla CON y SIN el lente puesto. El antes/después más directo posible.</td><td>Remarketing. Respuesta a "se ve oscuro". PDP.</td></tr>
+          <tr><td><strong>Unboxing funcional</strong></td><td>No el packaging — el momento de ponérselos por primera vez. La reacción real. Los primeros 10 minutos.</td><td>UGC. Remarketing. Tráfico tibio.</td></tr>
+          <tr><td><strong>Detalle de cristal</strong></td><td>Close-up del cristal mostrando la calidad óptica, el tinte en masa, el antirreflex (los reflejos verdes del coating).</td><td>PDP. Respuesta a "parece Aliexpress".</td></tr>
+          <tr><td><strong>Comparativa con genérico</strong></td><td>NOMERCY al lado de un lente genérico de MeLi. Transparencia, nitidez, build quality. Sin nombrar marcas.</td><td>Remarketing. Respuesta a precio.</td></tr>
+          <tr><td><strong>Testimonio de conductor</strong></td><td>Uber/remisero/camionero real contando su experiencia. Antes y después. En sus palabras.</td><td>Social proof. Tráfico frío manejo. Los testimonios de "pilotos de rally" ya existen en los comentarios.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="success">
+      <div class="success-title">El frameo de precio vs óptica</div>
+      <p>Una comentarista (Angela Maldonado) dijo que en la óptica pagó $150.000 por lentes genéricos "que vienen en 4 tonos". NOMERCY con cristal CR-39 de laboratorio + envío gratis + 3 cuotas sin interés se posiciona como <strong>mejor producto a menor precio que la óptica</strong>. Este frameo es más fuerte que competir contra los genéricos de $15K de MeLi — ahí se pierde. Contra la óptica, se gana.</p>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════ -->
+  <!-- 14 — BANCO DE LENGUAJE REAL -->
+  <!-- ══════════════════════════════════════════════════════ -->
+  <div class="section" id="banco-lenguaje">
+    <div class="section-header">
+      <div class="section-eyebrow">14</div>
+      <h2>Banco de Lenguaje Real</h2>
+    </div>
+
+    <p style="margin-bottom:24px;">Frases textuales de comentarios de ads y reseñas. Marzo 2026. Usar para hooks, copy, UGC scripts, y para calibrar el tono de la comunicación. El cliente habla así — nosotros hablamos así.</p>
+
+    <h3>Testimonios de alto valor — para social proof</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Quién</th><th>Qué dijo</th><th>Uso</th></tr></thead>
+        <tbody>
+          <tr><td><strong>@sebal081</strong></td><td>"Hace ya muchos años que manejo con lentes amarillos, lo aprendí de los pilotos de rally. Es impresionante lo calmado y cómodo que se maneja."</td><td>Social proof + ángulo rally. <strong>La validación de pilotos de rally es un ángulo nuevo.</strong></td></tr>
+          <tr><td><strong>@jose.morchio</strong></td><td>"Hace años que uso lentes amarillos de noche. No solo evitan el deslumbramiento sino que aumentan el contraste. También los uso cuando está nublado, hacen el día menos triste."</td><td>Doble uso: manejo nocturno + días nublados. Nuevo momento de uso.</td></tr>
+          <tr><td><strong>@ana.velitas</strong></td><td>"Son lo mejor que me pasó en la vida"</td><td>UGC highlight. Hipérbole real = convicción.</td></tr>
+          <tr><td><strong>@oyarzabalhe1938</strong></td><td>"De noche, días nublados y lluvioso espectacular. Con sol pleno, no!!!"</td><td>Delimita uso honestamente. El "con sol pleno no" genera credibilidad.</td></tr>
+          <tr><td><strong>@jorge1984c</strong></td><td>"Callate y tomá mi dinero"</td><td>Reacción de impulso puro. Útil para UGC edits.</td></tr>
+          <tr><td><strong>Mariano Facciano</strong></td><td>"Son fabulosos, yo supe comprar unos hace muchos años y todavía los tengo"</td><td>Durabilidad como prueba de calidad. Argumento contra "se van a romper".</td></tr>
+          <tr><td><strong>@robertolayus</strong></td><td>"Desde el 2009 manejo con lentes amarillos"</td><td>Prueba de uso sostenido en el tiempo. Validación de categoría.</td></tr>
+          <tr><td><strong>Jorge Valvino Vera</strong></td><td>"Yo lo uso cuando viajo en ruta de noche"</td><td>Uso específico de ruta. Conciso. Para carrusel testimonial.</td></tr>
+          <tr><td><strong>@ribbavicky</strong></td><td>"Es increíble cómo encandilan los autos ahora. Y las luces de la policía. Los que tenemos astigmatismo lo sufrimos peor."</td><td>Apertura del sub-segmento astigmatismo. Hook potencial.</td></tr>
+          <tr><td><strong>Clara White</strong></td><td>"Son buenísimos"</td><td>Simple y directo. Para compilaciones.</td></tr>
+          <tr><td><strong>@mcata87</strong></td><td>"Me quedé a ver el video pensando que iban a vender un ultra reflector para encandilar al que viene encandilando de frente, pero me sirve igual."</td><td>Humor real. El hook del ad enganchó aunque la solución no era la esperada.</td></tr>
+          <tr><td><strong>Jesus Antoni Dell Olio</strong></td><td>"Si de una ya los tengo y son muy buenos"</td><td>Comprador repetido validando en público. Social proof fuerte.</td></tr>
+          <tr><td><strong>Francisco Reyes</strong></td><td>"Nomarsi...son excelentes!!!"</td><td>Nombra la marca con cariño. Brand recognition.</td></tr>
+          <tr><td><strong>Dora Muñoz</strong></td><td>"SON MUY GENIALES!!!!"</td><td>Entusiasmo en mayúscula. Para compilaciones de reacciones.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Lo que la gente ve como bueno — reseñas de compradores</h3>
+    <p style="margin-bottom:16px;">Reseñas reales de MercadoLibre y Shopify. Marzo 2026. Lo que más repiten: liviano, cómodo, funciona para manejo, funciona para pantallas, buena relación precio-calidad (con excepciones).</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Rating</th><th>Qué dijo</th><th>Lo que revela</th></tr></thead>
+        <tbody>
+          <tr><td><strong>★★★★★</strong></td><td>"Excelente producto. Liviano. Me encanta."</td><td><strong>Livianos</strong> aparece repetido. Es un atributo físico que sorprende positivamente.</td></tr>
+          <tr><td><strong>★★★★★</strong></td><td>"Son livianos y muy cómodos."</td><td>Livianos + cómodos = las dos cosas que más mencionan los que ya compraron.</td></tr>
+          <tr><td><strong>★★★★</strong></td><td>"Cubren más de lo que pensaba."</td><td>La expectativa era baja. El producto supera. Esto es una oportunidad: mostrar la cobertura real en ads.</td></tr>
+          <tr><td><strong>★★★★★</strong></td><td>"La calidad de las gafas es muy bueno y noté un cambio notorio en el primer día, como la fatiga visual, hasta diría que duermo mejor, sin ese cansancio en los ojos."</td><td><strong>Cambio notorio en el primer día.</strong> El resultado es inmediato. Esto es copy listo para usar.</td></tr>
+          <tr><td><strong>★★★★★</strong></td><td>"Tenía unos de los 'block blue' que salen 1/5 que estos y la verdad es que la diferencia es enorme. Realmente puedo estar más horas trabajando en la computadora sin tanta fatiga y dolor de cabeza. Para manejar de noche también me sirven."</td><td><strong>La reseña más completa.</strong> Compara con genéricos. Valida pantallas + manejo. Menciona que es migrañosa/fotosensible. Cierra con "5/5 estrellas". Usarla entera como UGC base.</td></tr>
+          <tr><td><strong>★★★★★</strong></td><td>"La violencia lumínica en la calle es terrible. Esto me ayuda a bajarle intensidad. Y estéticamente son hermosos. Y buen material."</td><td><strong>"Violencia lumínica"</strong> — la misma frase que usa Agustín en la historia del founder. Validación del lenguaje de marca desde el cliente.</td></tr>
+          <tr><td><strong>★★★★★</strong></td><td>"Excelente, es un cambio real si trabajás en la computadora."</td><td>"Cambio real" = convicción alta. Para remarketing.</td></tr>
+          <tr><td><strong>★★★★★</strong></td><td>"Protegen muy bien 10/10."</td><td>La función se cumple. Simple. Para compilaciones.</td></tr>
+          <tr><td><strong>★★★★★</strong></td><td>"Excelentes!! Buenísimos para hacer un regalo."</td><td><strong>Regalable.</strong> Ángulo no explotado: "¿Conocés a alguien que maneja de noche?"</td></tr>
+          <tr><td><strong>★★★★★</strong></td><td>"Cumple con la función."</td><td>Funcional. Sin drama. Para público escéptico.</td></tr>
+          <tr><td><strong>★★★★</strong></td><td>"Le pongo 4 estrellas porque por lo que valen podrían ser de un poco más de calidad. Pero la verdad que son cómodos y necesarios si trabajás con pantallas, y para manejar de noche son un lujo."</td><td>Honesta: "para manejar de noche son un lujo" valida el ángulo principal. La queja de calidad/precio es el punto a monitorear.</td></tr>
+          <tr><td><strong>★★★★</strong></td><td>"Son un buen producto pero la relación precio/calidad está un poco por arriba en relación a otros productos similares."</td><td>Segunda mención de precio/calidad. Patrón a observar.</td></tr>
+          <tr><td><strong>★★★★</strong></td><td>"Necesito más tiempo para evaluar resultados pero parecen de buena calidad."</td><td>El beneficio no es inmediato para todos. Algunos necesitan días. Expectativas.</td></tr>
+          <tr><td><strong>★</strong></td><td>"Al segundo día ya aparenta ser viejo el lente, el marco safa, en general pareciera un anteojos de no más de 30 mil pero está súper sobrevalorado."</td><td><strong>La peor reseña.</strong> Percepción de sobrevaluado. "Aparenta ser viejo" = problema de materiales del marco. Único review de 1 estrella — es el riesgo de calidad percibida que hay que monitorear.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="success">
+      <div class="success-title">Patrón positivo en las reseñas</div>
+      <p>Lo que más repiten los compradores satisfechos: <strong>liviano, cómodo, funciona para manejo de noche, funciona para pantallas, cambio notorio desde el primer día.</strong> El producto cumple la promesa del ad. Las quejas (pocas) son sobre percepción de calidad del marco vs precio — no sobre la función del lente. El cristal no se cuestiona. El armazón sí.</p>
+    </div>
+
+    <div class="warning">
+      <div class="warning-title">Riesgo a monitorear — percepción de calidad del marco</div>
+      <p>Dos reseñas de 4★ y una de 1★ mencionan que el precio debería dar más calidad de materiales. "Por lo que valen podrían ser de un poco más de calidad." El cristal nunca se cuestiona. Si el armazón se percibe como flojo, el riesgo es que el rating baje. Monitorear y evaluar si un upgrade de materiales de marco (o de empaque/presentación) cambia la percepción.</p>
+    </div>
+
+    <h3>Vocabulario del cliente — lo que dicen vs lo que decimos</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Ellos dicen</th><th>Nosotros decíamos</th><th>Acción</th></tr></thead>
+        <tbody>
+          <tr><td><strong>"Encandilan" / "encandilamiento"</strong></td><td>"Destello" / "glare"</td><td><strong>Usar "encandilamiento" siempre.</strong> Es la palabra exacta del target. "Destello" suena a ficha técnica traducida.</td></tr>
+          <tr><td><strong>"Las luces de mierda"</strong></td><td>"Los LED modernos"</td><td>La emocionalidad es real. No copiar la grosería, pero capturar la frustración: "las luces que te destruyen los ojos".</td></tr>
+          <tr><td><strong>"Cabezas de termo"</strong></td><td>—</td><td>Para referirse a los que ponen LED en ópticas viejas. El target identifica al enemigo con precisión. No usarlo en copy oficial pero sí en UGC natural.</td></tr>
+          <tr><td><strong>"Calmado y cómodo que se maneja"</strong></td><td>"Reduce la fatiga visual"</td><td>La experiencia sensorial > la descripción técnica. "Manejás más calmado" es mejor que "reduce la fatiga".</td></tr>
+          <tr><td><strong>"Pilotos de rally"</strong></td><td>—</td><td><strong>Ángulo nuevo.</strong> Los lentes amarillos son usados por pilotos de rally hace décadas. Es validación técnica y aspiracional al mismo tiempo. Investigar y usar.</td></tr>
+          <tr><td><strong>"El día menos triste" (con nublado)</strong></td><td>—</td><td>Momento de uso nuevo: días grises/nublados. No solo manejo nocturno. El amarillo "levanta" el contraste en días opacos.</td></tr>
+          <tr><td><strong>"No me gusta ver mi vida en amarillo"</strong></td><td>—</td><td>La objeción estética más clara. Respuesta: video de adaptación en 10 minutos + testimonios de gente que se acostumbró al toque.</td></tr>
+          <tr><td><strong>"Info" / "Precio" / "Cuánto sale"</strong></td><td>—</td><td>~30% de los comentarios son pedidos de info/precio. <strong>El precio no está claro en el ad o la landing.</strong> Evaluar si el CTA debería incluir precio visible o si la fricción es intencional.</td></tr>
+          <tr><td><strong>"Liviano" / "cómodo"</strong></td><td>—</td><td>Los dos atributos físicos que más repiten los compradores. <strong>No los estamos comunicando.</strong> "Son livianos" aparece en reseñas como sorpresa positiva — agregar al copy de PDP y remarketing.</td></tr>
+          <tr><td><strong>"Cambio notorio en el primer día"</strong></td><td>—</td><td>El resultado es inmediato para muchos. Copy listo: "desde el primer día notás la diferencia". Usar en remarketing y PDP.</td></tr>
+          <tr><td><strong>"Violencia lumínica"</strong></td><td>"Violencia lumínica"</td><td>El cliente usa la misma frase que el founder. El lenguaje de marca está alineado con la experiencia real. Validación.</td></tr>
+          <tr><td><strong>"Para manejar de noche son un lujo"</strong></td><td>—</td><td>Reseña de 4★ que igual valida manejo como el caso de uso estrella. Incluso los tibios lo reconocen.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Correcciones del público — errores que nos marcaron</h3>
+    <div class="highlight">
+      <p><strong>"No es 'frecuencia' — es longitud de onda."</strong> Cristian Ariel Falcón, con tono duro pero razón. El vocabulario técnico incorrecto en un ad destruye la credibilidad con el segmento que sabe. Usar los términos correctos o no usarlos.</p>
+      <p><strong>"No son los autos nuevos — son los que ponen LED en ópticas viejas."</strong> Esto lo dicen ea.chul, juliodelpa78, agustindegiuseppe, Zevastian Halvornoz, astor.ramirez, Martín Schymansky, y 10+ más. Generalizar "autos nuevos = problema" enoja a la gente que tiene autos nuevos con LED bien regulados. <strong>Solución ya aplicada en hooks:</strong> decir "las luces LED que te vienen de frente" sin atribuir a un tipo de vehículo. El dolor es la luz, no el auto.</p>
+      <p><strong>"El lente ámbar abre la pupila."</strong> @fernandoesse y Haver Contreras argumentan que el lente amarillo dilata la pupila y empeora la situación. Es un argumento técnico parcialmente válido que necesita respuesta preparada. La ciencia: el filtro reduce la intensidad del espectro dañino aunque la pupila se adapte. La reducción neta sigue siendo positiva. Preparar contenido educativo para remarketing que aborde esto.</p>
+    </div>
+
+    <h3>Momentos de uso nuevos — detectados en comentarios</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Momento</th><th>Quién lo mencionó</th><th>Lente</th><th>Estado</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Días nublados / lluviosos</strong></td><td>jose.morchio, oyarzabalhe1938</td><td>Amarillo</td><td>⚠️ Sin comunicar — oportunidad</td></tr>
+          <tr><td><strong>Rally / conducción deportiva</strong></td><td>sebal081 ("pilotos de rally")</td><td>Amarillo</td><td>⚠️ Sin comunicar — oportunidad</td></tr>
+          <tr><td><strong>Luces de la policía / emergencias</strong></td><td>ribbavicky</td><td>Amarillo</td><td>⚠️ Mención aislada — no priorizar</td></tr>
+          <tr><td><strong>Graduación / receta / aumento</strong></td><td>20+ comentarios</td><td>Todos</td><td>❌ No se ofrece — responder y pasar</td></tr>
+          <tr><td><strong>Astigmatismo como amplificador</strong></td><td>ribbavicky, pablomartinet</td><td>Amarillo</td><td>⚠️ Sub-segmento con dolor amplificado</td></tr>
+          <tr><td><strong>Como regalo</strong></td><td>Reseña MeLi: "buenísimos para hacer un regalo"</td><td>Todos</td><td>⚠️ Sin comunicar — "¿conocés a alguien que maneja de noche?"</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Hooks nuevos derivados de comentarios</h3>
+    <div class="table-wrap">
+      <table class="hook-table">
+        <thead><tr><th>#</th><th>Lente</th><th>Hook</th><th>Visual sugerido</th></tr></thead>
+        <tbody>
+          <tr><td>N1</td><td><span class="hook-badge hb-amarillo">AMARILLO</span></td><td class="hook-text">Los pilotos de rally usan lentes amarillos hace décadas. ¿Sabés por qué?</td><td class="hook-visual">Auto de rally + close-up de lente amarillo</td></tr>
+          <tr><td>N2</td><td><span class="hook-badge hb-amarillo">AMARILLO</span></td><td class="hook-text">Si tenés astigmatismo, los faros LED son todavía peores para vos.</td><td class="hook-visual">POV conductor con halos exagerados (efecto astigmatismo)</td></tr>
+          <tr><td>N3</td><td><span class="hook-badge hb-amarillo">AMARILLO</span></td><td class="hook-text">No son los autos nuevos. Son los que les ponen LED a faros que no están diseñados para eso. Y vos te comés todo el encandilamiento.</td><td class="hook-visual">Faro viejo con LED metido + auto de frente</td></tr>
+          <tr><td>N4</td><td><span class="hook-badge hb-amarillo">AMARILLO</span></td><td class="hook-text">Días nublados, lluvia, ruta gris. Todo se ve plano y sin contraste. Esto lo cambia.</td><td class="hook-visual">Ruta nublada con/sin lente amarillo</td></tr>
+          <tr><td>N5</td><td><span class="hook-badge hb-todos">TODOS</span></td><td class="hook-text">En la óptica me quisieron cobrar $150K por unos lentes genéricos. Estos son de laboratorio argentino, con cristal CR-39 real, y salen menos.</td><td class="hook-visual">Founder / UGC mostrando el producto</td></tr>
+          <tr><td>N6</td><td><span class="hook-badge hb-todos">TODOS</span></td><td class="hook-text">"Se ve todo amarillo." Sí, los primeros 5 minutos. Después el cerebro se adapta y lo que sentís es alivio.</td><td class="hook-visual">Time-lapse: persona poniéndose el lente → 10 min después relajada</td></tr>
+          <tr><td>N7</td><td><span class="hook-badge hb-amarillo">AMARILLO</span></td><td class="hook-text">Manejás tranquilo hasta que viene una camioneta de frente con los LED a la altura de tu cara. Eso se acabó.</td><td class="hook-visual">POV sedán vs SUV, diferencia de altura</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="warning">
+      <div class="warning-title">Tendencia de ads — respuesta a "Info" y "Precio"</div>
+      <p>~30% de los comentarios son "info", "precio", "cuánto sale". Esto indica: (1) el ad engancha, hay intención de compra, (2) el precio o el CTA no están claros en el funnel. <strong>Evaluar:</strong> ¿el ad debería incluir precio visible? ¿El link en bio lleva rápido al producto? Cada "precio?" sin responder en 2 horas es una venta que se enfría.</p>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════ -->
+  <!-- 15 — CATALOGACIÓN DE ANUNCIOS -->
+  <!-- ══════════════════════════════════════════════════════ -->
+  <div class="section" id="catalogacion">
+    <div class="section-header">
+      <div class="section-eyebrow">15</div>
+      <h2>Catalogación de Anuncios</h2>
+    </div>
+
+    <p style="margin-bottom:12px;">Sistema de 5 categorías para clasificar, producir y distribuir presupuesto de creatives. Cada anuncio que se hace cae en una de estas letras. Si no sabés en cuál va, el anuncio no tiene función clara y no debería existir.</p>
+
+    <div class="golden-rule" style="margin-bottom:36px;">
+      <div class="label">La lógica del funnel</div>
+      <div class="text">A atrapa → B explica → C convence → D cierra → E descubre</div>
+      <div class="sub">Las categorías no son opcionales ni intercambiables. Un anuncio A que menciona el producto es un anuncio B mal hecho. Un anuncio C sin testimonio real es un anuncio B disfrazado. Si no cae limpio en una categoría, reescribirlo hasta que caiga.</div>
+    </div>
+
+    <div class="cat-grid">
+
+      <!-- CATEGORÍA A -->
+      <div class="cat-card cat-a">
+        <div class="cat-letter">A</div>
+        <div class="cat-tag">Categoría A</div>
+        <h4>Síntoma Puro</h4>
+        <div class="cat-pct">35-40% del presupuesto</div>
+        <p><strong style="color:#ffb060;">Regla #1: NUNCA menciona NOMERCY.</strong> Ni el nombre, ni el producto, ni "estos lentes", ni nada. El anuncio A es 100% dolor + curiosidad. El espectador tiene que sentir "ESO ME PASA A MÍ" y hacer click para descubrir qué es. El destino es el advertorial o la PDP — no el producto en el ad.</p>
+        <p>Es la categoría más grande porque es la puerta de entrada de todo el funnel. Sin un A fuerte no hay audiencia nueva. El hook de 56 días (#01) es un A. Todos los hooks longevos son A.</p>
+        <div class="cat-sub">
+          <strong>Objetivo</strong>
+          Hook fuerte → generar click → llevar al advertorial/PDP. Optimizar por CTR y CPC, no por ROAS directo.
+        </div>
+        <div class="cat-sub">
+          <strong>Estructura del anuncio</strong>
+          Dolor físico concreto (los ojos pesan, la cabeza explota, el encandilamiento te ciega) → amplificación del dolor (pasa todos los días, no mejora, probaste todo) → apertura de curiosidad ("hasta que entendí por qué" / "hay una razón biológica para eso") → CTA al advertorial.
+        </div>
+        <div class="cat-sub">
+          <strong>Ejemplos por tópico</strong>
+          <p style="margin-top:6px;">🚗 <strong style="color:#ffb060;">Manejo:</strong> "¿Manejás de noche y cada auto que viene de frente te pega un encandilamiento que te deja viendo manchas?" · "Oscuridad. Destello. Oscuridad. Destello. Así son tus noches manejando." · "Terminás el turno y los ojos te dicen basta."</p>
+          <p>💻 <strong style="color:#ffb060;">Pantallas:</strong> "¿A vos también los ojos te pesan después de 5 horas de pantalla?" · "¿Tomás ibuprofeno seguido por el dolor de cabeza?" · "Probé modo oscuro, probé bajar el brillo. Los dolores seguían."</p>
+          <p>🎮 <strong style="color:#ffb060;">Gaming:</strong> "Terminás de jugar a las 2AM y la cabeza sigue corriendo. No podés dormirte." · "4 horas de sesión y los ojos arden. Pero no parás."</p>
+          <p>🪩 <strong style="color:#ffb060;">Fiestas:</strong> "Salís del boliche con los ojos destruidos. Las luces estroboscópicas te pegaron directo durante 5 horas."</p>
+          <p>🏍️ <strong style="color:#ffb060;">Motos:</strong> "En la moto no tenés parabrisas. El LED te pega directo en la cara. Sin nada de por medio."</p>
+          <p>🤕 <strong style="color:#ffb060;">Migrañas:</strong> "Entrás a un shopping y a los 20 minutos ya tenés dolor de cabeza. No sos exagerada."</p>
+        </div>
+        <div class="cat-sub">
+          <strong>Lo que NO es un anuncio A</strong>
+          Cualquier ad que muestre el producto, la caja, el logo, diga "NOMERCY", o mencione "estos lentes" ya NO es A. Si el espectador puede saber qué le estás vendiendo antes de hacer click, no es A.
+        </div>
+      </div>
+
+      <!-- CATEGORÍA B -->
+      <div class="cat-card cat-b">
+        <div class="cat-letter">B</div>
+        <div class="cat-tag">Categoría B</div>
+        <h4>Educación / Mecanismo</h4>
+        <div class="cat-pct">20-25% del presupuesto</div>
+        <p>Explica <strong style="color:#90b0f0;">POR QUÉ</strong> pasa lo que pasa. El espectador ya se identificó con el dolor (A se lo mostró). Ahora quiere entender. El mecanismo es la revelación: no es que sos sensible, no es que estás viejo — es la composición de la luz artificial que destruye tus ojos y tu sueño.</p>
+        <p>Puede mencionar "lentes", "anteojos con filtro", incluso mostrar el producto como solución al final. Pero el centro del ad es la explicación, no el producto. Puede llevar al advertorial (profundiza) o directo a producto (si el mecanismo ya es suficiente).</p>
+        <div class="cat-sub">
+          <strong>Objetivo</strong>
+          Convertir curiosidad en comprensión. El espectador pasa de "me pasa eso" a "ahora entiendo por qué y sé que tiene solución". Optimizar por ThruPlay y engagement.
+        </div>
+        <div class="cat-sub">
+          <strong>Estructura del anuncio</strong>
+          Referencia rápida al dolor (1 oración) → mecanismo explicado simple ("la luz azul de los LED activa un sensor en tu ojo que le dice al cerebro que es de día") → por qué las soluciones comunes no funcionan (modo nocturno, bajar brillo, lentes transparentes) → la solución real → CTA.
+        </div>
+        <div class="cat-sub">
+          <strong>Ejemplos por tópico</strong>
+          <p style="margin-top:6px;">🔬 <strong style="color:#90b0f0;">Test real:</strong> "El test del láser que usan todas las marcas es humo. Te muestro qué pasa con un foco azul de verdad." · "Puse mis cristales frente a un foco azul. No pasa nada de luz."</p>
+          <p>🧠 <strong style="color:#90b0f0;">Ciencia del sueño:</strong> "El modo nocturno no elimina los 460-484nm que activan la melanopsina. Esto sí." · "Lo que hacés esta noche decide cómo te despertás mañana."</p>
+          <p>🚗 <strong style="color:#90b0f0;">Manejo:</strong> "Los faros de antes tenían 1.000 lúmenes. Los LED de ahora tienen 4.000. Tus ojos no evolucionaron para eso." · "No son los autos nuevos. Son los que ponen LED en faros que no están diseñados para eso."</p>
+          <p>🏷️ <strong style="color:#90b0f0;">Honestidad/Cochrane:</strong> "Salió un estudio que dice que los lentes de luz azul son un scam. Tienen razón. Los claros, sí." · "El 90% de los lentes de luz azul no hacen nada. Esto explica cuáles sí."</p>
+          <p>📹 <strong style="color:#90b0f0;">Streaming:</strong> "Ring light + pantalla + 8 horas = doble impacto lumínico. Nadie te lo dice."</p>
+          <p>🌙 <strong style="color:#90b0f0;">Turnos nocturnos:</strong> "Trabajás toda la noche bajo tubos LED. Después pretendés dormir de día. Tu cuerpo no puede. Hay una razón biológica."</p>
+        </div>
+        <div class="cat-sub">
+          <strong>El tinte como evidencia — el B más poderoso</strong>
+          "Si podés ver el mundo en colores normales con los lentes puestos, no te están protegiendo." Esto es un B puro: explica por qué el tinte existe y por qué los claros son humo. Funciona en todas las etapas del funnel.
+        </div>
+      </div>
+
+      <!-- CATEGORÍA C -->
+      <div class="cat-card cat-c">
+        <div class="cat-letter">C</div>
+        <div class="cat-tag">Categoría C</div>
+        <h4>Prueba Social / UGC</h4>
+        <div class="cat-pct">15-20% del presupuesto</div>
+        <p>Otra persona — no la marca — dice que funciona. El espectador ya entiende el problema (A), sabe por qué pasa (B), y ahora necesita creer que la solución funciona en gente real. Testimonios, antes/después, experiencias de compradores, el founder contando su historia.</p>
+        <p><strong style="color:#7aca9a;">¿El founder va acá? Sí y no.</strong> La historia del founder cuando cuenta su problema personal y cómo creó NOMERCY es C — es prueba social desde la autenticidad. Pero si el founder explica el mecanismo (melanopsina, espectro, etc.), eso es B con cara de founder. La diferencia: si el centro es "esto me pasó a mí y esto encontré" = C. Si el centro es "esto es lo que le pasa a tus ojos" = B.</p>
+        <div class="cat-sub">
+          <strong>Objetivo</strong>
+          Eliminar la duda. El espectador pasa de "suena bien" a "esta gente lo probó y funciona". Lleva directo a producto. Optimizar por purchases y ATC.
+        </div>
+        <div class="cat-sub">
+          <strong>Formatos que funcionan</strong>
+          <p style="margin-top:6px;">👤 <strong style="color:#7aca9a;">UGC de comprador:</strong> Conductor Uber contando su experiencia. Gamer mostrando su setup con los naranja puestos. Trabajadora con migrañas que dice "es lo mejor que me pasó". En sus palabras, no en las nuestras.</p>
+          <p>⭐ <strong style="color:#7aca9a;">Montaje de reseñas:</strong> Compilación de reseñas reales de MeLi/Shopify con voz en off o texto animado. "Liviano, cómodo, cambio notorio desde el primer día." "Para manejar de noche son un lujo." "Tenía unos blue blockers de 1/5 de estos — la diferencia es enorme."</p>
+          <p>👨‍💼 <strong style="color:#7aca9a;">Founder story:</strong> Agustín contando desde su problema personal hasta la creación de NOMERCY. "Busqué este producto en Argentina y no existía. Lo hice yo." No es pitch — es historia. El producto aparece como conclusión, no como apertura.</p>
+          <p>🔢 <strong style="color:#7aca9a;">Data social:</strong> "3.900 vendidos. 4.7 estrellas. Desde Tucumán para todo el país." Números como prueba masiva.</p>
+          <p>💬 <strong style="color:#7aca9a;">Screenshots de comentarios:</strong> Compilación de los mejores comentarios de ads. "Hace años que manejo con lentes amarillos, lo aprendí de los pilotos de rally." "Son lo mejor que me pasó en la vida." "Callate y tomá mi dinero." Los comentarios reales son más creíbles que cualquier UGC producido.</p>
+        </div>
+        <div class="cat-sub">
+          <strong>Banco de testimonios disponibles (ver sección 14)</strong>
+          sebal081 (pilotos de rally), jose.morchio (manejo + nublado), ana.velitas ("lo mejor que me pasó"), la reseña de la compradora migrañosa/fotosensible (la más completa), oyarzabalhe1938 (delimita uso con honestidad), jorge1984c ("callate y tomá mi dinero"), robertolayus (usa desde 2009).
+        </div>
+      </div>
+
+      <!-- CATEGORÍA D -->
+      <div class="cat-card cat-d">
+        <div class="cat-letter">D</div>
+        <div class="cat-tag">Categoría D</div>
+        <h4>Conversión Directa / Retargeting</h4>
+        <div class="cat-pct">10-15% del presupuesto</div>
+        <p>Para gente que ya vio el advertorial, visitó la PDP, o agregó al carrito. Ya saben qué es NOMERCY, ya entienden por qué funciona, ya vieron prueba social. Lo que falta es el empujón final. Acá sí: producto al frente, oferta, garantía, diferencia entre colores, modo de uso, calidad del cristal.</p>
+        <p>Es la categoría más pequeña en presupuesto porque la audiencia es más chica — pero es la de mayor ROAS. Cada creative D debería resolver una objeción específica o dar una razón concreta para comprar <strong style="color:#ffe348;">ahora</strong>.</p>
+        <div class="cat-sub">
+          <strong>Objetivo</strong>
+          Cerrar la venta. Eliminar la última objeción o crear la última urgencia. Optimizar por purchases y ROAS.
+        </div>
+        <div class="cat-sub">
+          <strong>Formatos que funcionan</strong>
+          <p style="margin-top:6px;">📦 <strong style="color:#ffe348;">Unboxing funcional:</strong> No el packaging — el momento de ponérselos y la reacción real. Los primeros 10 minutos. Qué se siente.</p>
+          <p>🔍 <strong style="color:#ffe348;">Detalle de cristal:</strong> Close-up del CR-39, el tinte en masa, los reflejos verdes del antirreflex. "Esto no es un coating que se raya — el color está en el cristal."</p>
+          <p>📅 <strong style="color:#ffe348;">Timeline de resultados:</strong> "Lo que vas a ver semana a semana. Día 1: alivio inmediato. Semana 1: no más ibuprofeno. Mes 1: tus mañanas cambian."</p>
+          <p>🎨 <strong style="color:#ffe348;">Guía de colores:</strong> "Amarillo = pantallas y manejo. Naranja = gaming nocturno. Rojo = insomnio y scroll en la cama. ¿Cuál es tu problema? Ese es tu lente."</p>
+          <p>💰 <strong style="color:#ffe348;">Frameo de precio:</strong> "En la óptica te cobran $150K por genéricos. NOMERCY con cristal CR-39 de laboratorio argentino + envío gratis + 3 cuotas sin interés."</p>
+          <p>🆚 <strong style="color:#ffe348;">Comparativa con genérico:</strong> NOMERCY al lado de un lente de MeLi. Nitidez, build quality, test del foco RGB. Sin nombrar marcas.</p>
+          <p>🔬 <strong style="color:#ffe348;">Test del foco RGB:</strong> Cristal NOMERCY frente a foco azul = cero luz. Genérico frente a foco azul = pasa todo. 5 segundos de prueba irrefutable.</p>
+          <p>🛒 <strong style="color:#ffe348;">Armando el pedido:</strong> Pantalla grabada eligiendo el color, agregando al carrito, mostrando las cuotas. Reduce la fricción de "no sé cómo se compra".</p>
+          <p>✅ <strong style="color:#ffe348;">Garantía / devolución:</strong> Si la hay, decirlo acá. Si no la hay, no inventarla.</p>
+        </div>
+        <div class="cat-sub">
+          <strong>Objeciones que D tiene que resolver</strong>
+          "Son caros" → frameo vs óptica + cuotas. "Se ve oscuro/amarillo" → video de adaptación en 10 min. "No sé cuál elegir" → guía de colores. "¿Funciona o es marketing?" → test del foco RGB. "Parecen Aliexpress" → detalle del cristal CR-39 + laboratorio argentino.
+        </div>
+      </div>
+
+      <!-- CATEGORÍA E -->
+      <div class="cat-card cat-e">
+        <div class="cat-letter">E</div>
+        <div class="cat-tag">Categoría E</div>
+        <h4>Descubrimiento</h4>
+        <div class="cat-pct">5-10% del presupuesto</div>
+        <p><strong style="color:#d0a0f0;">Laboratorio de ángulos.</strong> Acá se prueban tópicos nuevos, formatos nuevos, avatares que no se comunicaron todavía. No se espera ROAS — se espera data. ¿El ángulo de fiestas electrónicas genera engagement? ¿Los motociclistas responden? ¿El hook de migrañas funciona? E es donde se descubre.</p>
+        <p>Es presupuesto bajo pero no es plata tirada — es inversión en el pipeline de creatives. Cada A que hoy funciona fue un E antes. El hook de manejo que hoy es el más fuerte alguna vez fue un experimento. Sin E, el funnel se seca cuando los A actuales se fatiguen.</p>
+        <div class="cat-sub">
+          <strong>Objetivo</strong>
+          Descubrir qué nuevos ángulos, avatares y tópicos generan tracción. Optimizar por CTR, engagement, y señales de resonancia (comentarios, shares, saves). NO optimizar por purchases.
+        </div>
+        <div class="cat-sub">
+          <strong>Cómo funciona</strong>
+          <p style="margin-top:6px;">1. <strong style="color:#d0a0f0;">Elegir un tópico del mural</strong> que esté en 🆕 NUEVO o 🔄 EN EXPLORACIÓN.</p>
+          <p>2. <strong style="color:#d0a0f0;">Hacer 2-3 creatives A</strong> (síntoma puro, sin producto) para ese tópico. Bajo presupuesto, broad targeting.</p>
+          <p>3. <strong style="color:#d0a0f0;">Medir señales de resonancia:</strong> ¿el CTR es decente? ¿Hay comentarios de "a mí me pasa"? ¿Se genera debate? ¿La gente tagea amigos?</p>
+          <p>4. <strong style="color:#d0a0f0;">Si hay señal → promover a A real</strong> con presupuesto completo. Si no hay señal → descartar o iterar el ángulo.</p>
+        </div>
+        <div class="cat-sub">
+          <strong>Tópicos en cola de testeo (del mural)</strong>
+          <p style="margin-top:6px;">🪩 <strong style="color:#d0a0f0;">Fiestas / electrónica:</strong> "Salís del boliche con los ojos destrozados." — Potencial de debate social alto. El naranja se ve bien en contexto de fiesta. Target joven, muy activo en redes.</p>
+          <p>🏍️ <strong style="color:#d0a0f0;">Motociclistas:</strong> "En la moto no hay parabrisas. El LED te pega directo." — Comunidad tribu, dolor amplificado, distribución orgánica.</p>
+          <p>📹 <strong style="color:#d0a0f0;">Streaming / creadores:</strong> "Ring light + pantalla + 8 horas." — Si un streamer lo usa en vivo, los viewers lo ven puesto = publicidad infinita.</p>
+          <p>🤕 <strong style="color:#d0a0f0;">Fotosensibilidad / migrañas:</strong> "No sos exagerada. Es la luz." — Volcán silencioso. Gente con dolor extremo y poca oferta. Potencial de debate social fuerte.</p>
+          <p>🌙 <strong style="color:#d0a0f0;">Turnos nocturnos:</strong> "Nadie habla de lo que le pasa a tu cuerpo cuando trabajás de noche." — Frustración con condiciones laborales. Debate social.</p>
+          <p>🏟️ <strong style="color:#d0a0f0;">Eventos / estadios:</strong> "Reflectores LED en la cancha. Volvés con los ojos fritos." — Estacional, contenido situacional.</p>
+          <p>✈️ <strong style="color:#d0a0f0;">Viajes micro/avión:</strong> "La luz del micro no te deja dormir. El naranja fuerza la melatonina." — Dolor puntual pero agudo. Estacional.</p>
+          <p>📊 <strong style="color:#d0a0f0;">Traders:</strong> "4 monitores, horarios de madrugada. Fatiga en 2 horas." — Alto ticket, bajo volumen. Nicho que gasta en herramientas.</p>
+        </div>
+        <div class="cat-sub">
+          <strong>Potencial de debate social — los que pueden replicar lo de manejo</strong>
+          <p style="margin-top:6px;">Lo que hizo explotar manejo no fue el producto — fue que tocó un nervio social. La gente tiene rabia con los LED y el ad les dio un lugar para descargarla. El 70% de los comentarios ni hablan de NOMERCY. El producto se vende solo mientras la gente pelea en los comentarios.</p>
+          <p style="margin-top:8px;"><strong style="color:#d0a0f0;">Más probable que generen debate:</strong></p>
+          <p>🥇 <strong style="color:#d0a0f0;">Fiestas / electrónica</strong> — "Los boliches te destruyen los ojos y nadie dice nada" vs "y bueno, no vayas". Target joven, polarizante, visual.</p>
+          <p>🥈 <strong style="color:#d0a0f0;">Fotosensibilidad / migrañas</strong> — "Las luces de los shoppings deberían estar reguladas" vs "no exageres". Frustración social con iluminación que no tiene solución.</p>
+          <p>🥉 <strong style="color:#d0a0f0;">Turnos nocturnos</strong> — "Trabajás toda la noche bajo LED y pretenden que duermas de día." Se abre a salud laboral, derechos del trabajador nocturno.</p>
+          <p>4. <strong style="color:#d0a0f0;">Motociclistas</strong> — Comunidad tribu. Historias de terror con encandilamiento. Seguridad vial.</p>
+          <p>5. <strong style="color:#d0a0f0;">Streaming / creadores</strong> — Debate distinto: identificación masiva, no frustración social. "Es el precio de ser creador" vs "no tiene por qué ser así".</p>
+        </div>
+      </div>
+
+    </div>
+
+    <h3>Distribución de presupuesto — resumen</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Cat</th><th>Nombre</th><th>% Presupuesto</th><th>Objetivo</th><th>Optimizar por</th><th>Destino</th></tr></thead>
+        <tbody>
+          <tr><td><strong style="color:#f5a623;">A</strong></td><td>Síntoma puro</td><td><strong>35-40%</strong></td><td>Atraer tráfico frío</td><td>CTR · CPC</td><td>Advertorial / PDP</td></tr>
+          <tr><td><strong style="color:#7090d0;">B</strong></td><td>Educación / Mecanismo</td><td><strong>20-25%</strong></td><td>Convertir curiosidad en comprensión</td><td>ThruPlay · Engagement</td><td>Advertorial / Producto</td></tr>
+          <tr><td><strong style="color:#4a9a6a;">C</strong></td><td>Prueba social / UGC</td><td><strong>15-20%</strong></td><td>Eliminar la duda</td><td>Purchases · ATC</td><td>Producto directo</td></tr>
+          <tr><td><strong style="color:#d4c020;">D</strong></td><td>Conversión / Retargeting</td><td><strong>10-15%</strong></td><td>Cerrar la venta</td><td>Purchases · ROAS</td><td>Producto directo</td></tr>
+          <tr><td><strong style="color:#b070d0;">E</strong></td><td>Descubrimiento</td><td><strong>5-10%</strong></td><td>Encontrar nuevos ángulos</td><td>CTR · Engagement · Señales</td><td>Advertorial / PDP</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="highlight">
+      <p><strong>Regla de rotación:</strong> Cuando un E genera señal, se produce un A real y entra al ciclo A→B→C→D con presupuesto completo. Cuando un A se fatiga (caída sostenida de CTR después de 3+ semanas), se retira y se reemplaza con una variación o un tópico nuevo que vino de E. El pipeline nunca debería estar vacío: siempre tiene que haber 2-3 tópicos en E generando data para cuando los A actuales mueran.</p>
+    </div>
+
+    <div class="warning">
+      <div class="warning-title">Los porcentajes no son fijos</div>
+      <p>Los porcentajes son punto de partida. Si A está generando tráfico barato y D está cerrando, meter más en A y D. Si C (UGC/prueba social) es lo que más convierte en un período, subir C y bajar B. La distribución se revisa cada 2 semanas con data real. Lo que no cambia: E siempre tiene que existir, aunque sea al 5%.</p>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <p>NOMERCY · Master de Comunicación v2.2 · 17 Mar 2026</p>
+    <p>Síntesis de: Core v1 + Core v2 · Biblia Comunicacional · Análisis Competitivo · Analytics Ene-Feb 2026 · Founder Story · Mapa Conductores · Mapa Pantalla-Cerebro-Sueño · <strong>Comentarios de Ads Mar 2026 · Catalogación de Anuncios</strong></p>
+  </div>
+
+</div>
+</body>
+</html>

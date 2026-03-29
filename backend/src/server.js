@@ -6,6 +6,9 @@ const connectDB = require('./config/database');
 const { port, nodeEnv } = require('./config/environment');
 const errorHandler = require('./middleware/errorHandler');
 const authRoutes = require('./routes/authRoutes');
+const storeRoutes = require('./routes/storeRoutes');
+const tnRoutes = require('./routes/tnRoutes');
+const { startCronJobs } = require('./services/cronJobs');
 const logger = require('./utils/logger');
 
 const app = express();
@@ -33,6 +36,8 @@ app.get('/health', (_req, res) => {
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/stores', storeRoutes);
+app.use('/api/tn', tnRoutes);
 
 // Serve frontend in production
 if (nodeEnv === 'production') {
@@ -48,6 +53,7 @@ app.use(errorHandler);
 
 app.listen(port, () => {
   logger.info(`Server running on port ${port} (${nodeEnv})`);
+  startCronJobs();
 });
 
 module.exports = app;

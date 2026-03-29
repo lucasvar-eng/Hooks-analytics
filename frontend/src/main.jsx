@@ -7,6 +7,10 @@ import { store } from './store/store';
 import App from './App';
 import './index.css';
 
+// Theme: default to dark
+const savedTheme = localStorage.getItem('theme') || 'dark';
+document.documentElement.classList.toggle('dark', savedTheme === 'dark');
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {

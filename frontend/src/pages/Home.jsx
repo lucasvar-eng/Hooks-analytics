@@ -4,15 +4,18 @@ import { fetchStores, fetchStoreMetrics } from '../store/storeSlice';
 import Header from '../components/common/Header';
 import StoreGrid from '../components/home/StoreGrid';
 import AddStoreModal from '../components/home/AddStoreModal';
+import api from '../services/api';
 
 export default function Home() {
   const dispatch = useDispatch();
   const { stores, metrics, loading } = useSelector((state) => state.stores);
   const { from, to } = useSelector((state) => state.date);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [alertCounts, setAlertCounts] = useState({});
 
   useEffect(() => {
     dispatch(fetchStores());
+    api.get('/api/alerts/active-counts').then(({ data }) => setAlertCounts(data)).catch(() => {});
   }, [dispatch]);
 
   // Fetch metrics for all stores when date range or stores change
@@ -46,7 +49,7 @@ export default function Home() {
         {loading ? (
           <div className="text-center py-16 text-gray-500">Cargando...</div>
         ) : (
-          <StoreGrid stores={stores} metrics={metrics} onAddStore={() => setShowAddModal(true)} />
+          <StoreGrid stores={stores} metrics={metrics} alertCounts={alertCounts} onAddStore={() => setShowAddModal(true)} />
         )}
 
       </main>

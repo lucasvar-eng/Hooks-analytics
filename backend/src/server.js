@@ -16,8 +16,14 @@ const customerRoutes = require('./routes/customerRoutes');
 const creativeRoutes = require('./routes/creativeRoutes');
 const aiRoutes = require('./routes/aiRoutes');
 const competitorRoutes = require('./routes/competitorRoutes');
+const topicMapRoutes = require('./routes/topicMapRoutes');
+const languageBankRoutes = require('./routes/languageBankRoutes');
+const reportRoutes = require('./routes/reportRoutes');
+const alertRoutes = require('./routes/alertRoutes');
 const tiendaRoutes = require('./routes/tiendaRoutes');
 const userSettingsRoutes = require('./routes/userSettingsRoutes');
+const userManagementRoutes = require('./routes/userManagementRoutes');
+const widgetRoutes = require('./routes/widgetRoutes');
 const { startCronJobs } = require('./services/cronJobs');
 const logger = require('./utils/logger');
 
@@ -56,8 +62,14 @@ app.use('/api', customerRoutes);
 app.use('/api', creativeRoutes);
 app.use('/api', aiRoutes);
 app.use('/api', competitorRoutes);
+app.use('/api', topicMapRoutes);
+app.use('/api', languageBankRoutes);
+app.use('/api', reportRoutes);
+app.use('/api', alertRoutes);
+app.use('/api', widgetRoutes);
 app.use('/api', tiendaRoutes);
 app.use('/api/user', userSettingsRoutes);
+app.use('/api/admin/users', userManagementRoutes);
 
 // Serve frontend in production
 if (nodeEnv === 'production') {

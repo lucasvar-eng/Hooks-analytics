@@ -3,6 +3,7 @@ const Store = require('../models/Store');
 const { syncOrders, syncProducts } = require('./syncTiendanube');
 const { syncMetaStructure, syncMetaInsights, refreshMetaTokens } = require('./syncMeta');
 const { updateCashflowStates } = require('./cashflow');
+const { runDiagnostics } = require('./diagnosticsService');
 const logger = require('../utils/logger');
 
 async function runForTnStores(jobName, syncFn) {
@@ -60,7 +61,27 @@ function startCronJobs() {
     logger.info('Cron: updateCashflowStates finished');
   });
 
-  logger.info('Cron jobs scheduled: TN orders(4h), TN products(12h), Meta structure(12h), Meta insights(4x/day), Meta tokens(daily), Cashflow states(daily)');
+  // Diagnostics (alerts)
+  cron.schedule('0 */6 * * *', async () => {
+    logger.info('Cron: diagnostics starting...');
+    try {
+      const stores = await Store.find({
+        'objetivos.kpis': { $exists: true },
+      });
+      for (const store of stores) {
+        try {
+          await runDiagnostics(store);
+        } catch (error) {
+          logger.error(`Cron diagnostics failed for ${store.nombre}: ${error.message}`);
+        }
+      }
+      logger.info(`Cron: diagnostics finished (${stores.length} stores)`);
+    } catch (error) {
+      logger.error(`Cron diagnostics failed: ${error.message}`);
+    }
+  });
+
+  logger.info('Cron jobs scheduled: TN orders(4h), TN products(12h), Meta structure(12h), Meta insights(4x/day), Meta tokens(daily), Cashflow states(daily), Diagnostics(6h)');
 }
 
 module.exports = { startCronJobs };

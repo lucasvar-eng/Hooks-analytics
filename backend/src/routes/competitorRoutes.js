@@ -7,5 +7,6 @@ router.get('/stores/:id/competitors', auth, competitorController.list);
 router.post('/stores/:id/competitors', auth, competitorController.create);
 router.put('/stores/:id/competitors/:competitorId', auth, competitorController.update);
 router.delete('/stores/:id/competitors/:competitorId', auth, competitorController.remove);
+router.post('/stores/:id/competitors/:competitorId/analyze', auth, competitorController.analyze);
 
 module.exports = router;

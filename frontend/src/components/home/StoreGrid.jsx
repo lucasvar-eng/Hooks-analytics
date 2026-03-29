@@ -51,7 +51,7 @@ function AddStoreCard({ onClick }) {
   );
 }
 
-export default function StoreGrid({ stores, metrics, onAddStore }) {
+export default function StoreGrid({ stores, metrics, alertCounts = {}, onAddStore }) {
   if (!stores.length) {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -68,6 +68,7 @@ export default function StoreGrid({ stores, metrics, onAddStore }) {
           store={store}
           metrics={metrics[store._id]}
           notes={getStoreNotes(store, metrics[store._id])}
+          alertCount={alertCounts[store._id] || 0}
         />
       ))}
       <AddStoreCard onClick={onAddStore} />

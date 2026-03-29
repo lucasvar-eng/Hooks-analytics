@@ -9,6 +9,7 @@ export default function Competencia() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ nombre: '', url: '', notas: '' });
   const [editId, setEditId] = useState(null);
+  const [analyzing, setAnalyzing] = useState(null); // competitor id being analyzed
 
   const fetch = useCallback(async () => {
     setLoading(true);
@@ -45,6 +46,15 @@ export default function Competencia() {
   const handleDelete = async (id) => {
     await api.delete(`/api/stores/${storeId}/competitors/${id}`);
     fetch();
+  };
+
+  const handleAnalyze = async (id) => {
+    setAnalyzing(id);
+    try {
+      await api.post(`/api/stores/${storeId}/competitors/${id}/analyze`);
+      fetch();
+    } catch {}
+    setAnalyzing(null);
   };
 
   if (loading) return <div className="text-center py-12 text-gray-500">Cargando competencia...</div>;
@@ -99,14 +109,32 @@ export default function Competencia() {
                   )}
                 </div>
                 <div className="flex gap-2">
+                  <button
+                    onClick={() => handleAnalyze(c._id)}
+                    disabled={analyzing === c._id}
+                    className="text-xs text-violet-600 dark:text-violet-400 hover:underline disabled:opacity-50"
+                  >
+                    {analyzing === c._id ? 'Analizando...' : 'Analizar'}
+                  </button>
                   <button onClick={() => handleEdit(c)} className="text-xs text-gray-500 hover:text-indigo-500">Editar</button>
                   <button onClick={() => handleDelete(c._id)} className="text-xs text-gray-500 hover:text-red-500">Eliminar</button>
                 </div>
               </div>
               {c.notas && <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">{c.notas}</p>}
               {c.analysisResult && (
-                <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-750 rounded text-sm text-gray-700 dark:text-gray-300">
-                  {c.analysisResult}
+                <div className="mt-3 p-3 bg-violet-50 dark:bg-violet-900/10 border border-violet-100 dark:border-violet-800/30 rounded text-sm text-gray-700 dark:text-gray-300">
+                  <p className="text-[10px] font-medium text-violet-500 dark:text-violet-400 mb-1 uppercase">Análisis AI {c.lastAnalysis && `— ${new Date(c.lastAnalysis).toLocaleDateString('es-AR')}`}</p>
+                  <div
+                    dangerouslySetInnerHTML={{
+                      __html: c.analysisResult
+                        .replace(/\n/g, '<br>')
+                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                        .replace(/^### (.*)/gm, '<h4 class="font-semibold mt-2">$1</h4>')
+                        .replace(/^## (.*)/gm, '<h3 class="font-bold mt-2">$1</h3>')
+                        .replace(/^- (.*)/gm, '<li>$1</li>'),
+                    }}
+                  />
                 </div>
               )}
             </div>

@@ -9,6 +9,7 @@ import CostosSection from '../components/dashboard/CostosSection';
 import LatestSalesTable from '../components/dashboard/LatestSalesTable';
 import OrderDetailModal from '../components/dashboard/OrderDetailModal';
 import AIAnalysisPanel from '../components/common/AIAnalysisPanel';
+import WidgetGrid from '../components/widgets/WidgetGrid';
 
 export default function Dashboard() {
   const { storeId } = useParams();
@@ -17,6 +18,9 @@ export default function Dashboard() {
   const { from, to } = useSelector((state) => state.date);
   const [selectedOrder, setSelectedOrder] = useState(null);
 
+  const store = useSelector((state) =>
+    state.stores.stores.find((s) => s._id === storeId)
+  );
   const current = metrics?.current || {};
   const deltas = metrics?.deltas || {};
 
@@ -33,7 +37,7 @@ export default function Dashboard() {
       </h2>
 
       {/* 8 KPI Cards */}
-      <KPITopBar current={current} deltas={deltas} />
+      <KPITopBar current={current} deltas={deltas} objetivos={store?.objetivos} />
 
       {/* Sections grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -62,6 +66,9 @@ export default function Dashboard() {
         to={to}
         onOrderClick={setSelectedOrder}
       />
+
+      {/* Custom Widgets */}
+      <WidgetGrid storeId={storeId} pageId="dashboard" metrics={metrics} />
 
       {/* AI Analysis */}
       <AIAnalysisPanel storeId={storeId} section="dashboard" from={from} to={to} />

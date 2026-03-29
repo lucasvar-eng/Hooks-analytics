@@ -5,10 +5,13 @@ export default function AIAnalysisPanel({ storeId, section, from, to }) {
   const [analysis, setAnalysis] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   const handleAnalyze = async () => {
     setLoading(true);
     setError(null);
+    setSaveSuccess(false);
     try {
       const { data } = await api.post(`/api/stores/${storeId}/ai/analyze`, {
         section,
@@ -20,6 +23,30 @@ export default function AIAnalysisPanel({ storeId, section, from, to }) {
       setError(err.response?.data?.error || 'Error al generar análisis');
     }
     setLoading(false);
+  };
+
+  const handleSave = async () => {
+    const defaultTitle = `Análisis ${section} - ${new Date().toLocaleDateString('es-AR')}`;
+    const titulo = prompt('Título del reporte:', defaultTitle);
+    if (titulo === null) return;
+
+    setSaving(true);
+    setSaveSuccess(false);
+    try {
+      await api.post(`/api/stores/${storeId}/reports`, {
+        titulo,
+        contenido: analysis.analysis,
+        section,
+        tipo: 'analysis',
+        dateRange: { from, to },
+        tokensUsed: analysis.tokensUsed,
+        model: analysis.model,
+      });
+      setSaveSuccess(true);
+    } catch {
+      setSaveSuccess(false);
+    }
+    setSaving(false);
   };
 
   return (
@@ -52,11 +79,23 @@ export default function AIAnalysisPanel({ storeId, section, from, to }) {
                 .replace(/^- (.*)/gm, '<li>$1</li>'),
             }}
           />
-          {analysis.tokensUsed && (
-            <p className="text-xs text-gray-400 mt-2">
-              {analysis.tokensUsed} tokens | {analysis.model}
-            </p>
-          )}
+          <div className="flex items-center gap-3 mt-2">
+            {analysis.tokensUsed && (
+              <p className="text-xs text-gray-400">
+                {analysis.tokensUsed} tokens | {analysis.model}
+              </p>
+            )}
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="px-3 py-1.5 bg-indigo-600 text-white text-sm rounded hover:bg-indigo-700 disabled:opacity-50 transition"
+            >
+              {saving ? 'Guardando...' : 'Guardar análisis'}
+            </button>
+            {saveSuccess && (
+              <span className="text-xs text-green-500">Análisis guardado correctamente</span>
+            )}
+          </div>
         </div>
       )}
 

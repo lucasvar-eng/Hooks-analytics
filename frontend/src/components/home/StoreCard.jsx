@@ -1,13 +1,26 @@
 import { useNavigate } from 'react-router-dom';
 import MetricValue from '../common/MetricValue';
 
-const CARD_METRICS = [
-  { key: 'ordenesPositivas', label: 'Ventas', prefix: '', suffix: '', decimals: 0 },
-  { key: 'adSpend', label: 'Ad Spend', prefix: '$', suffix: '', decimals: 0, compact: true },
-  { key: 'roas', label: 'ROAS', prefix: '', suffix: 'x', decimals: 2 },
-  { key: 'cpa', label: 'CPA', prefix: '$', suffix: '', decimals: 0 },
-  { key: 'conversionRate', label: 'CVR', prefix: '', suffix: '%', decimals: 2 },
-];
+const METRICS_MAP = {
+  ordenesPositivas: { label: 'Ventas', prefix: '', suffix: '', decimals: 0 },
+  revenue: { label: 'Revenue', prefix: '$', suffix: '', decimals: 0, compact: true },
+  netRevenue: { label: 'Net Revenue', prefix: '$', suffix: '', decimals: 0, compact: true },
+  profit: { label: 'Profit', prefix: '$', suffix: '', decimals: 0, compact: true },
+  profitMargin: { label: 'Margen', prefix: '', suffix: '%', decimals: 1 },
+  adSpend: { label: 'Ad Spend', prefix: '$', suffix: '', decimals: 0, compact: true },
+  roas: { label: 'ROAS', prefix: '', suffix: 'x', decimals: 2 },
+  trueRoas: { label: 'True ROAS', prefix: '', suffix: 'x', decimals: 2 },
+  cpa: { label: 'CPA', prefix: '$', suffix: '', decimals: 0 },
+  trueCpa: { label: 'True CPA', prefix: '$', suffix: '', decimals: 0 },
+  ncPct: { label: 'NC %', prefix: '', suffix: '%', decimals: 1 },
+  aov: { label: 'AOV', prefix: '$', suffix: '', decimals: 0, compact: true },
+  conversionRate: { label: 'CVR', prefix: '', suffix: '%', decimals: 2 },
+  ctr: { label: 'CTR', prefix: '', suffix: '%', decimals: 2 },
+  cpm: { label: 'CPM', prefix: '$', suffix: '', decimals: 0 },
+  devoluciones: { label: 'Devol.', prefix: '', suffix: '', decimals: 0 },
+};
+
+const DEFAULT_METRICS = ['ordenesPositivas', 'revenue', 'trueRoas', 'profit', 'ncPct'];
 
 function getHealthBadge(current, objetivos) {
   if (!objetivos?.kpis) return { color: 'bg-gray-300 dark:bg-gray-600', label: 'Sin objetivos' };
@@ -37,11 +50,14 @@ function getHealthBadge(current, objetivos) {
   return { color: 'bg-green-500', label: 'OK' };
 }
 
-export default function StoreCard({ store, metrics, notes }) {
+export default function StoreCard({ store, metrics, notes, alertCount = 0 }) {
   const navigate = useNavigate();
   const current = metrics?.current || {};
   const deltas = metrics?.deltas || {};
   const badge = getHealthBadge(current, store.objetivos);
+
+  const metricKeys = store.metricasHome?.length ? store.metricasHome : DEFAULT_METRICS;
+  const cardMetrics = metricKeys.map(key => ({ key, ...METRICS_MAP[key] })).filter(m => m.label);
 
   return (
     <div
@@ -50,9 +66,16 @@ export default function StoreCard({ store, metrics, notes }) {
     >
       {/* Header: name + health badge */}
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-semibold text-gray-900 dark:text-gray-100 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition truncate">
-          {store.nombre}
-        </h3>
+        <div className="flex items-center gap-2 min-w-0">
+          <h3 className="font-semibold text-gray-900 dark:text-gray-100 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition truncate">
+            {store.nombre}
+          </h3>
+          {alertCount > 0 && (
+            <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold text-white bg-red-500 rounded-full shrink-0">
+              {alertCount}
+            </span>
+          )}
+        </div>
         <span
           className={`w-3 h-3 rounded-full shrink-0 ${badge.color}`}
           title={badge.label}
@@ -61,7 +84,7 @@ export default function StoreCard({ store, metrics, notes }) {
 
       {/* Metrics grid */}
       <div className="grid grid-cols-2 gap-3 mb-4">
-        {CARD_METRICS.map((m) => (
+        {cardMetrics.map((m) => (
           <MetricValue
             key={m.key}
             label={m.label}

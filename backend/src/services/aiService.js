@@ -268,6 +268,9 @@ async function analyze(section, storeId, from, to, userId) {
     productos: 'Analiza el rendimiento de productos: top sellers, márgenes, oportunidades de bundling o cross-sell.',
     clientes: 'Analiza la base de clientes: segmentos RFM, retención, LTV. Sugerí estrategias por segmento.',
     creativos: 'Analiza el rendimiento de creativos/campañas: clasificación ABCDE, qué escalar, qué matar.',
+    diagnostics: 'Analizá anomalías de los últimos 7 días comparando con el período anterior. Identificá caídas abruptas, tendencias negativas y oportunidades. Respondé con bullets concretos de máximo 1 línea cada uno.',
+    competencia: 'Compará el rendimiento de la tienda con los datos del competidor proporcionado. Identificá ventajas competitivas, brechas de precio y oportunidades.',
+    report: 'Generá un resumen ejecutivo de máximo 200 palabras integrando todos los datos proporcionados. Cerrá con 3 acciones prioritarias.',
   };
 
   const prompt = `${sectionInstructions[section] || sectionInstructions.dashboard}\n\nDatos:\n${JSON.stringify(context, null, 2)}`;

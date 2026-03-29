@@ -142,6 +142,107 @@ function StoreAIContextSection({ storeId }) {
   );
 }
 
+const ALL_METRICS = [
+  { key: 'ordenesPositivas', label: 'Órdenes positivas' },
+  { key: 'revenue', label: 'Revenue' },
+  { key: 'netRevenue', label: 'Net Revenue' },
+  { key: 'profit', label: 'Profit' },
+  { key: 'profitMargin', label: 'Margen de Profit (%)' },
+  { key: 'adSpend', label: 'Ad Spend' },
+  { key: 'roas', label: 'ROAS' },
+  { key: 'trueRoas', label: 'True ROAS' },
+  { key: 'cpa', label: 'CPA' },
+  { key: 'trueCpa', label: 'True CPA' },
+  { key: 'ncPct', label: 'NC %' },
+  { key: 'aov', label: 'AOV' },
+  { key: 'conversionRate', label: 'Tasa de conversión' },
+  { key: 'ctr', label: 'CTR (%)' },
+  { key: 'cpm', label: 'CPM' },
+  { key: 'devoluciones', label: 'Devoluciones' },
+];
+
+function MetricSelectorSection({ storeId }) {
+  const [selected, setSelected] = useState(['ordenesPositivas', 'revenue', 'trueRoas', 'profit', 'ncPct']);
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState(null);
+  const [limitMsg, setLimitMsg] = useState(false);
+
+  useEffect(() => {
+    api.get(`/api/stores/${storeId}`).then(({ data }) => {
+      if (data.metricasHome?.length) setSelected(data.metricasHome);
+    }).catch(() => {});
+  }, [storeId]);
+
+  const toggle = (key) => {
+    setLimitMsg(false);
+    if (selected.includes(key)) {
+      setSelected(selected.filter((k) => k !== key));
+    } else {
+      if (selected.length >= 5) {
+        setLimitMsg(true);
+        return;
+      }
+      setSelected([...selected, key]);
+    }
+    setMsg(null);
+  };
+
+  const save = async () => {
+    setSaving(true);
+    setMsg(null);
+    try {
+      await api.put(`/api/stores/${storeId}`, { metricasHome: selected });
+      setMsg({ ok: true, text: 'Métricas guardadas' });
+    } catch (err) {
+      setMsg({ ok: false, text: err.response?.data?.error || 'Error al guardar' });
+    }
+    setSaving(false);
+  };
+
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase">Métricas de Home</h3>
+      <p className="text-xs text-gray-400 dark:text-gray-500 mb-3">
+        Elegí hasta 5 métricas para mostrar en la tarjeta de Home de esta tienda.
+      </p>
+      <div className="grid grid-cols-2 gap-y-2 gap-x-4 mb-3">
+        {ALL_METRICS.map((m) => {
+          const isChecked = selected.includes(m.key);
+          return (
+            <label key={m.key} className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isChecked}
+                onChange={() => toggle(m.key)}
+                className="accent-indigo-600 w-4 h-4 cursor-pointer"
+              />
+              <span className="text-sm text-gray-700 dark:text-gray-300">{m.label}</span>
+            </label>
+          );
+        })}
+      </div>
+      {limitMsg && (
+        <p className="text-xs text-amber-600 dark:text-amber-400 mb-2">Máximo 5 métricas</p>
+      )}
+      <div className="flex items-center gap-3">
+        <button
+          onClick={save}
+          disabled={saving || selected.length === 0}
+          className="px-3 py-1.5 bg-indigo-600 text-white text-xs rounded hover:bg-indigo-700 disabled:opacity-50 transition font-medium"
+        >
+          {saving ? 'Guardando...' : 'Guardar métricas'}
+        </button>
+        <span className="text-xs text-gray-400 dark:text-gray-500">{selected.length}/5 seleccionadas</span>
+        {msg && (
+          <span className={`text-xs font-medium ${msg.ok ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+            {msg.text}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function Settings() {
   const { storeId } = useParams();
   const [store, setStore] = useState(null);
@@ -309,6 +410,9 @@ export default function Settings() {
 
       {/* Store AI Context */}
       <StoreAIContextSection storeId={storeId} />
+
+      {/* Home metric selector */}
+      <MetricSelectorSection storeId={storeId} />
 
       {/* Financial config */}
       <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">

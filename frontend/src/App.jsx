@@ -12,8 +12,15 @@ import Productos from './pages/Productos';
 import Clientes from './pages/Clientes';
 import Creativos from './pages/Creativos';
 import Competencia from './pages/Competencia';
+import TopicMap from './pages/TopicMap';
+import LanguageBank from './pages/LanguageBank';
+import Simulador from './pages/Simulador';
+import Reportes from './pages/Reportes';
+import ReportBuilder from './pages/ReportBuilder';
+import Alertas from './pages/Alertas';
 import Settings from './pages/Settings';
 import UserProfile from './pages/UserProfile';
+import UserManagement from './pages/UserManagement';
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated } = useAuth();
@@ -52,7 +59,13 @@ export default function App() {
         <Route path="productos" element={<Productos />} />
         <Route path="clientes" element={<Clientes />} />
         <Route path="creativos" element={<Creativos />} />
+        <Route path="topic-map" element={<TopicMap />} />
+        <Route path="language-bank" element={<LanguageBank />} />
         <Route path="competencia" element={<Competencia />} />
+        <Route path="simulador" element={<Simulador />} />
+        <Route path="reportes" element={<Reportes />} />
+        <Route path="report-builder" element={<ReportBuilder />} />
+        <Route path="alertas" element={<Alertas />} />
         <Route path="settings" element={<Settings />} />
       </Route>
       <Route
@@ -60,6 +73,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <UserProfile />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/users"
+        element={
+          <ProtectedRoute>
+            <UserManagement />
           </ProtectedRoute>
         }
       />

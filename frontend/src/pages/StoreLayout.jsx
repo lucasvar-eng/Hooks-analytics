@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useParams, NavLink, Outlet } from 'react-router-dom';
+import { useParams, NavLink, Outlet, Link } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { selectStore } from '../store/storeSlice';
 import Header from '../components/common/Header';
@@ -38,6 +38,15 @@ export default function StoreLayout() {
         {/* Sidebar */}
         <aside className="w-56 shrink-0 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 min-h-[calc(100vh-57px)]">
           <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+            <Link
+              to="/"
+              className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-indigo-500 dark:hover:text-indigo-400 transition mb-2"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              Todas las tiendas
+            </Link>
             <h3 className="font-semibold text-sm text-gray-900 dark:text-gray-100 truncate">
               {store?.nombre || 'Tienda'}
             </h3>

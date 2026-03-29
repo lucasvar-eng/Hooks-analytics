@@ -1,7 +1,10 @@
 const { ai } = require('../config/environment');
+const { getProvider } = require('./aiProviders');
+const { decrypt } = require('../utils/encryption');
+const User = require('../models/User');
+const Store = require('../models/Store');
 const DailyMetric = require('../models/DailyMetric');
 const Order = require('../models/Order');
-const Product = require('../models/Product');
 const Customer = require('../models/Customer');
 const MetaCampaign = require('../models/MetaCampaign');
 const MetaDailyInsight = require('../models/MetaDailyInsight');
@@ -9,20 +12,7 @@ const CashflowEntry = require('../models/CashflowEntry');
 const mongoose = require('mongoose');
 const logger = require('../utils/logger');
 
-let Anthropic;
-try {
-  Anthropic = require('@anthropic-ai/sdk');
-} catch {
-  // SDK not installed
-}
-
-function getClient() {
-  if (!Anthropic) throw new Error('@anthropic-ai/sdk not installed. Run: npm install @anthropic-ai/sdk');
-  if (!ai.anthropicApiKey) throw new Error('ANTHROPIC_API_KEY no configurada. Agregala en .env o en Settings.');
-  return new Anthropic({ apiKey: ai.anthropicApiKey });
-}
-
-const SYSTEM_PROMPT = `Sos un analista senior de ecommerce argentino. Tu cliente es una agencia que gestiona tiendas en TiendaNube con Meta Ads.
+const BASE_SYSTEM_PROMPT = `Sos un analista senior de ecommerce argentino. Tu cliente es una agencia que gestiona tiendas en TiendaNube con Meta Ads.
 
 Reglas:
 - Respondé siempre en español argentino
@@ -34,7 +24,92 @@ Reglas:
 - Siempre cerrá con 2-3 acciones concretas priorizadas`;
 
 /**
- * Build context data for a specific section.
+ * Resolve AI credentials for a user (user key → env fallback).
+ */
+async function resolveCredentials(userId) {
+  if (userId) {
+    const user = await User.findById(userId)
+      .select('+aiConfig.apiKeyEncrypted +aiConfig.apiKeyIV +aiConfig.apiKeyAuthTag aiConfig.provider aiConfig.modelAnalysis aiConfig.modelChat');
+
+    if (user?.aiConfig?.apiKeyEncrypted) {
+      const apiKey = decrypt(
+        user.aiConfig.apiKeyEncrypted,
+        user.aiConfig.apiKeyIV,
+        user.aiConfig.apiKeyAuthTag
+      );
+      return {
+        provider: user.aiConfig.provider || 'anthropic',
+        apiKey,
+        modelAnalysis: user.aiConfig.modelAnalysis || ai.modelAnalysis,
+        modelChat: user.aiConfig.modelChat || ai.modelChat,
+      };
+    }
+  }
+
+  // Fallback to .env
+  if (!ai.anthropicApiKey) {
+    throw new Error('No hay API key de AI configurada. Configurala en tu perfil o en .env');
+  }
+  return {
+    provider: 'anthropic',
+    apiKey: ai.anthropicApiKey,
+    modelAnalysis: ai.modelAnalysis,
+    modelChat: ai.modelChat,
+  };
+}
+
+/**
+ * Build the full system prompt merging base + user global + store instructions.
+ */
+async function buildSystemPrompt(userId, storeId) {
+  let prompt = BASE_SYSTEM_PROMPT;
+
+  // User global instructions
+  if (userId) {
+    const user = await User.findById(userId)
+      .select('aiConfig.globalInstructions')
+      .populate({ path: 'aiConfig.globalFiles', select: 'filename content' });
+
+    // Re-fetch with file content since select: false
+    const userFull = await User.findById(userId).select('+aiConfig.globalFiles.content aiConfig.globalInstructions');
+
+    if (userFull?.aiConfig?.globalInstructions) {
+      prompt += `\n\n--- Instrucciones globales del usuario ---\n${userFull.aiConfig.globalInstructions}`;
+    }
+    if (userFull?.aiConfig?.globalFiles?.length) {
+      for (const f of userFull.aiConfig.globalFiles) {
+        if (f.content) {
+          prompt += `\n\n--- Archivo: ${f.filename} ---\n${f.content}`;
+        }
+      }
+    }
+  }
+
+  // Store-specific instructions
+  if (storeId) {
+    const store = await Store.findById(storeId).select('aiContext nombre');
+    if (store?.aiContext?.instructions) {
+      prompt += `\n\n--- Instrucciones de la tienda "${store.nombre}" ---\n${store.aiContext.instructions}`;
+    }
+    if (store?.aiContext?.files?.length) {
+      for (const f of store.aiContext.files) {
+        if (f.content) {
+          prompt += `\n\n--- Archivo tienda: ${f.filename} ---\n${f.content}`;
+        }
+      }
+    }
+  }
+
+  // Safety: truncate if too long (30K chars max for system prompt)
+  if (prompt.length > 30000) {
+    prompt = prompt.substring(0, 30000) + '\n\n[Contexto truncado por límite de tamaño]';
+  }
+
+  return prompt;
+}
+
+/**
+ * Build data context for a specific section.
  */
 async function buildContext(section, storeId, from, to) {
   const sid = new mongoose.Types.ObjectId(storeId);
@@ -48,7 +123,6 @@ async function buildContext(section, storeId, from, to) {
 
   const dateMatch = Object.keys(dateFilter).length > 0 ? { date: dateFilter } : {};
 
-  // Base metrics — always included
   const [baseAgg] = await DailyMetric.aggregate([
     { $match: { storeId: sid, ...dateMatch } },
     {
@@ -102,7 +176,6 @@ async function buildContext(section, storeId, from, to) {
     devoluciones: b.devoluciones,
   };
 
-  // Section-specific extra context
   const extra = {};
 
   if (section === 'costos' || section === 'dashboard') {
@@ -122,16 +195,9 @@ async function buildContext(section, storeId, from, to) {
       pagosRecibidos: Math.round(b.pagosRecibidos),
       pagosPendientes: Math.round(b.pagosPendientes),
     };
-    // Upcoming payments
     const upcoming = await CashflowEntry.aggregate([
       { $match: { storeId: sid, estado: 'pendiente' } },
-      {
-        $group: {
-          _id: { $dateToString: { format: '%Y-%m-%d', date: '$fechaPago' } },
-          total: { $sum: '$liquidable' },
-          count: { $sum: 1 },
-        },
-      },
+      { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$fechaPago' } }, total: { $sum: '$liquidable' }, count: { $sum: 1 } } },
       { $sort: { _id: 1 } },
       { $limit: 7 },
     ]);
@@ -142,40 +208,21 @@ async function buildContext(section, storeId, from, to) {
     const topProducts = await Order.aggregate([
       { $match: { storeId: sid, ...dateMatch, estado: { $ne: 'cancelled' } } },
       { $unwind: '$items' },
-      {
-        $group: {
-          _id: '$items.nombre',
-          vendidos: { $sum: '$items.cantidad' },
-          revenue: { $sum: { $multiply: ['$items.precioUnitario', '$items.cantidad'] } },
-        },
-      },
+      { $group: { _id: '$items.nombre', vendidos: { $sum: '$items.cantidad' }, revenue: { $sum: { $multiply: ['$items.precioUnitario', '$items.cantidad'] } } } },
       { $sort: { revenue: -1 } },
       { $limit: 10 },
     ]);
-    extra.topProductos = topProducts.map((p) => ({
-      nombre: p._id,
-      vendidos: p.vendidos,
-      revenue: Math.round(p.revenue),
-    }));
+    extra.topProductos = topProducts.map((p) => ({ nombre: p._id, vendidos: p.vendidos, revenue: Math.round(p.revenue) }));
   }
 
   if (section === 'clientes') {
     const segments = await Customer.aggregate([
       { $match: { storeId: sid, rfmSegment: { $exists: true } } },
-      {
-        $group: {
-          _id: '$rfmSegment',
-          count: { $sum: 1 },
-          totalRevenue: { $sum: '$totalSpent' },
-          avgLTV: { $avg: '$ltv' },
-        },
-      },
+      { $group: { _id: '$rfmSegment', count: { $sum: 1 }, totalRevenue: { $sum: '$totalSpent' }, avgLTV: { $avg: '$ltv' } } },
       { $sort: { totalRevenue: -1 } },
     ]);
     extra.segmentosRFM = segments;
-
-    const totalCustomers = await Customer.countDocuments({ storeId: sid });
-    extra.totalClientes = totalCustomers;
+    extra.totalClientes = await Customer.countDocuments({ storeId: sid });
   }
 
   if (section === 'meta' || section === 'creativos') {
@@ -184,16 +231,7 @@ async function buildContext(section, storeId, from, to) {
     for (const c of campaigns.slice(0, 10)) {
       const [ins] = await MetaDailyInsight.aggregate([
         { $match: { storeId: sid, metaId: c.metaId, ...dateMatch } },
-        {
-          $group: {
-            _id: null,
-            spend: { $sum: '$spend' },
-            impressions: { $sum: '$impressions' },
-            clicks: { $sum: '$clicks' },
-            purchases: { $sum: '$purchases' },
-            purchaseValue: { $sum: '$purchaseValue' },
-          },
-        },
+        { $group: { _id: null, spend: { $sum: '$spend' }, impressions: { $sum: '$impressions' }, clicks: { $sum: '$clicks' }, purchases: { $sum: '$purchases' }, purchaseValue: { $sum: '$purchaseValue' } } },
       ]);
       if (ins && ins.spend > 0) {
         campaignMetrics.push({
@@ -216,15 +254,17 @@ async function buildContext(section, storeId, from, to) {
 /**
  * Generate AI analysis for a section.
  */
-async function analyze(section, storeId, from, to) {
-  const client = getClient();
+async function analyze(section, storeId, from, to, userId) {
+  const credentials = await resolveCredentials(userId);
+  const provider = getProvider(credentials.provider, credentials.apiKey);
+  const systemPrompt = await buildSystemPrompt(userId, storeId);
   const context = await buildContext(section, storeId, from, to);
 
   const sectionInstructions = {
     dashboard: 'Analiza el rendimiento general: ventas, profit, ROAS vs True ROAS, NC vs RC, tendencias. Identificá lo más urgente.',
     cashflow: 'Analiza el cashflow: liquidez, timing de cobros, comisiones, pagos pendientes. Recomendá cómo mejorar el flujo.',
     meta: 'Analiza el rendimiento de Meta Ads por campaña: ROAS, CPA, CTR. Identificá qué escalar y qué pausar.',
-    costos: 'Analiza la estructura de costos: márgenes, líneas más pesadas, oportunidades de optimización. Comparálas con benchmarks.',
+    costos: 'Analiza la estructura de costos: márgenes, líneas más pesadas, oportunidades de optimización.',
     productos: 'Analiza el rendimiento de productos: top sellers, márgenes, oportunidades de bundling o cross-sell.',
     clientes: 'Analiza la base de clientes: segmentos RFM, retención, LTV. Sugerí estrategias por segmento.',
     creativos: 'Analiza el rendimiento de creativos/campañas: clasificación ABCDE, qué escalar, qué matar.',
@@ -232,70 +272,61 @@ async function analyze(section, storeId, from, to) {
 
   const prompt = `${sectionInstructions[section] || sectionInstructions.dashboard}\n\nDatos:\n${JSON.stringify(context, null, 2)}`;
 
-  const response = await client.messages.create({
-    model: ai.modelAnalysis,
-    max_tokens: 1500,
-    system: SYSTEM_PROMPT,
+  const result = await provider.createMessage({
+    model: credentials.modelAnalysis,
+    maxTokens: 1500,
+    system: systemPrompt,
     messages: [{ role: 'user', content: prompt }],
   });
 
-  const text = response.content
-    .filter((c) => c.type === 'text')
-    .map((c) => c.text)
-    .join('\n');
-
   return {
-    analysis: text,
-    tokensUsed: (response.usage?.input_tokens || 0) + (response.usage?.output_tokens || 0),
-    model: ai.modelAnalysis,
+    analysis: result.text,
+    tokensUsed: result.usage.inputTokens + result.usage.outputTokens,
+    model: credentials.modelAnalysis,
+    provider: credentials.provider,
   };
 }
 
 /**
  * Chat with AI about store data.
  */
-async function chat(messages, storeId, from, to) {
-  const client = getClient();
+async function chat(messages, storeId, from, to, userId) {
+  const credentials = await resolveCredentials(userId);
+  const provider = getProvider(credentials.provider, credentials.apiKey);
+  const systemPrompt = await buildSystemPrompt(userId, storeId);
   const context = await buildContext('dashboard', storeId, from, to);
 
-  const systemPrompt = `${SYSTEM_PROMPT}\n\nDatos de la tienda en el período seleccionado:\n${JSON.stringify(context, null, 2)}\n\nSi te preguntan algo que no podés determinar con estos datos, decilo claramente.`;
+  const fullSystem = `${systemPrompt}\n\nDatos de la tienda en el período seleccionado:\n${JSON.stringify(context, null, 2)}\n\nSi te preguntan algo que no podés determinar con estos datos, decilo claramente.`;
 
-  const response = await client.messages.create({
-    model: ai.modelChat,
-    max_tokens: 1000,
-    system: systemPrompt,
-    messages: messages.map((m) => ({
-      role: m.role,
-      content: m.content,
-    })),
+  const result = await provider.createMessage({
+    model: credentials.modelChat,
+    maxTokens: 1000,
+    system: fullSystem,
+    messages: messages.map((m) => ({ role: m.role, content: m.content })),
   });
 
-  const text = response.content
-    .filter((c) => c.type === 'text')
-    .map((c) => c.text)
-    .join('\n');
-
   return {
-    response: text,
-    tokensUsed: (response.usage?.input_tokens || 0) + (response.usage?.output_tokens || 0),
+    response: result.text,
+    tokensUsed: result.usage.inputTokens + result.usage.outputTokens,
   };
 }
 
 /**
- * Test API connection.
+ * Test API connection using user's credentials.
  */
-async function testConnection() {
-  const client = getClient();
-  await client.messages.create({
-    model: 'claude-haiku-4-5-20251001',
-    max_tokens: 10,
-    messages: [{ role: 'user', content: 'OK' }],
+async function testConnection(userId) {
+  const credentials = await resolveCredentials(userId);
+  const provider = getProvider(credentials.provider, credentials.apiKey);
+  const testModel = credentials.provider === 'anthropic' ? 'claude-haiku-4-5-20251001' : 'gpt-4o-mini';
+
+  await provider.createMessage({
+    model: testModel,
+    maxTokens: 10,
+    system: 'Respond OK',
+    messages: [{ role: 'user', content: 'test' }],
   });
-  return { status: 'ok' };
+
+  return { status: 'ok', provider: credentials.provider };
 }
 
-module.exports = {
-  analyze,
-  chat,
-  testConnection,
-};
+module.exports = { analyze, chat, testConnection };

@@ -13,6 +13,7 @@ import Clientes from './pages/Clientes';
 import Creativos from './pages/Creativos';
 import Competencia from './pages/Competencia';
 import Settings from './pages/Settings';
+import UserProfile from './pages/UserProfile';
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated } = useAuth();
@@ -54,6 +55,14 @@ export default function App() {
         <Route path="competencia" element={<Competencia />} />
         <Route path="settings" element={<Settings />} />
       </Route>
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute>
+            <UserProfile />
+          </ProtectedRoute>
+        }
+      />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

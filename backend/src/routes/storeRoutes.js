@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const storeController = require('../controllers/storeController');
 const settingsController = require('../controllers/settingsController');
+const storeAIContext = require('../controllers/storeAIContextController');
 const { auth, requireRole } = require('../middleware/auth');
 
 // All store routes require auth
@@ -21,5 +22,11 @@ router.post('/:id/recalculate', requireRole('admin'), settingsController.recalcu
 router.post('/:id/connect-tn-manual', requireRole('admin'), settingsController.connectTNManual);
 router.get('/:id/orders/:orderId', storeController.getOrderDetail);
 router.get('/:id/daily-metrics', storeController.getDailyMetrics);
+
+// AI context per store
+router.get('/:id/ai-context', storeAIContext.getAIContext);
+router.put('/:id/ai-context', requireRole('admin', 'analyst'), storeAIContext.updateAIContext);
+router.post('/:id/ai-context/files', requireRole('admin', 'analyst'), storeAIContext.uploadStoreFile);
+router.delete('/:id/ai-context/files/:filename', requireRole('admin', 'analyst'), storeAIContext.deleteStoreFile);
 
 module.exports = router;

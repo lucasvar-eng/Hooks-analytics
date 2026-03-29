@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import DateRangePicker from './DateRangePicker';
 
@@ -20,9 +21,12 @@ export default function Header() {
 
         {/* User menu */}
         <div className="flex items-center gap-3 shrink-0">
-          <span className="text-sm text-gray-600 dark:text-gray-400">
+          <Link
+            to="/profile"
+            className="text-sm text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition"
+          >
             {user?.nombre}
-          </span>
+          </Link>
           <button
             onClick={logout}
             className="text-xs text-red-600 dark:text-red-400 hover:underline"

@@ -24,6 +24,8 @@ module.exports = {
     callbackUrl: process.env.META_CALLBACK_URL,
   },
 
+  encryptionKey: process.env.ENCRYPTION_KEY,
+
   // AI (Sprint 9)
   ai: {
     anthropicApiKey: process.env.ANTHROPIC_API_KEY,

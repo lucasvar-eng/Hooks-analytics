@@ -3,7 +3,7 @@ const aiService = require('../services/aiService');
 exports.analyze = async (req, res) => {
   try {
     const { section, from, to } = req.body;
-    const result = await aiService.analyze(section || 'dashboard', req.params.id, from, to);
+    const result = await aiService.analyze(section || 'dashboard', req.params.id, from, to, req.user._id);
     res.json(result);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -16,7 +16,7 @@ exports.chat = async (req, res) => {
     if (!messages || !Array.isArray(messages)) {
       return res.status(400).json({ error: 'messages array required' });
     }
-    const result = await aiService.chat(messages, req.params.id, from, to);
+    const result = await aiService.chat(messages, req.params.id, from, to, req.user._id);
     res.json(result);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -25,7 +25,7 @@ exports.chat = async (req, res) => {
 
 exports.testConnection = async (req, res) => {
   try {
-    const result = await aiService.testConnection();
+    const result = await aiService.testConnection(req.user._id);
     res.json(result);
   } catch (error) {
     res.status(500).json({ error: error.message });

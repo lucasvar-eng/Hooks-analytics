@@ -1,44 +1,143 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import api from '../services/api';
 
 function AIConfigSection() {
-  const [testing, setTesting] = useState(false);
-  const [aiStatus, setAiStatus] = useState(null);
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase">AI</h3>
+      <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+        La configuración de proveedor AI, API key y modelos se gestiona desde tu perfil de usuario.
+      </p>
+      <Link
+        to="/profile"
+        className="inline-block px-3 py-1.5 bg-violet-600 text-white text-xs rounded hover:bg-violet-700 transition font-medium"
+      >
+        Ir a mi perfil
+      </Link>
+    </div>
+  );
+}
 
-  const testAI = async () => {
-    setTesting(true);
-    setAiStatus(null);
+function StoreAIContextSection({ storeId }) {
+  const [instructions, setInstructions] = useState('');
+  const [files, setFiles] = useState([]);
+  const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [msg, setMsg] = useState(null);
+
+  useEffect(() => {
+    loadContext();
+  }, [storeId]);
+
+  const loadContext = async () => {
     try {
-      await api.post('/api/ai/test-connection');
-      setAiStatus({ ok: true, message: 'Conexión exitosa con Claude API' });
-    } catch (err) {
-      setAiStatus({ ok: false, message: err.response?.data?.error || 'Error de conexión' });
+      const { data } = await api.get(`/api/stores/${storeId}/ai-context`);
+      setInstructions(data.instructions || '');
+      setFiles(data.files || []);
+    } catch {
+      // ignore
     }
-    setTesting(false);
+  };
+
+  const saveInstructions = async () => {
+    setSaving(true);
+    setMsg(null);
+    try {
+      await api.put(`/api/stores/${storeId}/ai-context`, { instructions });
+      setMsg({ ok: true, text: 'Instrucciones guardadas' });
+    } catch (err) {
+      setMsg({ ok: false, text: err.response?.data?.error || 'Error al guardar' });
+    }
+    setSaving(false);
+  };
+
+  const uploadFile = async () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.txt,.md,.csv';
+    input.onchange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      setUploading(true);
+      try {
+        const content = await file.text();
+        await api.post(`/api/stores/${storeId}/ai-context/files`, { filename: file.name, content });
+        await loadContext();
+      } catch (err) {
+        alert(err.response?.data?.error || 'Error al subir archivo');
+      }
+      setUploading(false);
+    };
+    input.click();
+  };
+
+  const deleteFile = async (filename) => {
+    if (!confirm(`Eliminar "${filename}"?`)) return;
+    try {
+      await api.delete(`/api/stores/${storeId}/ai-context/files/${encodeURIComponent(filename)}`);
+      setFiles(files.filter((f) => f.filename !== filename));
+    } catch (err) {
+      alert(err.response?.data?.error || 'Error al eliminar');
+    }
   };
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase">AI (Claude)</h3>
-      <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
-        La API key se configura en el archivo <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">.env</code> del backend como <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">ANTHROPIC_API_KEY</code>.
-        Necesitás una key de <a href="https://console.anthropic.com" target="_blank" rel="noopener noreferrer" className="text-indigo-500 hover:underline">console.anthropic.com</a>.
+      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 uppercase">Contexto AI de la tienda</h3>
+      <p className="text-xs text-gray-400 mb-3">
+        Instrucciones específicas para esta tienda. Se suman a tus instrucciones globales de perfil.
       </p>
-      <div className="flex items-center gap-3">
-        <button
-          onClick={testAI}
-          disabled={testing}
-          className="px-3 py-1.5 bg-violet-600 text-white text-xs rounded hover:bg-violet-700 disabled:opacity-50 transition font-medium"
-        >
-          {testing ? 'Probando...' : 'Probar conexión'}
-        </button>
-        {aiStatus && (
-          <span className={`text-xs font-medium ${aiStatus.ok ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-            {aiStatus.message}
-          </span>
-        )}
+
+      <textarea
+        value={instructions}
+        onChange={(e) => setInstructions(e.target.value)}
+        rows={4}
+        maxLength={10000}
+        placeholder="Ej: Esta tienda vende ropa deportiva. El ticket promedio objetivo es $45.000. Priorizá recomendaciones de cross-sell..."
+        className="w-full px-3 py-2 text-sm border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 resize-y mb-2"
+      />
+      <div className="flex items-center justify-between mb-4">
+        <span className="text-xs text-gray-400">{instructions.length}/10,000</span>
+        <div className="flex items-center gap-3">
+          {msg && (
+            <span className={`text-xs font-medium ${msg.ok ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+              {msg.text}
+            </span>
+          )}
+          <button
+            onClick={saveInstructions}
+            disabled={saving}
+            className="px-3 py-1.5 bg-indigo-600 text-white text-xs rounded hover:bg-indigo-700 disabled:opacity-50 transition font-medium"
+          >
+            {saving ? 'Guardando...' : 'Guardar instrucciones'}
+          </button>
+        </div>
       </div>
+
+      {/* Files */}
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Archivos de contexto (max 5)</span>
+        <button
+          onClick={uploadFile}
+          disabled={uploading || files.length >= 5}
+          className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-400 disabled:opacity-50"
+        >
+          {uploading ? 'Subiendo...' : '+ Subir'}
+        </button>
+      </div>
+      {files.length === 0 ? (
+        <p className="text-xs text-gray-400">Sin archivos.</p>
+      ) : (
+        <div className="space-y-1">
+          {files.map((f) => (
+            <div key={f.filename} className="flex items-center justify-between py-1.5 px-2 bg-gray-50 dark:bg-gray-750 rounded text-sm">
+              <span className="text-gray-700 dark:text-gray-300">{f.filename}</span>
+              <button onClick={() => deleteFile(f.filename)} className="text-xs text-red-500 hover:underline">Eliminar</button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -171,7 +270,6 @@ export default function Settings() {
                             tnStoreId: tnStoreIdInput.trim(),
                           });
                           setMessage(data.message);
-                          setShowTNManual(false);
                           // Refresh store data
                           const { data: updated } = await api.get(`/api/stores/${storeId}`);
                           setStore(updated);
@@ -184,12 +282,6 @@ export default function Settings() {
                       className="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 disabled:opacity-50 transition font-medium"
                     >
                       {connectingTN ? 'Conectando...' : 'Conectar y sincronizar'}
-                    </button>
-                    <button
-                      onClick={() => setShowTNManual(false)}
-                      className="px-3 py-2 text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-                    >
-                      Cancelar
                     </button>
                   </div>
                 </div>
@@ -214,6 +306,9 @@ export default function Settings() {
 
       {/* AI Configuration */}
       <AIConfigSection />
+
+      {/* Store AI Context */}
+      <StoreAIContextSection storeId={storeId} />
 
       {/* Financial config */}
       <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">

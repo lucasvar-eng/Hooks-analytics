@@ -17,6 +17,7 @@ const creativeRoutes = require('./routes/creativeRoutes');
 const aiRoutes = require('./routes/aiRoutes');
 const competitorRoutes = require('./routes/competitorRoutes');
 const tiendaRoutes = require('./routes/tiendaRoutes');
+const userSettingsRoutes = require('./routes/userSettingsRoutes');
 const { startCronJobs } = require('./services/cronJobs');
 const logger = require('./utils/logger');
 
@@ -56,6 +57,7 @@ app.use('/api', creativeRoutes);
 app.use('/api', aiRoutes);
 app.use('/api', competitorRoutes);
 app.use('/api', tiendaRoutes);
+app.use('/api/user', userSettingsRoutes);
 
 // Serve frontend in production
 if (nodeEnv === 'production') {

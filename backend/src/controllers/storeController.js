@@ -1,4 +1,5 @@
 const Store = require('../models/Store');
+const User = require('../models/User');
 const Order = require('../models/Order');
 const DailyMetric = require('../models/DailyMetric');
 const { aggregateRange } = require('../services/metricCalculator');
@@ -23,8 +24,27 @@ exports.list = async (req, res, next) => {
 exports.create = async (req, res, next) => {
   try {
     const { nombre, tnStoreId, tnAccessToken } = req.body;
-    const store = await Store.create({ nombre, tnStoreId, tnAccessToken });
+    if (!nombre || !nombre.trim()) {
+      return res.status(400).json({ error: 'El nombre es requerido' });
+    }
+    const store = await Store.create({ nombre: nombre.trim(), tnStoreId, tnAccessToken });
+
+    // Add store to creator's storeAccess
+    await User.findByIdAndUpdate(req.user._id, {
+      $addToSet: { storeAccess: store._id },
+    });
+
     res.status(201).json(store);
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.remove = async (req, res, next) => {
+  try {
+    const store = await Store.findByIdAndDelete(req.params.id);
+    if (!store) return res.status(404).json({ error: 'Store not found' });
+    res.json({ message: 'Tienda eliminada' });
   } catch (error) {
     next(error);
   }

@@ -49,16 +49,17 @@ export default function Home() {
           <StoreGrid stores={stores} metrics={metrics} onAddStore={() => setShowAddModal(true)} />
         )}
 
-        {showAddModal && (
-          <AddStoreModal
-            onClose={() => setShowAddModal(false)}
-            onCreated={() => {
-              setShowAddModal(false);
-              dispatch(fetchStores());
-            }}
-          />
-        )}
       </main>
+
+      {showAddModal && (
+        <AddStoreModal
+          onClose={() => setShowAddModal(false)}
+          onCreated={() => {
+            setShowAddModal(false);
+            dispatch(fetchStores());
+          }}
+        />
+      )}
     </div>
   );
 }

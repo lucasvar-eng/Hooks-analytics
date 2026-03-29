@@ -11,6 +11,7 @@ router.get('/', storeController.list);
 router.post('/', requireRole('admin'), storeController.create);
 router.get('/:id', storeController.getById);
 router.put('/:id', requireRole('admin', 'analyst'), storeController.update);
+router.delete('/:id', requireRole('admin'), storeController.remove);
 router.get('/:id/metrics', storeController.getMetrics);
 router.get('/:id/orders', storeController.getOrders);
 router.post('/:id/sync/now', requireRole('admin'), storeController.syncNow);

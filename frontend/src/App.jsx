@@ -10,6 +10,9 @@ import Costos from './pages/Costos';
 import Productos from './pages/Productos';
 import Clientes from './pages/Clientes';
 import Creativos from './pages/Creativos';
+import Competencia from './pages/Competencia';
+import DailyTracker from './pages/DailyTracker';
+import Settings from './pages/Settings';
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated } = useAuth();
@@ -45,6 +48,9 @@ export default function App() {
         <Route path="productos" element={<Productos />} />
         <Route path="clientes" element={<Clientes />} />
         <Route path="creativos" element={<Creativos />} />
+        <Route path="competencia" element={<Competencia />} />
+        <Route path="daily-tracker" element={<DailyTracker />} />
+        <Route path="settings" element={<Settings />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

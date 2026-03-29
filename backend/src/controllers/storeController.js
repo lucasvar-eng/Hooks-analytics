@@ -1,5 +1,6 @@
 const Store = require('../models/Store');
 const Order = require('../models/Order');
+const DailyMetric = require('../models/DailyMetric');
 const { aggregateRange } = require('../services/metricCalculator');
 const { syncOrders, syncProducts } = require('../services/syncTiendanube');
 
@@ -132,6 +133,29 @@ exports.syncNow = async (req, res, next) => {
     syncProducts(store).catch((err) => {
       console.error('Background sync products failed:', err.message);
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.getDailyMetrics = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { from, to } = req.query;
+
+    const filter = { storeId: id };
+    if (from || to) {
+      filter.date = {};
+      if (from) filter.date.$gte = new Date(from);
+      if (to) {
+        const toDate = new Date(to);
+        toDate.setHours(23, 59, 59, 999);
+        filter.date.$lte = toDate;
+      }
+    }
+
+    const daily = await DailyMetric.find(filter).sort({ date: 1 }).lean();
+    res.json(daily);
   } catch (error) {
     next(error);
   }

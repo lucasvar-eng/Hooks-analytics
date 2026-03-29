@@ -13,11 +13,9 @@ const NAV_ITEMS = [
   { path: 'productos', label: 'Productos' },
   { path: 'clientes', label: 'Clientes' },
   { path: 'creativos', label: 'Creativos' },
-  { path: 'competencia', label: 'Competencia', disabled: true },
-  { path: 'reportes', label: 'Reportes', disabled: true },
-  { path: 'daily-tracker', label: 'Daily Tracker', disabled: true },
-  { path: 'objetivos', label: 'Objetivos', disabled: true },
-  { path: 'settings', label: 'Settings', disabled: true },
+  { path: 'competencia', label: 'Competencia' },
+  { path: 'daily-tracker', label: 'Daily Tracker' },
+  { path: 'settings', label: 'Settings' },
 ];
 
 export default function StoreLayout() {

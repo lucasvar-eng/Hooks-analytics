@@ -18,5 +18,6 @@ router.get('/:id/settings', settingsController.getSettings);
 router.put('/:id/settings', requireRole('admin', 'analyst'), settingsController.updateSettings);
 router.post('/:id/recalculate', requireRole('admin'), settingsController.recalculate);
 router.get('/:id/orders/:orderId', storeController.getOrderDetail);
+router.get('/:id/daily-metrics', storeController.getDailyMetrics);
 
 module.exports = router;

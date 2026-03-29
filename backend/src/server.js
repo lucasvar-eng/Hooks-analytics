@@ -14,6 +14,8 @@ const costosRoutes = require('./routes/costosRoutes');
 const productRoutes = require('./routes/productRoutes');
 const customerRoutes = require('./routes/customerRoutes');
 const creativeRoutes = require('./routes/creativeRoutes');
+const aiRoutes = require('./routes/aiRoutes');
+const competitorRoutes = require('./routes/competitorRoutes');
 const { startCronJobs } = require('./services/cronJobs');
 const logger = require('./utils/logger');
 
@@ -50,6 +52,8 @@ app.use('/api', costosRoutes);
 app.use('/api', productRoutes);
 app.use('/api', customerRoutes);
 app.use('/api', creativeRoutes);
+app.use('/api', aiRoutes);
+app.use('/api', competitorRoutes);
 
 // Serve frontend in production
 if (nodeEnv === 'production') {

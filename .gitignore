@@ -16,8 +16,12 @@ Thumbs.db
 .idea/
 
 # Build
-dist/
+frontend/dist/
+backend/dist/
 build/
+
+# Docker
+docker-compose.override.yml
 
 # Logs
 *.log

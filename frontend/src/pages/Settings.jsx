@@ -9,6 +9,12 @@ export default function Settings() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
 
+  // TN manual connection
+  const [showTNManual, setShowTNManual] = useState(false);
+  const [tnToken, setTnToken] = useState('');
+  const [tnStoreIdInput, setTnStoreIdInput] = useState('');
+  const [connectingTN, setConnectingTN] = useState(false);
+
   // Editable fields
   const [tasaIBB, setTasaIBB] = useState(0);
   const [feePlataformaPct, setFeePlataformaPct] = useState(0);
@@ -65,29 +71,96 @@ export default function Settings() {
         <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase">Integraciones</h3>
         <div className="space-y-4">
           {/* TiendaNube */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className={`w-2.5 h-2.5 rounded-full ${store?.integrationStatus?.tiendanube?.connected ? 'bg-green-500' : 'bg-gray-300'}`} />
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">TiendaNube</span>
-              {store?.integrationStatus?.tiendanube?.connected && store?.integrationStatus?.tiendanube?.lastSync && (
-                <span className="text-xs text-gray-400 ml-2">
-                  Último sync: {new Date(store.integrationStatus.tiendanube.lastSync).toLocaleString('es-AR')}
-                </span>
+          <div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className={`w-2.5 h-2.5 rounded-full ${store?.integrationStatus?.tiendanube?.connected ? 'bg-green-500' : 'bg-gray-300'}`} />
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">TiendaNube</span>
+                {store?.integrationStatus?.tiendanube?.connected && (
+                  <span className="text-xs text-gray-400 ml-1">
+                    (Store ID: {store?.tnStoreId})
+                    {store?.integrationStatus?.tiendanube?.lastSync && (
+                      <> — Sync: {new Date(store.integrationStatus.tiendanube.lastSync).toLocaleString('es-AR')}</>
+                    )}
+                  </span>
+                )}
+              </div>
+              {store?.integrationStatus?.tiendanube?.connected ? (
+                <span className="text-xs px-2 py-1 rounded bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 font-medium">Conectada</span>
+              ) : (
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShowTNManual(!showTNManual)}
+                    className="px-3 py-1.5 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition font-medium"
+                  >
+                    Conectar manualmente
+                  </button>
+                </div>
               )}
             </div>
-            {store?.integrationStatus?.tiendanube?.connected ? (
-              <span className="text-xs px-2 py-1 rounded bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 font-medium">Conectada</span>
-            ) : (
-              <button
-                onClick={() => {
-                  api.get(`/api/tn/connect/${storeId}`).then(({ data }) => {
-                    if (data.authUrl) window.location.href = data.authUrl;
-                  }).catch(() => setMessage('Error al conectar TiendaNube'));
-                }}
-                className="px-3 py-1.5 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition font-medium"
-              >
-                Conectar TiendaNube
-              </button>
+
+            {/* Manual TN connection form */}
+            {showTNManual && !store?.integrationStatus?.tiendanube?.connected && (
+              <div className="mt-3 p-4 rounded-lg bg-gray-50 dark:bg-gray-750 border border-gray-200 dark:border-gray-600">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+                  Pegá el Access Token y Store ID de TiendaNube. Los podés encontrar en las variables de entorno de tu app (ej: Railway) o en el panel de TiendaNube Partners.
+                </p>
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-xs font-medium text-gray-600 dark:text-gray-400">Access Token</label>
+                    <input
+                      type="text"
+                      value={tnToken}
+                      onChange={(e) => setTnToken(e.target.value)}
+                      placeholder="ej: 1a2b3c4d5e6f7g8h..."
+                      className="w-full mt-1 px-3 py-2 text-sm border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-gray-600 dark:text-gray-400">Store ID (user_id)</label>
+                    <input
+                      type="text"
+                      value={tnStoreIdInput}
+                      onChange={(e) => setTnStoreIdInput(e.target.value)}
+                      placeholder="ej: 1234567"
+                      className="w-full mt-1 px-3 py-2 text-sm border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 font-mono"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={async () => {
+                        if (!tnToken.trim() || !tnStoreIdInput.trim()) return;
+                        setConnectingTN(true);
+                        setMessage(null);
+                        try {
+                          const { data } = await api.post(`/api/stores/${storeId}/connect-tn-manual`, {
+                            tnAccessToken: tnToken.trim(),
+                            tnStoreId: tnStoreIdInput.trim(),
+                          });
+                          setMessage(data.message);
+                          setShowTNManual(false);
+                          // Refresh store data
+                          const { data: updated } = await api.get(`/api/stores/${storeId}`);
+                          setStore(updated);
+                        } catch (err) {
+                          setMessage(`Error: ${err.response?.data?.error || err.message}`);
+                        }
+                        setConnectingTN(false);
+                      }}
+                      disabled={connectingTN || !tnToken.trim() || !tnStoreIdInput.trim()}
+                      className="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 disabled:opacity-50 transition font-medium"
+                    >
+                      {connectingTN ? 'Conectando...' : 'Conectar y sincronizar'}
+                    </button>
+                    <button
+                      onClick={() => setShowTNManual(false)}
+                      className="px-3 py-2 text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              </div>
             )}
           </div>
 

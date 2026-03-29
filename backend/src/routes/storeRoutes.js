@@ -18,6 +18,7 @@ router.post('/:id/sync/now', requireRole('admin'), storeController.syncNow);
 router.get('/:id/settings', settingsController.getSettings);
 router.put('/:id/settings', requireRole('admin', 'analyst'), settingsController.updateSettings);
 router.post('/:id/recalculate', requireRole('admin'), settingsController.recalculate);
+router.post('/:id/connect-tn-manual', requireRole('admin'), settingsController.connectTNManual);
 router.get('/:id/orders/:orderId', storeController.getOrderDetail);
 router.get('/:id/daily-metrics', storeController.getDailyMetrics);
 

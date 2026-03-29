@@ -9,6 +9,7 @@ const authRoutes = require('./routes/authRoutes');
 const storeRoutes = require('./routes/storeRoutes');
 const tnRoutes = require('./routes/tnRoutes');
 const metaRoutes = require('./routes/metaRoutes');
+const cashflowRoutes = require('./routes/cashflowRoutes');
 const { startCronJobs } = require('./services/cronJobs');
 const logger = require('./utils/logger');
 
@@ -40,6 +41,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/stores', storeRoutes);
 app.use('/api/tn', tnRoutes);
 app.use('/api', metaRoutes);
+app.use('/api', cashflowRoutes);
 
 // Serve frontend in production
 if (nodeEnv === 'production') {

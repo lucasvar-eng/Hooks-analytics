@@ -8,7 +8,7 @@ const NAV_ITEMS = [
   { path: 'dashboard', label: 'Dashboard' },
   // Sprint 3+
   { path: 'meta-pixel', label: 'Meta Pixel' },
-  { path: 'cashflow', label: 'Cashflow', disabled: true },
+  { path: 'cashflow', label: 'Cashflow' },
   { path: 'productos', label: 'Productos', disabled: true },
   { path: 'clientes', label: 'Clientes', disabled: true },
   { path: 'creativos', label: 'Creativos', disabled: true },

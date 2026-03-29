@@ -2,6 +2,7 @@ const cron = require('node-cron');
 const Store = require('../models/Store');
 const { syncOrders, syncProducts } = require('./syncTiendanube');
 const { syncMetaStructure, syncMetaInsights, refreshMetaTokens } = require('./syncMeta');
+const { updateCashflowStates } = require('./cashflow');
 const logger = require('../utils/logger');
 
 async function runForTnStores(jobName, syncFn) {
@@ -48,7 +49,18 @@ function startCronJobs() {
   cron.schedule('0 1,7,13,19 * * *', () => runForMetaStores('syncMetaInsights', syncMetaInsights));
   cron.schedule('0 2 * * *', () => runForMetaStores('refreshMetaTokens', refreshMetaTokens));
 
-  logger.info('Cron jobs scheduled: TN orders(4h), TN products(12h), Meta structure(12h), Meta insights(4x/day), Meta tokens(daily)');
+  // Cashflow
+  cron.schedule('0 3 * * *', async () => {
+    logger.info('Cron: updateCashflowStates starting...');
+    try {
+      await updateCashflowStates();
+    } catch (error) {
+      logger.error(`Cron updateCashflowStates failed: ${error.message}`);
+    }
+    logger.info('Cron: updateCashflowStates finished');
+  });
+
+  logger.info('Cron jobs scheduled: TN orders(4h), TN products(12h), Meta structure(12h), Meta insights(4x/day), Meta tokens(daily), Cashflow states(daily)');
 }
 
 module.exports = { startCronJobs };

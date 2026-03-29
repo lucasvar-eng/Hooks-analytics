@@ -4,6 +4,7 @@ const Product = require('../models/Product');
 const SyncLog = require('../models/SyncLog');
 const { recalculateDailyMetric } = require('./metricCalculator');
 const { calculateOrderFinancials, classifyCustomer } = require('./orderFinancials');
+const { generateCashflowEntries } = require('./cashflow');
 const logger = require('../utils/logger');
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -80,6 +81,7 @@ async function syncOrders(store) {
         if (order.estado !== 'cancelled') {
           await calculateOrderFinancials(order, store);
           await classifyCustomer(order, store);
+          await generateCashflowEntries(order);
         }
 
         // Track dates for DailyMetric recalculation

@@ -10,6 +10,14 @@ const customerSchema = new mongoose.Schema(
     firstPurchase: { type: Date },
     cohortMonth: { type: String }, // '2026-03'
     lastOrderDate: { type: Date },
+
+    // RFM (Sprint 7)
+    recency: { type: Number },     // days since last order
+    frequency: { type: Number },   // total orders
+    monetary: { type: Number },    // total spent
+    rfmScore: { type: String },    // e.g. '5-4-5'
+    rfmSegment: { type: String },  // 'champions', 'loyal', 'at_risk', 'lost', etc.
+    ltv: { type: Number, default: 0 },
   },
   { timestamps: true }
 );

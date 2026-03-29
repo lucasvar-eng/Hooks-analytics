@@ -8,6 +8,8 @@ import MetaPixel from './pages/MetaPixel';
 import Cashflow from './pages/Cashflow';
 import Costos from './pages/Costos';
 import Productos from './pages/Productos';
+import Clientes from './pages/Clientes';
+import Creativos from './pages/Creativos';
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated } = useAuth();
@@ -41,6 +43,8 @@ export default function App() {
         <Route path="cashflow" element={<Cashflow />} />
         <Route path="costos" element={<Costos />} />
         <Route path="productos" element={<Productos />} />
+        <Route path="clientes" element={<Clientes />} />
+        <Route path="creativos" element={<Creativos />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

@@ -3,6 +3,7 @@ import { useParams, NavLink, Outlet, Link } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { selectStore } from '../store/storeSlice';
 import Header from '../components/common/Header';
+import AIChatPanel from '../components/common/AIChatPanel';
 
 const NAV_ITEMS = [
   { path: 'dashboard', label: 'Dashboard' },
@@ -23,6 +24,7 @@ const NAV_ITEMS = [
 export default function StoreLayout() {
   const { storeId } = useParams();
   const dispatch = useDispatch();
+  const { from, to } = useSelector((state) => state.date);
   const store = useSelector((state) =>
     state.stores.stores.find((s) => s._id === storeId)
   );
@@ -78,6 +80,8 @@ export default function StoreLayout() {
           <Outlet />
         </main>
       </div>
+
+      <AIChatPanel storeId={storeId} from={from} to={to} />
     </div>
   );
 }

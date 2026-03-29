@@ -2,6 +2,47 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import api from '../services/api';
 
+function AIConfigSection() {
+  const [testing, setTesting] = useState(false);
+  const [aiStatus, setAiStatus] = useState(null);
+
+  const testAI = async () => {
+    setTesting(true);
+    setAiStatus(null);
+    try {
+      await api.post('/api/ai/test-connection');
+      setAiStatus({ ok: true, message: 'Conexión exitosa con Claude API' });
+    } catch (err) {
+      setAiStatus({ ok: false, message: err.response?.data?.error || 'Error de conexión' });
+    }
+    setTesting(false);
+  };
+
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase">AI (Claude)</h3>
+      <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+        La API key se configura en el archivo <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">.env</code> del backend como <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">ANTHROPIC_API_KEY</code>.
+        Necesitás una key de <a href="https://console.anthropic.com" target="_blank" rel="noopener noreferrer" className="text-indigo-500 hover:underline">console.anthropic.com</a>.
+      </p>
+      <div className="flex items-center gap-3">
+        <button
+          onClick={testAI}
+          disabled={testing}
+          className="px-3 py-1.5 bg-violet-600 text-white text-xs rounded hover:bg-violet-700 disabled:opacity-50 transition font-medium"
+        >
+          {testing ? 'Probando...' : 'Probar conexión'}
+        </button>
+        {aiStatus && (
+          <span className={`text-xs font-medium ${aiStatus.ok ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+            {aiStatus.message}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function Settings() {
   const { storeId } = useParams();
   const [store, setStore] = useState(null);
@@ -170,6 +211,9 @@ export default function Settings() {
           </div>
         </div>
       </div>
+
+      {/* AI Configuration */}
+      <AIConfigSection />
 
       {/* Financial config */}
       <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">

@@ -9,7 +9,8 @@ const NAV_ITEMS = [
   // Sprint 3+
   { path: 'meta-pixel', label: 'Meta Pixel' },
   { path: 'cashflow', label: 'Cashflow' },
-  { path: 'productos', label: 'Productos', disabled: true },
+  { path: 'costos', label: 'Costos & P&L' },
+  { path: 'productos', label: 'Productos' },
   { path: 'clientes', label: 'Clientes', disabled: true },
   { path: 'creativos', label: 'Creativos', disabled: true },
   { path: 'competencia', label: 'Competencia', disabled: true },

@@ -1,6 +1,10 @@
+const dns = require('dns');
 const mongoose = require('mongoose');
 const { mongodbUri } = require('./environment');
 const logger = require('../utils/logger');
+
+// Force Google DNS for MongoDB Atlas SRV resolution
+dns.setServers(['8.8.8.8', '8.8.4.4']);
 
 const connectDB = async () => {
   if (!mongodbUri) {

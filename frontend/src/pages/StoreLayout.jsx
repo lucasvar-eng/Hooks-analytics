@@ -7,7 +7,7 @@ import Header from '../components/common/Header';
 const NAV_ITEMS = [
   { path: 'dashboard', label: 'Dashboard' },
   // Sprint 3+
-  { path: 'meta-pixel', label: 'Meta Pixel', disabled: true },
+  { path: 'meta-pixel', label: 'Meta Pixel' },
   { path: 'cashflow', label: 'Cashflow', disabled: true },
   { path: 'productos', label: 'Productos', disabled: true },
   { path: 'clientes', label: 'Clientes', disabled: true },

@@ -4,6 +4,7 @@ import Login from './pages/Login';
 import Home from './pages/Home';
 import StoreLayout from './pages/StoreLayout';
 import Dashboard from './pages/Dashboard';
+import MetaPixel from './pages/MetaPixel';
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated } = useAuth();
@@ -33,6 +34,7 @@ export default function App() {
       >
         <Route index element={<Navigate to="dashboard" replace />} />
         <Route path="dashboard" element={<Dashboard />} />
+        <Route path="meta-pixel" element={<MetaPixel />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

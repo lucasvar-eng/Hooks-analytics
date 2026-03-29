@@ -8,6 +8,7 @@ const errorHandler = require('./middleware/errorHandler');
 const authRoutes = require('./routes/authRoutes');
 const storeRoutes = require('./routes/storeRoutes');
 const tnRoutes = require('./routes/tnRoutes');
+const metaRoutes = require('./routes/metaRoutes');
 const { startCronJobs } = require('./services/cronJobs');
 const logger = require('./utils/logger');
 
@@ -38,6 +39,7 @@ app.get('/health', (_req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/stores', storeRoutes);
 app.use('/api/tn', tnRoutes);
+app.use('/api', metaRoutes);
 
 // Serve frontend in production
 if (nodeEnv === 'production') {

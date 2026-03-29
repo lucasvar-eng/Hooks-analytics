@@ -1,6 +1,8 @@
 const mongoose = require('mongoose');
 const Order = require('../models/Order');
 const DailyMetric = require('../models/DailyMetric');
+const MetaDailyInsight = require('../models/MetaDailyInsight');
+const MetaCampaign = require('../models/MetaCampaign');
 const logger = require('../utils/logger');
 
 const safeDiv = (a, b) => (b && b > 0 ? a / b : 0);
@@ -98,24 +100,61 @@ async function recalculateDailyMetric(storeId, date) {
   const rcOrdenes = o.ordenesPositivas - o.ncOrdenes;
   const rcRevenue = o.revenue - o.ncRevenue;
 
-  // 4. Derived metrics
+  // 3b. Aggregate Meta insights (campaign-level only to avoid double-counting)
+  const campaignIds = await MetaCampaign.find({
+    storeId: storeOid,
+    level: 'campaign',
+  }).distinct('metaId');
+
+  const metaAgg = campaignIds.length > 0
+    ? await MetaDailyInsight.aggregate([
+        {
+          $match: {
+            storeId: storeOid,
+            metaId: { $in: campaignIds },
+            date: { $gte: dayStart, $lte: dayEnd },
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            adSpend: { $sum: '$spend' },
+            impressions: { $sum: '$impressions' },
+            reach: { $sum: '$reach' },
+            clicks: { $sum: '$clicks' },
+            metaPurchases: { $sum: '$purchases' },
+            metaPurchaseValue: { $sum: '$purchaseValue' },
+          },
+        },
+      ])
+    : [];
+
+  const m = metaAgg[0] || {
+    adSpend: 0,
+    impressions: 0,
+    reach: 0,
+    clicks: 0,
+    metaPurchases: 0,
+    metaPurchaseValue: 0,
+  };
+
+  // 4. Derived metrics (now with real Meta data)
   const derived = {
     aov: safeDiv(o.revenue, o.ordenesPositivas),
     aovNeto: safeDiv(o.netRevenue, o.ordenesPositivas),
     profitMargin: safeDiv(o.netRevenue, o.revenue) * 100,
     ncPct: safeDiv(o.ncOrdenes, o.ordenesPositivas) * 100,
-    // Meta-dependent (0 until Sprint 3)
-    roas: 0,
-    trueRoas: 0,
-    cpa: 0,
-    trueCpa: 0,
-    ncCpa: 0,
-    ncRoas: 0,
-    ncTrueRoas: 0,
-    cpc: 0,
-    ctr: 0,
-    cpm: 0,
-    conversionRate: 0,
+    roas: safeDiv(o.revenue, m.adSpend),
+    trueRoas: safeDiv(o.netRevenue, m.adSpend),
+    cpa: safeDiv(m.adSpend, o.ordenesPositivas),
+    trueCpa: safeDiv(m.adSpend, o.ordenesPositivas),
+    ncCpa: safeDiv(m.adSpend, o.ncOrdenes),
+    ncRoas: safeDiv(o.ncRevenue, m.adSpend),
+    ncTrueRoas: safeDiv(o.ncNetRevenue, m.adSpend),
+    cpc: safeDiv(m.adSpend, m.clicks),
+    ctr: safeDiv(m.clicks, m.impressions) * 100,
+    cpm: safeDiv(m.adSpend, m.impressions) * 1000,
+    conversionRate: safeDiv(o.ordenesPositivas, m.clicks) * 100,
   };
 
   // 5. Upsert DailyMetric
@@ -140,6 +179,12 @@ async function recalculateDailyMetric(storeId, date) {
       rcRevenue,
       devoluciones,
       profit: o.netRevenue,
+      adSpend: m.adSpend,
+      impressions: m.impressions,
+      reach: m.reach,
+      clicks: m.clicks,
+      metaPurchases: m.metaPurchases,
+      metaPurchaseValue: m.metaPurchaseValue,
       ...derived,
     },
     { upsert: true }

@@ -15,5 +15,7 @@ router.get('/stores/:id/meta/campaigns', auth, metaController.getCampaigns);
 router.get('/stores/:id/meta/campaigns/:campaignId/adsets', auth, metaController.getAdSets);
 router.get('/stores/:id/meta/adsets/:adsetId/ads', auth, metaController.getAds);
 router.post('/stores/:id/meta/import', auth, requireRole('admin', 'analyst'), upload.single('file'), metaController.importCSV);
+router.post('/stores/:id/meta/import/validate', auth, upload.single('file'), metaController.validateCSV);
+router.get('/stores/:id/meta/import-history', auth, metaController.getImportHistory);
 
 module.exports = router;

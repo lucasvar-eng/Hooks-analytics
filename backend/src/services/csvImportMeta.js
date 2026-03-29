@@ -1,5 +1,6 @@
 const MetaCampaign = require('../models/MetaCampaign');
 const MetaDailyInsight = require('../models/MetaDailyInsight');
+const ImportLog = require('../models/ImportLog');
 const { recalculateDailyMetric } = require('./metricCalculator');
 const logger = require('../utils/logger');
 
@@ -62,6 +63,39 @@ const COLUMN_MAP = {
 };
 
 /**
+ * Required columns — at least one of these must be present per group.
+ */
+const REQUIRED_GROUPS = {
+  identification: ['campaignName', 'campaignId'],
+  date: ['date'],
+  metrics: ['spend', 'impressions', 'clicks'],
+};
+
+/**
+ * Validate CSV headers and return detected + missing columns.
+ */
+function validateHeaders(headers) {
+  const detected = [];
+  const mapped = {};
+
+  for (const header of headers) {
+    const key = COLUMN_MAP[header.trim()];
+    if (key) {
+      detected.push(key);
+      mapped[header.trim()] = key;
+    }
+  }
+
+  const missing = [];
+  for (const [group, keys] of Object.entries(REQUIRED_GROUPS)) {
+    const hasAny = keys.some((k) => detected.includes(k));
+    if (!hasAny) missing.push(`${group} (${keys.join(' o ')})`);
+  }
+
+  return { detected, missing, isValid: missing.length === 0 };
+}
+
+/**
  * Parse a CSV row using the column map.
  */
 function mapRow(row, headers) {
@@ -81,7 +115,7 @@ function mapRow(row, headers) {
  * @param {string} storeId - Store ObjectId
  * @returns {object} { imported, errors }
  */
-async function importMetaCSV(rows, storeId) {
+async function importMetaCSV(rows, storeId, fileName) {
   if (!rows || rows.length < 2) {
     return { imported: 0, errors: ['CSV is empty or has no data rows'] };
   }
@@ -179,9 +213,53 @@ async function importMetaCSV(rows, storeId) {
     await recalculateDailyMetric(storeId, new Date(dateStr));
   }
 
+  // Determine date range
+  const sortedDates = [...affectedDates].sort();
+  const dateRangeFrom = sortedDates[0] ? new Date(sortedDates[0]) : null;
+  const dateRangeTo = sortedDates[sortedDates.length - 1] ? new Date(sortedDates[sortedDates.length - 1]) : null;
+
+  // Validate headers
+  const { detected, missing } = validateHeaders(headers);
+
+  // Save import log
+  const status = errors.length === 0 ? 'success' : imported > 0 ? 'partial' : 'error';
+  await ImportLog.create({
+    storeId,
+    type: 'meta_csv',
+    fileName: fileName || 'unknown.csv',
+    rowsImported: imported,
+    rowsTotal: dataRows.length,
+    errors: errors.slice(0, 20),
+    dateRangeFrom,
+    dateRangeTo,
+    columnsDetected: detected,
+    columnsMissing: missing,
+    status,
+  });
+
   logger.info(`Meta CSV imported for store ${storeId}: ${imported} rows, ${errors.length} errors`);
 
-  return { imported, errors };
+  return {
+    imported,
+    total: dataRows.length,
+    errors: errors.slice(0, 10),
+    dateRange: dateRangeFrom && dateRangeTo ? {
+      from: sortedDates[0],
+      to: sortedDates[sortedDates.length - 1],
+    } : null,
+    columnsDetected: detected,
+    columnsMissing: missing,
+  };
 }
 
-module.exports = { importMetaCSV };
+/**
+ * Get import history for a store.
+ */
+async function getImportHistory(storeId) {
+  return ImportLog.find({ storeId, type: 'meta_csv' })
+    .sort({ createdAt: -1 })
+    .limit(20)
+    .lean();
+}
+
+module.exports = { importMetaCSV, validateHeaders, getImportHistory };

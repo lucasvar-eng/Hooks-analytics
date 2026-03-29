@@ -63,19 +63,45 @@ export default function Settings() {
       {/* Integrations status */}
       <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
         <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase">Integraciones</h3>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="flex items-center gap-2">
-            <span className={`w-2 h-2 rounded-full ${store?.integrationStatus?.tiendanube?.connected ? 'bg-green-500' : 'bg-gray-300'}`} />
-            <span className="text-sm text-gray-700 dark:text-gray-300">TiendaNube</span>
-            {store?.integrationStatus?.tiendanube?.lastSync && (
-              <span className="text-xs text-gray-400">
-                Último sync: {new Date(store.integrationStatus.tiendanube.lastSync).toLocaleString('es-AR')}
-              </span>
+        <div className="space-y-4">
+          {/* TiendaNube */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className={`w-2.5 h-2.5 rounded-full ${store?.integrationStatus?.tiendanube?.connected ? 'bg-green-500' : 'bg-gray-300'}`} />
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">TiendaNube</span>
+              {store?.integrationStatus?.tiendanube?.connected && store?.integrationStatus?.tiendanube?.lastSync && (
+                <span className="text-xs text-gray-400 ml-2">
+                  Último sync: {new Date(store.integrationStatus.tiendanube.lastSync).toLocaleString('es-AR')}
+                </span>
+              )}
+            </div>
+            {store?.integrationStatus?.tiendanube?.connected ? (
+              <span className="text-xs px-2 py-1 rounded bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 font-medium">Conectada</span>
+            ) : (
+              <button
+                onClick={() => {
+                  api.get(`/api/tn/connect/${storeId}`).then(({ data }) => {
+                    if (data.authUrl) window.location.href = data.authUrl;
+                  }).catch(() => setMessage('Error al conectar TiendaNube'));
+                }}
+                className="px-3 py-1.5 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition font-medium"
+              >
+                Conectar TiendaNube
+              </button>
             )}
           </div>
-          <div className="flex items-center gap-2">
-            <span className={`w-2 h-2 rounded-full ${store?.integrationStatus?.metaAds?.connected ? 'bg-green-500' : 'bg-gray-300'}`} />
-            <span className="text-sm text-gray-700 dark:text-gray-300">Meta Ads</span>
+
+          {/* Meta Ads */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className={`w-2.5 h-2.5 rounded-full ${store?.integrationStatus?.metaAds?.connected ? 'bg-green-500' : 'bg-gray-300'}`} />
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Meta Ads</span>
+            </div>
+            {store?.integrationStatus?.metaAds?.connected ? (
+              <span className="text-xs px-2 py-1 rounded bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 font-medium">Conectada</span>
+            ) : (
+              <span className="text-xs text-gray-400">Usá la importación CSV desde la pestaña Meta Ads</span>
+            )}
           </div>
         </div>
       </div>

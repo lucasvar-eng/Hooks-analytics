@@ -3,7 +3,7 @@ const MetaCampaign = require('../models/MetaCampaign');
 const MetaDailyInsight = require('../models/MetaDailyInsight');
 const metaAPI = require('../services/metaAPI');
 const { syncMetaStructure, syncMetaInsights } = require('../services/syncMeta');
-const { importMetaCSV } = require('../services/csvImportMeta');
+const { importMetaCSV, validateHeaders, getImportHistory } = require('../services/csvImportMeta');
 const { meta: metaConfig } = require('../config/environment');
 const logger = require('../utils/logger');
 
@@ -253,6 +253,29 @@ exports.getAds = async (req, res, next) => {
 };
 
 /**
+ * Validate CSV headers without importing.
+ */
+exports.validateCSV = async (req, res, next) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+
+    const Papa = require('papaparse');
+    const csvText = req.file.buffer.toString('utf-8');
+    const parsed = Papa.parse(csvText, { skipEmptyLines: true });
+
+    if (!parsed.data || parsed.data.length < 1) {
+      return res.json({ isValid: false, detected: [], missing: ['CSV vacío'] });
+    }
+
+    const result = validateHeaders(parsed.data[0]);
+    result.totalRows = parsed.data.length - 1;
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * Import Meta Ads data from CSV upload.
  */
 exports.importCSV = async (req, res, next) => {
@@ -263,9 +286,21 @@ exports.importCSV = async (req, res, next) => {
     const csvText = req.file.buffer.toString('utf-8');
     const parsed = Papa.parse(csvText, { skipEmptyLines: true });
 
-    const { imported, errors } = await importMetaCSV(parsed.data, req.params.id);
+    const result = await importMetaCSV(parsed.data, req.params.id, req.file.originalname);
 
-    res.json({ imported, errors: errors.slice(0, 10) });
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Get import history for a store.
+ */
+exports.getImportHistory = async (req, res, next) => {
+  try {
+    const history = await getImportHistory(req.params.id);
+    res.json(history);
   } catch (error) {
     next(error);
   }

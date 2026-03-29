@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import api from '../services/api';
+import AIAnalysisPanel from '../components/common/AIAnalysisPanel';
 
 function formatCurrency(v) {
   if (v == null || isNaN(v)) return '—';
@@ -221,6 +222,8 @@ export default function Cashflow() {
           <DailyTable daily={daily} />
         )}
       </div>
+
+      <AIAnalysisPanel storeId={storeId} section="cashflow" from={from} to={to} />
     </div>
   );
 }

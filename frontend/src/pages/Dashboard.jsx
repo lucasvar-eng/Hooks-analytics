@@ -8,6 +8,7 @@ import NCRCSection from '../components/dashboard/NCRCSection';
 import CostosSection from '../components/dashboard/CostosSection';
 import LatestSalesTable from '../components/dashboard/LatestSalesTable';
 import OrderDetailModal from '../components/dashboard/OrderDetailModal';
+import AIAnalysisPanel from '../components/common/AIAnalysisPanel';
 
 export default function Dashboard() {
   const { storeId } = useParams();
@@ -61,6 +62,9 @@ export default function Dashboard() {
         to={to}
         onOrderClick={setSelectedOrder}
       />
+
+      {/* AI Analysis */}
+      <AIAnalysisPanel storeId={storeId} section="dashboard" from={from} to={to} />
 
       {/* Order detail modal */}
       <OrderDetailModal

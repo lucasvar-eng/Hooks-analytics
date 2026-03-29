@@ -6,15 +6,17 @@ import Header from '../components/common/Header';
 
 const NAV_ITEMS = [
   { path: 'dashboard', label: 'Dashboard' },
-  // Sprint 3+
-  { path: 'meta-pixel', label: 'Meta Pixel' },
+  // Fuentes de datos
+  { path: 'tienda', label: 'Tienda', section: true },
+  { path: 'meta-ads', label: 'Meta Ads' },
+  // Análisis
   { path: 'cashflow', label: 'Cashflow' },
   { path: 'costos', label: 'Costos & P&L' },
   { path: 'productos', label: 'Productos' },
   { path: 'clientes', label: 'Clientes' },
   { path: 'creativos', label: 'Creativos' },
   { path: 'competencia', label: 'Competencia' },
-  { path: 'daily-tracker', label: 'Daily Tracker' },
+  // Config
   { path: 'settings', label: 'Settings' },
 ];
 

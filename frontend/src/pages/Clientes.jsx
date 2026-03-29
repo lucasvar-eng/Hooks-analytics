@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import api from '../services/api';
+import AIAnalysisPanel from '../components/common/AIAnalysisPanel';
 
 function fmt(v) {
   if (v == null || isNaN(v)) return '—';
@@ -210,6 +211,8 @@ export default function Clientes() {
           <button disabled={page >= Math.ceil(customerData.total / 50)} onClick={() => setPage(page + 1)} className="px-3 py-1 text-sm rounded border disabled:opacity-50">Siguiente</button>
         </div>
       )}
+
+      <AIAnalysisPanel storeId={storeId} section="clientes" from={undefined} to={undefined} />
     </div>
   );
 }

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import api from '../services/api';
+import AIAnalysisPanel from '../components/common/AIAnalysisPanel';
 
 function fmt(v) {
   if (v == null || isNaN(v)) return '—';
@@ -197,6 +198,8 @@ export default function Costos() {
       </div>
 
       <CSVUploadSection storeId={storeId} onUploaded={fetchData} />
+
+      <AIAnalysisPanel storeId={storeId} section="costos" from={from} to={to} />
     </div>
   );
 }

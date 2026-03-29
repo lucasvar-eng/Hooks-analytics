@@ -4,14 +4,14 @@ import Login from './pages/Login';
 import Home from './pages/Home';
 import StoreLayout from './pages/StoreLayout';
 import Dashboard from './pages/Dashboard';
-import MetaPixel from './pages/MetaPixel';
+import Tienda from './pages/Tienda';
+import MetaAds from './pages/MetaAds';
 import Cashflow from './pages/Cashflow';
 import Costos from './pages/Costos';
 import Productos from './pages/Productos';
 import Clientes from './pages/Clientes';
 import Creativos from './pages/Creativos';
 import Competencia from './pages/Competencia';
-import DailyTracker from './pages/DailyTracker';
 import Settings from './pages/Settings';
 
 function ProtectedRoute({ children }) {
@@ -42,14 +42,16 @@ export default function App() {
       >
         <Route index element={<Navigate to="dashboard" replace />} />
         <Route path="dashboard" element={<Dashboard />} />
-        <Route path="meta-pixel" element={<MetaPixel />} />
+        <Route path="tienda" element={<Tienda />} />
+        <Route path="meta-ads" element={<MetaAds />} />
+        {/* Backwards compat for old bookmarks */}
+        <Route path="meta-pixel" element={<Navigate to="../meta-ads" replace />} />
         <Route path="cashflow" element={<Cashflow />} />
         <Route path="costos" element={<Costos />} />
         <Route path="productos" element={<Productos />} />
         <Route path="clientes" element={<Clientes />} />
         <Route path="creativos" element={<Creativos />} />
         <Route path="competencia" element={<Competencia />} />
-        <Route path="daily-tracker" element={<DailyTracker />} />
         <Route path="settings" element={<Settings />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

@@ -1,48 +1,72 @@
+import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
+import { fetchStoreMetrics } from '../store/storeSlice';
+import KPITopBar from '../components/dashboard/KPITopBar';
+import TiendaSection from '../components/dashboard/TiendaSection';
+import NCRCSection from '../components/dashboard/NCRCSection';
+import CostosSection from '../components/dashboard/CostosSection';
+import LatestSalesTable from '../components/dashboard/LatestSalesTable';
+import OrderDetailModal from '../components/dashboard/OrderDetailModal';
 
 export default function Dashboard() {
   const { storeId } = useParams();
+  const dispatch = useDispatch();
   const metrics = useSelector((state) => state.stores.metrics[storeId]);
+  const { from, to } = useSelector((state) => state.date);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+
   const current = metrics?.current || {};
+  const deltas = metrics?.deltas || {};
+
+  useEffect(() => {
+    if (storeId && from && to) {
+      dispatch(fetchStoreMetrics({ storeId, from, to }));
+    }
+  }, [dispatch, storeId, from, to]);
 
   return (
-    <div>
-      <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-6">
+    <div className="space-y-6">
+      <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
         Dashboard
       </h2>
 
-      {/* KPI cards placeholder — Sprint 2 builds the full 8-card layout */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        {[
-          { label: 'Órdenes', value: current.ordenesPositivas },
-          { label: 'Revenue', value: current.revenue, prefix: '$' },
-          { label: 'Net Revenue', value: current.netRevenue, prefix: '$' },
-          { label: 'AOV', value: current.aov, prefix: '$' },
-        ].map((kpi) => (
-          <div
-            key={kpi.label}
-            className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4"
-          >
-            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-              {kpi.label}
-            </p>
-            <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
-              {kpi.prefix || ''}
-              {kpi.value != null
-                ? kpi.value.toLocaleString('es-AR', { maximumFractionDigits: 0 })
-                : '—'}
-            </p>
-          </div>
-        ))}
+      {/* 8 KPI Cards */}
+      <KPITopBar current={current} deltas={deltas} />
+
+      {/* Sections grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <TiendaSection current={current} deltas={deltas} />
+        <NCRCSection current={current} deltas={deltas} />
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-        <p className="text-gray-500 dark:text-gray-400">
-          Dashboard completo se construye en Sprint 2 (8 KPI cards, NC/RC,
-          tabla de órdenes, modal de detalle).
+      {/* Marketing Mix placeholder */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+        <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">
+          Marketing Mix
+        </h3>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          Conectar Meta Ads para ver datos de campañas, ROAS por canal y
+          distribución de inversión. (Sprint 3)
         </p>
       </div>
+
+      {/* Costos */}
+      <CostosSection current={current} deltas={deltas} />
+
+      {/* Últimas ventas */}
+      <LatestSalesTable
+        storeId={storeId}
+        from={from}
+        to={to}
+        onOrderClick={setSelectedOrder}
+      />
+
+      {/* Order detail modal */}
+      <OrderDetailModal
+        order={selectedOrder}
+        onClose={() => setSelectedOrder(null)}
+      />
     </div>
   );
 }

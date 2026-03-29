@@ -1,5 +1,33 @@
 import StoreCard from './StoreCard';
 
+/**
+ * Generate quick notes for a store card.
+ * Not tied to the date range — always shows most current/pending info.
+ */
+function getStoreNotes(store, metrics) {
+  const notes = [];
+  const current = metrics?.current || {};
+
+  if (!store.integrationStatus?.tiendanube?.connected) {
+    notes.push({ text: 'TiendaNube no conectada' });
+  }
+  if (!store.integrationStatus?.metaAds?.connected) {
+    notes.push({ text: 'Meta Ads no conectado' });
+  }
+  if (current.devoluciones > 0) {
+    notes.push({ text: `${current.devoluciones} devoluciones recientes` });
+  }
+  if (store.objetivos?.kpis?.roasTarget && current.roas) {
+    if (current.roas < store.objetivos.kpis.roasTarget) {
+      notes.push({
+        text: `ROAS debajo del target (${current.roas.toFixed(1)}x vs ${store.objetivos.kpis.roasTarget}x)`,
+      });
+    }
+  }
+
+  return notes;
+}
+
 export default function StoreGrid({ stores, metrics }) {
   if (!stores.length) {
     return (
@@ -21,6 +49,7 @@ export default function StoreGrid({ stores, metrics }) {
           key={store._id}
           store={store}
           metrics={metrics[store._id]}
+          notes={getStoreNotes(store, metrics[store._id])}
         />
       ))}
     </div>

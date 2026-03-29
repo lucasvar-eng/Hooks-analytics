@@ -136,3 +136,16 @@ exports.syncNow = async (req, res, next) => {
     next(error);
   }
 };
+
+exports.getOrderDetail = async (req, res, next) => {
+  try {
+    const order = await Order.findOne({
+      _id: req.params.orderId,
+      storeId: req.params.id,
+    });
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+    res.json(order);
+  } catch (error) {
+    next(error);
+  }
+};

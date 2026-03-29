@@ -3,6 +3,7 @@ const Order = require('../models/Order');
 const Product = require('../models/Product');
 const SyncLog = require('../models/SyncLog');
 const { recalculateDailyMetric } = require('./metricCalculator');
+const { calculateOrderFinancials, classifyCustomer } = require('./orderFinancials');
 const logger = require('../utils/logger');
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -69,11 +70,17 @@ async function syncOrders(store) {
       const orders = response.data;
 
       for (const tnOrder of orders) {
-        await Order.findOneAndUpdate(
+        const order = await Order.findOneAndUpdate(
           { storeId: store._id, tnOrderId: String(tnOrder.id) },
           { ...mapTnOrderToSchema(tnOrder) },
           { upsert: true, new: true }
         );
+
+        // Calculate financials + NC/RC for each order
+        if (order.estado !== 'cancelled') {
+          await calculateOrderFinancials(order, store);
+          await classifyCustomer(order, store);
+        }
 
         // Track dates for DailyMetric recalculation
         const dateStr = new Date(tnOrder.created_at)

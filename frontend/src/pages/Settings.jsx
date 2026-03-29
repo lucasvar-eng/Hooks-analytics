@@ -10,7 +10,6 @@ export default function Settings() {
   const [message, setMessage] = useState(null);
 
   // TN manual connection
-  const [showTNManual, setShowTNManual] = useState(false);
   const [tnToken, setTnToken] = useState('');
   const [tnStoreIdInput, setTnStoreIdInput] = useState('');
   const [connectingTN, setConnectingTN] = useState(false);
@@ -88,19 +87,12 @@ export default function Settings() {
               {store?.integrationStatus?.tiendanube?.connected ? (
                 <span className="text-xs px-2 py-1 rounded bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 font-medium">Conectada</span>
               ) : (
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setShowTNManual(!showTNManual)}
-                    className="px-3 py-1.5 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition font-medium"
-                  >
-                    Conectar manualmente
-                  </button>
-                </div>
+                <span className="text-xs text-gray-400">No conectada</span>
               )}
             </div>
 
-            {/* Manual TN connection form */}
-            {showTNManual && !store?.integrationStatus?.tiendanube?.connected && (
+            {/* Manual TN connection form — always shown when not connected */}
+            {!store?.integrationStatus?.tiendanube?.connected && (
               <div className="mt-3 p-4 rounded-lg bg-gray-50 dark:bg-gray-750 border border-gray-200 dark:border-gray-600">
                 <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
                   Pegá el Access Token y Store ID de TiendaNube. Los podés encontrar en las variables de entorno de tu app (ej: Railway) o en el panel de TiendaNube Partners.

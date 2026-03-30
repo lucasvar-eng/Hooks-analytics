@@ -2,20 +2,25 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import api from '../services/api';
 
+function SectionCard({ title, children }) {
+  return (
+    <div className="card p-5">
+      <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-4">{title}</p>
+      {children}
+    </div>
+  );
+}
+
 function AIConfigSection() {
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60 p-4">
-      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase">AI</h3>
-      <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+    <SectionCard title="AI">
+      <p className="text-[12px] text-gray-600 mb-3">
         La configuración de proveedor AI, API key y modelos se gestiona desde tu perfil de usuario.
       </p>
-      <Link
-        to="/profile"
-        className="inline-block px-3 py-1.5 bg-primary-600 text-white text-xs rounded hover:bg-primary-700 transition font-medium"
-      >
+      <Link to="/profile" className="btn-primary inline-block text-[12px]">
         Ir a mi perfil
       </Link>
-    </div>
+    </SectionCard>
   );
 }
 
@@ -26,23 +31,18 @@ function StoreAIContextSection({ storeId }) {
   const [uploading, setUploading] = useState(false);
   const [msg, setMsg] = useState(null);
 
-  useEffect(() => {
-    loadContext();
-  }, [storeId]);
+  useEffect(() => { loadContext(); }, [storeId]);
 
   const loadContext = async () => {
     try {
       const { data } = await api.get(`/api/stores/${storeId}/ai-context`);
       setInstructions(data.instructions || '');
       setFiles(data.files || []);
-    } catch {
-      // ignore
-    }
+    } catch {}
   };
 
   const saveInstructions = async () => {
-    setSaving(true);
-    setMsg(null);
+    setSaving(true); setMsg(null);
     try {
       await api.put(`/api/stores/${storeId}/ai-context`, { instructions });
       setMsg({ ok: true, text: 'Instrucciones guardadas' });
@@ -83,62 +83,47 @@ function StoreAIContextSection({ storeId }) {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60 p-4">
-      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 uppercase">Contexto AI de la tienda</h3>
-      <p className="text-xs text-gray-400 mb-3">
+    <SectionCard title="Contexto AI de la tienda">
+      <p className="text-[12px] text-gray-600 mb-3">
         Instrucciones específicas para esta tienda. Se suman a tus instrucciones globales de perfil.
       </p>
-
       <textarea
         value={instructions}
         onChange={(e) => setInstructions(e.target.value)}
         rows={4}
         maxLength={10000}
-        placeholder="Ej: Esta tienda vende ropa deportiva. El ticket promedio objetivo es $45.000. Priorizá recomendaciones de cross-sell..."
-        className="w-full px-3 py-2 text-sm border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 resize-y mb-2"
+        placeholder="Ej: Esta tienda vende ropa deportiva. El ticket promedio objetivo es $45.000..."
+        className="input-dark w-full resize-y mb-2"
       />
       <div className="flex items-center justify-between mb-4">
-        <span className="text-xs text-gray-400">{instructions.length}/10,000</span>
+        <span className="text-[11px] text-gray-600">{instructions.length}/10,000</span>
         <div className="flex items-center gap-3">
-          {msg && (
-            <span className={`text-xs font-medium ${msg.ok ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-              {msg.text}
-            </span>
-          )}
-          <button
-            onClick={saveInstructions}
-            disabled={saving}
-            className="px-3 py-1.5 bg-primary-600 text-white text-xs rounded hover:bg-primary-700 disabled:opacity-50 transition font-medium"
-          >
+          {msg && <span className={`text-[12px] font-medium ${msg.ok ? 'text-emerald-400' : 'text-red-400'}`}>{msg.text}</span>}
+          <button onClick={saveInstructions} disabled={saving} className="btn-primary text-[12px] disabled:opacity-50">
             {saving ? 'Guardando...' : 'Guardar instrucciones'}
           </button>
         </div>
       </div>
 
-      {/* Files */}
       <div className="flex items-center justify-between mb-2">
-        <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Archivos de contexto (max 5)</span>
-        <button
-          onClick={uploadFile}
-          disabled={uploading || files.length >= 5}
-          className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-400 disabled:opacity-50"
-        >
+        <span className="text-[12px] text-gray-500">Archivos de contexto (max 5)</span>
+        <button onClick={uploadFile} disabled={uploading || files.length >= 5} className="btn-ghost text-[12px] disabled:opacity-50">
           {uploading ? 'Subiendo...' : '+ Subir'}
         </button>
       </div>
       {files.length === 0 ? (
-        <p className="text-xs text-gray-400">Sin archivos.</p>
+        <p className="text-[12px] text-gray-600">Sin archivos.</p>
       ) : (
-        <div className="space-y-1">
+        <div className="space-y-1.5">
           {files.map((f) => (
-            <div key={f.filename} className="flex items-center justify-between py-1.5 px-2 bg-gray-50 dark:bg-gray-750 rounded text-sm">
-              <span className="text-gray-700 dark:text-gray-300">{f.filename}</span>
-              <button onClick={() => deleteFile(f.filename)} className="text-xs text-red-500 hover:underline">Eliminar</button>
+            <div key={f.filename} className="flex items-center justify-between py-2 px-3 bg-white/[0.03] rounded-lg border border-white/[0.05]">
+              <span className="text-[12px] text-gray-300">{f.filename}</span>
+              <button onClick={() => deleteFile(f.filename)} className="text-[11px] text-red-500 hover:text-red-400 transition">Eliminar</button>
             </div>
           ))}
         </div>
       )}
-    </div>
+    </SectionCard>
   );
 }
 
@@ -157,7 +142,7 @@ function ObjetivosPanel({ storeId }) {
 
   useEffect(() => {
     api.get(`/api/stores/${storeId}`).then(({ data }) => {
-      if (data.objetivos) setObj({ ...obj, ...data.objetivos });
+      if (data.objetivos) setObj((prev) => ({ ...prev, ...data.objetivos }));
     }).catch(() => {});
   }, [storeId]);
 
@@ -184,8 +169,8 @@ function ObjetivosPanel({ storeId }) {
     { key: 'profitMarginMin', label: 'Margen Profit Mín.', suffix: '%', step: 1 },
     { key: 'aovTarget', label: 'AOV Target', prefix: '$', step: 100 },
     { key: 'ncPctTarget', label: 'NC % Target', suffix: '%', step: 1 },
-    { key: 'conversionRateTarget', label: 'Tasa Conversión Target', suffix: '%', step: 0.1 },
-    { key: 'tasaDevolucionMax', label: 'Tasa Devolución Máx.', suffix: '%', step: 1 },
+    { key: 'conversionRateTarget', label: 'CVR Target', suffix: '%', step: 0.1 },
+    { key: 'tasaDevolucionMax', label: 'Tasa Dev. Máx.', suffix: '%', step: 1 },
   ];
 
   const beFields = [
@@ -194,64 +179,62 @@ function ObjetivosPanel({ storeId }) {
     { key: 'aovMinimo', label: 'AOV Mínimo', prefix: '$', step: 100 },
   ];
 
-  return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60 p-4">
-      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase">Objetivos y KPIs</h3>
+  function NumInput({ value, onChange, step, prefix, suffix }) {
+    return (
+      <div className="flex items-center gap-1">
+        {prefix && <span className="text-[11px] text-gray-600">{prefix}</span>}
+        <input type="number" step={step} value={value ?? ''} onChange={(e) => onChange(e.target.value)} className="input-dark w-full" placeholder="—" />
+        {suffix && <span className="text-[11px] text-gray-600">{suffix}</span>}
+      </div>
+    );
+  }
 
+  return (
+    <SectionCard title="Objetivos y KPIs">
       <div className="mb-4">
-        <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">Fase de la tienda</label>
-        <select value={obj.fase} onChange={(e) => setObj({ ...obj, fase: e.target.value })} className="w-full px-3 py-2 text-sm border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100">
+        <label className="kpi-label mb-1 block">Fase de la tienda</label>
+        <select value={obj.fase} onChange={(e) => setObj({ ...obj, fase: e.target.value })} className="input-dark w-full">
           {FASES.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
         </select>
       </div>
 
-      <p className="text-xs text-gray-400 mb-2">KPIs Target</p>
+      <p className="text-[11px] text-gray-600 mb-2 uppercase tracking-wider">KPIs Target</p>
       <div className="grid grid-cols-3 gap-3 mb-4">
         {kpiFields.map((f) => (
           <div key={f.key}>
-            <label className="text-xs text-gray-500 dark:text-gray-400">{f.label}</label>
-            <div className="flex items-center gap-1 mt-1">
-              {f.prefix && <span className="text-xs text-gray-400">{f.prefix}</span>}
-              <input type="number" step={f.step} value={obj.kpis[f.key] ?? ''} onChange={(e) => updateKpi(f.key, e.target.value)} className="w-full px-2 py-1.5 text-sm border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100" placeholder="—" />
-              {f.suffix && <span className="text-xs text-gray-400">{f.suffix}</span>}
-            </div>
+            <label className="kpi-label mb-1 block">{f.label}</label>
+            <NumInput value={obj.kpis[f.key]} onChange={(v) => updateKpi(f.key, v)} step={f.step} prefix={f.prefix} suffix={f.suffix} />
           </div>
         ))}
       </div>
 
-      <p className="text-xs text-gray-400 mb-2">Breakeven</p>
+      <p className="text-[11px] text-gray-600 mb-2 uppercase tracking-wider">Breakeven</p>
       <div className="grid grid-cols-3 gap-3 mb-4">
         {beFields.map((f) => (
           <div key={f.key}>
-            <label className="text-xs text-gray-500 dark:text-gray-400">{f.label}</label>
-            <div className="flex items-center gap-1 mt-1">
-              {f.prefix && <span className="text-xs text-gray-400">{f.prefix}</span>}
-              <input type="number" step={f.step} value={obj.breakeven[f.key] ?? ''} onChange={(e) => updateBe(f.key, e.target.value)} className="w-full px-2 py-1.5 text-sm border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100" placeholder="—" />
-              {f.suffix && <span className="text-xs text-gray-400">{f.suffix}</span>}
-            </div>
+            <label className="kpi-label mb-1 block">{f.label}</label>
+            <NumInput value={obj.breakeven[f.key]} onChange={(v) => updateBe(f.key, v)} step={f.step} prefix={f.prefix} suffix={f.suffix} />
           </div>
         ))}
       </div>
 
-      <p className="text-xs text-gray-400 mb-2">Umbrales de alerta (% desviación del target)</p>
+      <p className="text-[11px] text-gray-600 mb-2 uppercase tracking-wider">Umbrales de alerta (% desviación del target)</p>
       <div className="grid grid-cols-2 gap-3 mb-4">
         <div>
-          <label className="text-xs text-gray-500">Warning (%)</label>
-          <input type="number" step="1" value={obj.alertThresholds?.warningPct ?? 10} onChange={(e) => updateAt('warningPct', e.target.value)} className="w-full mt-1 px-2 py-1.5 text-sm border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100" />
+          <label className="kpi-label mb-1 block">Warning (%)</label>
+          <input type="number" step="1" value={obj.alertThresholds?.warningPct ?? 10} onChange={(e) => updateAt('warningPct', e.target.value)} className="input-dark w-full" />
         </div>
         <div>
-          <label className="text-xs text-gray-500">Critical (%)</label>
-          <input type="number" step="1" value={obj.alertThresholds?.criticalPct ?? 25} onChange={(e) => updateAt('criticalPct', e.target.value)} className="w-full mt-1 px-2 py-1.5 text-sm border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100" />
+          <label className="kpi-label mb-1 block">Critical (%)</label>
+          <input type="number" step="1" value={obj.alertThresholds?.criticalPct ?? 25} onChange={(e) => updateAt('criticalPct', e.target.value)} className="input-dark w-full" />
         </div>
       </div>
 
       <div className="flex items-center gap-3">
-        <button onClick={save} disabled={saving} className="px-3 py-1.5 bg-primary-600 text-white text-xs rounded hover:bg-primary-700 disabled:opacity-50 transition font-medium">
-          {saving ? 'Guardando...' : 'Guardar objetivos'}
-        </button>
-        {msg && <span className={`text-xs font-medium ${msg.ok ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>{msg.text}</span>}
+        <button onClick={save} disabled={saving} className="btn-primary disabled:opacity-50">{saving ? 'Guardando...' : 'Guardar objetivos'}</button>
+        {msg && <span className={`text-[12px] font-medium ${msg.ok ? 'text-emerald-400' : 'text-red-400'}`}>{msg.text}</span>}
       </div>
-    </div>
+    </SectionCard>
   );
 }
 
@@ -261,9 +244,7 @@ function CotizacionDolarPanel({ storeId }) {
   const [msg, setMsg] = useState(null);
 
   useEffect(() => {
-    api.get(`/api/stores/${storeId}`).then(({ data }) => {
-      setCotizacion(data.cotizacionDolar || 0);
-    }).catch(() => {});
+    api.get(`/api/stores/${storeId}`).then(({ data }) => setCotizacion(data.cotizacionDolar || 0)).catch(() => {});
   }, [storeId]);
 
   const save = async () => {
@@ -278,21 +259,18 @@ function CotizacionDolarPanel({ storeId }) {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60 p-4">
-      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase">Cotización USD</h3>
-      <p className="text-xs text-gray-400 mb-3">Tipo de cambio para convertir Ad Spend (USD) a ARS. Se usa en cálculos de ROAS real, CPA y márgenes.</p>
+    <SectionCard title="Cotización USD">
+      <p className="text-[12px] text-gray-600 mb-3">Tipo de cambio para convertir Ad Spend (USD) a ARS.</p>
       <div className="flex items-center gap-3">
-        <div className="flex items-center gap-1">
-          <span className="text-sm text-gray-500">1 USD =</span>
-          <input type="number" step="1" value={cotizacion} onChange={(e) => setCotizacion(+e.target.value)} className="w-28 px-3 py-2 text-sm border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100" />
-          <span className="text-sm text-gray-500">ARS</span>
+        <div className="flex items-center gap-2">
+          <span className="text-[13px] text-gray-500">1 USD =</span>
+          <input type="number" step="1" value={cotizacion} onChange={(e) => setCotizacion(+e.target.value)} className="input-dark w-28" />
+          <span className="text-[13px] text-gray-500">ARS</span>
         </div>
-        <button onClick={save} disabled={saving} className="px-3 py-1.5 bg-primary-600 text-white text-xs rounded hover:bg-primary-700 disabled:opacity-50 transition font-medium">
-          {saving ? '...' : 'Guardar'}
-        </button>
-        {msg && <span className={`text-xs font-medium ${msg.ok ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>{msg.text}</span>}
+        <button onClick={save} disabled={saving} className="btn-primary disabled:opacity-50">{saving ? '...' : 'Guardar'}</button>
+        {msg && <span className={`text-[12px] font-medium ${msg.ok ? 'text-emerald-400' : 'text-red-400'}`}>{msg.text}</span>}
       </div>
-    </div>
+    </SectionCard>
   );
 }
 
@@ -327,17 +305,11 @@ function AdVerdictThresholdsPanel({ storeId }) {
     }).catch(() => {});
   }, [storeId]);
 
-  const update = (cat, key, val) => {
-    setThresholds((prev) => ({
-      ...prev,
-      [cat]: { ...prev[cat], [key]: val === '' ? '' : Number(val) },
-    }));
-  };
+  const update = (cat, key, val) => setThresholds((prev) => ({ ...prev, [cat]: { ...prev[cat], [key]: val === '' ? '' : Number(val) } }));
 
   const save = async () => {
     setSaving(true); setMsg(null);
     try {
-      // Clean empty strings to undefined
       const clean = {};
       for (const cat of Object.keys(thresholds)) {
         clean[cat] = {};
@@ -379,52 +351,51 @@ function AdVerdictThresholdsPanel({ storeId }) {
   };
 
   const categories = [
-    { cat: 'escalar', label: 'ESCALAR', color: 'text-green-600 dark:text-green-400', fields: [
+    { cat: 'escalar', label: 'ESCALAR', color: 'text-emerald-400', fields: [
       { key: 'roasMin', label: 'ROAS mín.', suffix: 'x', step: 0.1 },
       { key: 'minSpend', label: 'Gasto mín.', prefix: '$', step: 1000 },
       { key: 'minPurchases', label: 'Compras mín.', step: 1 },
     ]},
-    { cat: 'mantener', label: 'MANTENER', color: 'text-gray-600 dark:text-gray-400', fields: [
+    { cat: 'mantener', label: 'MANTENER', color: 'text-gray-400', fields: [
       { key: 'roasMin', label: 'ROAS mín.', suffix: 'x', step: 0.1 },
       { key: 'minSpend', label: 'Gasto mín.', prefix: '$', step: 1000 },
     ]},
-    { cat: 'revisar', label: 'REVISAR', color: 'text-orange-600 dark:text-orange-400', fields: [
+    { cat: 'revisar', label: 'REVISAR', color: 'text-amber-400', fields: [
       { key: 'roasMin', label: 'ROAS mín.', suffix: 'x', step: 0.1 },
       { key: 'cpaMaxPct', label: 'CPA máx. vs target', suffix: '%', step: 10 },
     ]},
-    { cat: 'pausar', label: 'PAUSAR', color: 'text-red-600 dark:text-red-400', fields: [
+    { cat: 'pausar', label: 'PAUSAR', color: 'text-red-400', fields: [
       { key: 'roasMax', label: 'ROAS máx.', suffix: 'x', step: 0.1 },
       { key: 'minSpend', label: 'Gasto mín. para pausar', prefix: '$', step: 1000 },
       { key: 'minDays', label: 'Días mín. activo', step: 1 },
     ]},
-    { cat: 'testear', label: 'TESTEAR', color: 'text-blue-600 dark:text-blue-400', fields: [
+    { cat: 'testear', label: 'TESTEAR', color: 'text-blue-400', fields: [
       { key: 'maxSpend', label: 'Gasto máx. (poco data)', prefix: '$', step: 1000 },
       { key: 'maxPurchases', label: 'Compras máx. (poco data)', step: 1 },
     ]},
   ];
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60 p-4">
+    <SectionCard title="Umbrales de veredicto de Ads">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase">Umbrales de veredicto de Ads</h3>
-        <button onClick={generateWithAI} disabled={generating} className="text-xs px-2 py-1 bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400 rounded hover:bg-violet-200 dark:hover:bg-violet-800/40 disabled:opacity-50 font-medium">
+        <p className="text-[12px] text-gray-600">Definí cuándo un anuncio se clasifica como ESCALAR, PAUSAR, etc. Podés generar con AI basado en tu data histórica.</p>
+        <button onClick={generateWithAI} disabled={generating} className="btn-ghost text-[12px] disabled:opacity-50">
           {generating ? 'Generando...' : 'Generar con AI'}
         </button>
       </div>
-      <p className="text-xs text-gray-400 mb-4">Definí cuándo un anuncio se clasifica como ESCALAR, PAUSAR, etc. Si dejás vacío se usan valores por defecto. Podés generar con AI basado en tu data histórica.</p>
 
-      <div className="space-y-4">
+      <div className="space-y-3">
         {categories.map((c) => (
-          <div key={c.cat} className="p-3 rounded-lg bg-gray-50 dark:bg-gray-750 border border-gray-100 dark:border-gray-700/60">
-            <p className={`text-xs font-bold mb-2 ${c.color}`}>{c.label}</p>
+          <div key={c.cat} className="p-3.5 rounded-lg bg-white/[0.03] border border-white/[0.05]">
+            <p className={`text-[11px] font-bold mb-2.5 ${c.color}`}>{c.label}</p>
             <div className="grid grid-cols-3 gap-2">
               {c.fields.map((f) => (
                 <div key={f.key}>
-                  <label className="text-xs text-gray-500">{f.label}</label>
-                  <div className="flex items-center gap-1 mt-0.5">
-                    {f.prefix && <span className="text-xs text-gray-400">{f.prefix}</span>}
-                    <input type="number" step={f.step} value={thresholds[c.cat][f.key]} onChange={(e) => update(c.cat, f.key, e.target.value)} className="w-full px-2 py-1 text-sm border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100" placeholder="auto" />
-                    {f.suffix && <span className="text-xs text-gray-400">{f.suffix}</span>}
+                  <label className="kpi-label mb-1 block">{f.label}</label>
+                  <div className="flex items-center gap-1">
+                    {f.prefix && <span className="text-[11px] text-gray-600">{f.prefix}</span>}
+                    <input type="number" step={f.step} value={thresholds[c.cat][f.key]} onChange={(e) => update(c.cat, f.key, e.target.value)} className="input-dark w-full" placeholder="auto" />
+                    {f.suffix && <span className="text-[11px] text-gray-600">{f.suffix}</span>}
                   </div>
                 </div>
               ))}
@@ -434,12 +405,10 @@ function AdVerdictThresholdsPanel({ storeId }) {
       </div>
 
       <div className="flex items-center gap-3 mt-4">
-        <button onClick={save} disabled={saving} className="px-3 py-1.5 bg-primary-600 text-white text-xs rounded hover:bg-primary-700 disabled:opacity-50 transition font-medium">
-          {saving ? 'Guardando...' : 'Guardar umbrales'}
-        </button>
-        {msg && <span className={`text-xs font-medium ${msg.ok ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>{msg.text}</span>}
+        <button onClick={save} disabled={saving} className="btn-primary disabled:opacity-50">{saving ? 'Guardando...' : 'Guardar umbrales'}</button>
+        {msg && <span className={`text-[12px] font-medium ${msg.ok ? 'text-emerald-400' : 'text-red-400'}`}>{msg.text}</span>}
       </div>
-    </div>
+    </SectionCard>
   );
 }
 
@@ -479,18 +448,14 @@ function MetricSelectorSection({ storeId }) {
     if (selected.includes(key)) {
       setSelected(selected.filter((k) => k !== key));
     } else {
-      if (selected.length >= 5) {
-        setLimitMsg(true);
-        return;
-      }
+      if (selected.length >= 5) { setLimitMsg(true); return; }
       setSelected([...selected, key]);
     }
     setMsg(null);
   };
 
   const save = async () => {
-    setSaving(true);
-    setMsg(null);
+    setSaving(true); setMsg(null);
     try {
       await api.put(`/api/stores/${storeId}`, { metricasHome: selected });
       setMsg({ ok: true, text: 'Métricas guardadas' });
@@ -501,46 +466,25 @@ function MetricSelectorSection({ storeId }) {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60 p-4">
-      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase">Métricas de Home</h3>
-      <p className="text-xs text-gray-400 dark:text-gray-500 mb-3">
-        Elegí hasta 5 métricas para mostrar en la tarjeta de Home de esta tienda.
-      </p>
+    <SectionCard title="Métricas de Home">
+      <p className="text-[12px] text-gray-600 mb-3">Elegí hasta 5 métricas para mostrar en la tarjeta de Home de esta tienda.</p>
       <div className="grid grid-cols-2 gap-y-2 gap-x-4 mb-3">
-        {ALL_METRICS.map((m) => {
-          const isChecked = selected.includes(m.key);
-          return (
-            <label key={m.key} className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={isChecked}
-                onChange={() => toggle(m.key)}
-                className="accent-indigo-600 w-4 h-4 cursor-pointer"
-              />
-              <span className="text-sm text-gray-700 dark:text-gray-300">{m.label}</span>
-            </label>
-          );
-        })}
+        {ALL_METRICS.map((m) => (
+          <label key={m.key} className="flex items-center gap-2.5 cursor-pointer group">
+            <input type="checkbox" checked={selected.includes(m.key)} onChange={() => toggle(m.key)} className="w-4 h-4 accent-blue-500 rounded" />
+            <span className="text-[13px] text-gray-400 group-hover:text-gray-200 transition">{m.label}</span>
+          </label>
+        ))}
       </div>
-      {limitMsg && (
-        <p className="text-xs text-amber-600 dark:text-amber-400 mb-2">Máximo 5 métricas</p>
-      )}
+      {limitMsg && <p className="text-[12px] text-amber-400 mb-2">Máximo 5 métricas</p>}
       <div className="flex items-center gap-3">
-        <button
-          onClick={save}
-          disabled={saving || selected.length === 0}
-          className="px-3 py-1.5 bg-primary-600 text-white text-xs rounded hover:bg-primary-700 disabled:opacity-50 transition font-medium"
-        >
+        <button onClick={save} disabled={saving || selected.length === 0} className="btn-primary disabled:opacity-50">
           {saving ? 'Guardando...' : 'Guardar métricas'}
         </button>
-        <span className="text-xs text-gray-400 dark:text-gray-500">{selected.length}/5 seleccionadas</span>
-        {msg && (
-          <span className={`text-xs font-medium ${msg.ok ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-            {msg.text}
-          </span>
-        )}
+        <span className="text-[12px] text-gray-600">{selected.length}/5 seleccionadas</span>
+        {msg && <span className={`text-[12px] font-medium ${msg.ok ? 'text-emerald-400' : 'text-red-400'}`}>{msg.text}</span>}
       </div>
-    </div>
+    </SectionCard>
   );
 }
 
@@ -550,13 +494,9 @@ export default function Settings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
-
-  // TN manual connection
   const [tnToken, setTnToken] = useState('');
   const [tnStoreIdInput, setTnStoreIdInput] = useState('');
   const [connectingTN, setConnectingTN] = useState(false);
-
-  // Editable fields
   const [tasaIBB, setTasaIBB] = useState(0);
   const [feePlataformaPct, setFeePlataformaPct] = useState(0);
   const [comisiones, setComisiones] = useState([]);
@@ -572,14 +512,9 @@ export default function Settings() {
   }, [storeId]);
 
   const handleSave = async () => {
-    setSaving(true);
-    setMessage(null);
+    setSaving(true); setMessage(null);
     try {
-      await api.put(`/api/stores/${storeId}/settings/costos`, {
-        tasaIBB,
-        feePlataformaPct,
-        comisionPagoConfig: comisiones,
-      });
+      await api.put(`/api/stores/${storeId}/settings/costos`, { tasaIBB, feePlataformaPct, comisionPagoConfig: comisiones });
       setMessage('Guardado. Recalculando órdenes en background...');
     } catch (err) {
       setMessage(`Error: ${err.response?.data?.error || err.message}`);
@@ -587,38 +522,34 @@ export default function Settings() {
     setSaving(false);
   };
 
-  const addComision = () => {
-    setComisiones([...comisiones, { medioPago: '', cuotas: 1, comisionBase: 0, comisionCuotas: 0 }]);
-  };
-
+  const addComision = () => setComisiones([...comisiones, { medioPago: '', cuotas: 1, comisionBase: 0, comisionCuotas: 0 }]);
   const updateComision = (idx, field, value) => {
     const updated = [...comisiones];
     updated[idx] = { ...updated[idx], [field]: field === 'medioPago' ? value : Number(value) };
     setComisiones(updated);
   };
+  const removeComision = (idx) => setComisiones(comisiones.filter((_, i) => i !== idx));
 
-  const removeComision = (idx) => {
-    setComisiones(comisiones.filter((_, i) => i !== idx));
-  };
-
-  if (loading) return <div className="text-center py-12 text-gray-500">Cargando settings...</div>;
+  if (loading) return <div className="text-center py-12 text-[13px] text-gray-600">Cargando settings...</div>;
 
   return (
     <div className="space-y-5 max-w-3xl">
-      <p className="section-label">Settings — {store?.nombre}</p>
+      <div>
+        <h1 className="page-title">Settings</h1>
+        <p className="page-subtitle">{store?.nombre} — Configuración de integraciones, objetivos y costos.</p>
+      </div>
 
-      {/* Integrations status */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60 p-4">
-        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase">Integraciones</h3>
+      {/* Integrations */}
+      <SectionCard title="Integraciones">
         <div className="space-y-4">
           {/* TiendaNube */}
           <div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className={`w-2.5 h-2.5 rounded-full ${store?.integrationStatus?.tiendanube?.connected ? 'bg-green-500' : 'bg-gray-300'}`} />
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">TiendaNube</span>
+                <span className={`w-2 h-2 rounded-full ${store?.integrationStatus?.tiendanube?.connected ? 'bg-emerald-500' : 'bg-gray-600'}`} />
+                <span className="text-[13px] font-medium text-white">TiendaNube</span>
                 {store?.integrationStatus?.tiendanube?.connected && (
-                  <span className="text-xs text-gray-400 ml-1">
+                  <span className="text-[11px] text-gray-500">
                     (Store ID: {store?.tnStoreId})
                     {store?.integrationStatus?.tiendanube?.lastSync && (
                       <> — Sync: {new Date(store.integrationStatus.tiendanube.lastSync).toLocaleString('es-AR')}</>
@@ -627,66 +558,44 @@ export default function Settings() {
                 )}
               </div>
               {store?.integrationStatus?.tiendanube?.connected ? (
-                <span className="text-xs px-2 py-1 rounded bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 font-medium">Conectada</span>
+                <span className="badge-green">Conectada</span>
               ) : (
-                <span className="text-xs text-gray-400">No conectada</span>
+                <span className="text-[11px] text-gray-600">No conectada</span>
               )}
             </div>
 
-            {/* Manual TN connection form — always shown when not connected */}
             {!store?.integrationStatus?.tiendanube?.connected && (
-              <div className="mt-3 p-4 rounded-lg bg-gray-50 dark:bg-gray-750 border border-gray-200 dark:border-gray-600">
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
-                  Pegá el Access Token y Store ID de TiendaNube. Los podés encontrar en las variables de entorno de tu app (ej: Railway) o en el panel de TiendaNube Partners.
+              <div className="mt-3 p-4 rounded-lg bg-white/[0.03] border border-white/[0.06] space-y-3">
+                <p className="text-[12px] text-gray-500">
+                  Pegá el Access Token y Store ID de TiendaNube.
                 </p>
-                <div className="space-y-3">
-                  <div>
-                    <label className="text-xs font-medium text-gray-600 dark:text-gray-400">Access Token</label>
-                    <input
-                      type="text"
-                      value={tnToken}
-                      onChange={(e) => setTnToken(e.target.value)}
-                      placeholder="ej: 1a2b3c4d5e6f7g8h..."
-                      className="w-full mt-1 px-3 py-2 text-sm border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 font-mono"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-gray-600 dark:text-gray-400">Store ID (user_id)</label>
-                    <input
-                      type="text"
-                      value={tnStoreIdInput}
-                      onChange={(e) => setTnStoreIdInput(e.target.value)}
-                      placeholder="ej: 1234567"
-                      className="w-full mt-1 px-3 py-2 text-sm border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 font-mono"
-                    />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={async () => {
-                        if (!tnToken.trim() || !tnStoreIdInput.trim()) return;
-                        setConnectingTN(true);
-                        setMessage(null);
-                        try {
-                          const { data } = await api.post(`/api/stores/${storeId}/connect-tn-manual`, {
-                            tnAccessToken: tnToken.trim(),
-                            tnStoreId: tnStoreIdInput.trim(),
-                          });
-                          setMessage(data.message);
-                          // Refresh store data
-                          const { data: updated } = await api.get(`/api/stores/${storeId}`);
-                          setStore(updated);
-                        } catch (err) {
-                          setMessage(`Error: ${err.response?.data?.error || err.message}`);
-                        }
-                        setConnectingTN(false);
-                      }}
-                      disabled={connectingTN || !tnToken.trim() || !tnStoreIdInput.trim()}
-                      className="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 disabled:opacity-50 transition font-medium"
-                    >
-                      {connectingTN ? 'Conectando...' : 'Conectar y sincronizar'}
-                    </button>
-                  </div>
+                <div>
+                  <label className="kpi-label mb-1 block">Access Token</label>
+                  <input type="text" value={tnToken} onChange={(e) => setTnToken(e.target.value)} placeholder="ej: 1a2b3c4d..." className="input-dark w-full font-mono" />
                 </div>
+                <div>
+                  <label className="kpi-label mb-1 block">Store ID (user_id)</label>
+                  <input type="text" value={tnStoreIdInput} onChange={(e) => setTnStoreIdInput(e.target.value)} placeholder="ej: 1234567" className="input-dark w-full font-mono" />
+                </div>
+                <button
+                  onClick={async () => {
+                    if (!tnToken.trim() || !tnStoreIdInput.trim()) return;
+                    setConnectingTN(true); setMessage(null);
+                    try {
+                      const { data } = await api.post(`/api/stores/${storeId}/connect-tn-manual`, { tnAccessToken: tnToken.trim(), tnStoreId: tnStoreIdInput.trim() });
+                      setMessage(data.message);
+                      const { data: updated } = await api.get(`/api/stores/${storeId}`);
+                      setStore(updated);
+                    } catch (err) {
+                      setMessage(`Error: ${err.response?.data?.error || err.message}`);
+                    }
+                    setConnectingTN(false);
+                  }}
+                  disabled={connectingTN || !tnToken.trim() || !tnStoreIdInput.trim()}
+                  className="btn-primary disabled:opacity-50"
+                >
+                  {connectingTN ? 'Conectando...' : 'Conectar y sincronizar'}
+                </button>
               </div>
             )}
           </div>
@@ -694,101 +603,88 @@ export default function Settings() {
           {/* Meta Ads */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className={`w-2.5 h-2.5 rounded-full ${store?.integrationStatus?.metaAds?.connected ? 'bg-green-500' : 'bg-gray-300'}`} />
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Meta Ads</span>
+              <span className={`w-2 h-2 rounded-full ${store?.integrationStatus?.metaAds?.connected ? 'bg-emerald-500' : 'bg-gray-600'}`} />
+              <span className="text-[13px] font-medium text-white">Meta Ads</span>
             </div>
             {store?.integrationStatus?.metaAds?.connected ? (
-              <span className="text-xs px-2 py-1 rounded bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 font-medium">Conectada</span>
+              <span className="badge-green">Conectada</span>
             ) : (
-              <span className="text-xs text-gray-400">Usá la importación CSV desde la pestaña Meta Ads</span>
+              <span className="text-[11px] text-gray-600">Usá la importación CSV desde la pestaña Meta Ads</span>
             )}
           </div>
         </div>
-      </div>
+      </SectionCard>
 
-      {/* AI Configuration */}
       <AIConfigSection />
-
-      {/* Store AI Context */}
       <StoreAIContextSection storeId={storeId} />
-
-      {/* Objetivos y KPIs */}
       <ObjetivosPanel storeId={storeId} />
-
-      {/* Cotización USD */}
       <CotizacionDolarPanel storeId={storeId} />
-
-      {/* Ad Verdict Thresholds */}
       <AdVerdictThresholdsPanel storeId={storeId} />
-
-      {/* Home metric selector */}
       <MetricSelectorSection storeId={storeId} />
 
       {/* Financial config */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60 p-4">
-        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase">Configuración financiera</h3>
+      <SectionCard title="Configuración financiera">
         <div className="grid grid-cols-2 gap-4 mb-4">
           <div>
-            <label className="text-xs text-gray-500">Tasa IBB (%)</label>
-            <input type="number" step="0.1" value={tasaIBB} onChange={(e) => setTasaIBB(+e.target.value)} className="w-full mt-1 px-3 py-2 text-sm border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100" />
+            <label className="kpi-label mb-1 block">Tasa IBB (%)</label>
+            <input type="number" step="0.1" value={tasaIBB} onChange={(e) => setTasaIBB(+e.target.value)} className="input-dark w-full" />
           </div>
           <div>
-            <label className="text-xs text-gray-500">Fee Plataforma (%)</label>
-            <input type="number" step="0.1" value={feePlataformaPct} onChange={(e) => setFeePlataformaPct(+e.target.value)} className="w-full mt-1 px-3 py-2 text-sm border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100" />
+            <label className="kpi-label mb-1 block">Fee Plataforma (%)</label>
+            <input type="number" step="0.1" value={feePlataformaPct} onChange={(e) => setFeePlataformaPct(+e.target.value)} className="input-dark w-full" />
           </div>
         </div>
-      </div>
+      </SectionCard>
 
-      {/* Comisiones de pago */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60 p-4">
+      {/* Comisiones */}
+      <SectionCard title="Comisiones de pago">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase">Comisiones de pago</h3>
-          <button onClick={addComision} className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-400">
-            + Agregar
-          </button>
+          <span />
+          <button onClick={addComision} className="btn-ghost text-[12px]">+ Agregar</button>
         </div>
-
         {comisiones.length === 0 ? (
-          <p className="text-sm text-gray-400">Sin comisiones configuradas.</p>
+          <p className="text-[13px] text-gray-600">Sin comisiones configuradas.</p>
         ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-xs text-gray-500">
-                <th className="text-left py-1">Medio de pago</th>
-                <th className="text-left py-1">Cuotas</th>
-                <th className="text-left py-1">Comisión base %</th>
-                <th className="text-left py-1">Comisión cuotas %</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {comisiones.map((c, i) => (
-                <tr key={i} className="border-t border-gray-100 dark:border-gray-700/60">
-                  <td className="py-1">
-                    <select value={c.medioPago} onChange={(e) => updateComision(i, 'medioPago', e.target.value)} className="px-2 py-1 text-sm border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100">
-                      <option value="">Seleccionar</option>
-                      {['mercadopago', 'visa', 'mastercard', 'amex', 'debito', 'transferencia', 'efectivo', 'otro'].map((mp) => (
-                        <option key={mp} value={mp}>{mp}</option>
-                      ))}
-                    </select>
-                  </td>
-                  <td className="py-1"><input type="number" value={c.cuotas} onChange={(e) => updateComision(i, 'cuotas', e.target.value)} className="w-16 px-2 py-1 text-sm border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100" /></td>
-                  <td className="py-1"><input type="number" step="0.1" value={c.comisionBase} onChange={(e) => updateComision(i, 'comisionBase', e.target.value)} className="w-20 px-2 py-1 text-sm border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100" /></td>
-                  <td className="py-1"><input type="number" step="0.1" value={c.comisionCuotas} onChange={(e) => updateComision(i, 'comisionCuotas', e.target.value)} className="w-20 px-2 py-1 text-sm border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100" /></td>
-                  <td className="py-1"><button onClick={() => removeComision(i)} className="text-red-500 text-xs hover:underline">X</button></td>
+          <div className="overflow-x-auto">
+            <table className="w-full table-dark">
+              <thead>
+                <tr>
+                  <th className="text-left">Medio de pago</th>
+                  <th className="text-left">Cuotas</th>
+                  <th className="text-left">Com. base %</th>
+                  <th className="text-left">Com. cuotas %</th>
+                  <th />
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {comisiones.map((c, i) => (
+                  <tr key={i}>
+                    <td>
+                      <select value={c.medioPago} onChange={(e) => updateComision(i, 'medioPago', e.target.value)} className="input-dark">
+                        <option value="">Seleccionar</option>
+                        {['mercadopago', 'visa', 'mastercard', 'amex', 'debito', 'transferencia', 'efectivo', 'otro'].map((mp) => (
+                          <option key={mp} value={mp}>{mp}</option>
+                        ))}
+                      </select>
+                    </td>
+                    <td><input type="number" value={c.cuotas} onChange={(e) => updateComision(i, 'cuotas', e.target.value)} className="input-dark w-16" /></td>
+                    <td><input type="number" step="0.1" value={c.comisionBase} onChange={(e) => updateComision(i, 'comisionBase', e.target.value)} className="input-dark w-20" /></td>
+                    <td><input type="number" step="0.1" value={c.comisionCuotas} onChange={(e) => updateComision(i, 'comisionCuotas', e.target.value)} className="input-dark w-20" /></td>
+                    <td><button onClick={() => removeComision(i)} className="text-[11px] text-red-500 hover:text-red-400">✕</button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
-      </div>
+      </SectionCard>
 
       {/* Save */}
       <div className="flex items-center gap-3">
-        <button onClick={handleSave} disabled={saving} className="px-4 py-2 bg-primary-600 text-white text-sm rounded hover:bg-primary-700 disabled:opacity-50">
+        <button onClick={handleSave} disabled={saving} className="btn-primary disabled:opacity-50">
           {saving ? 'Guardando...' : 'Guardar y recalcular'}
         </button>
-        {message && <span className="text-sm text-gray-600 dark:text-gray-400">{message}</span>}
+        {message && <span className="text-[13px] text-gray-400">{message}</span>}
       </div>
     </div>
   );

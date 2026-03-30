@@ -12,7 +12,6 @@ export default function UserProfile() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  // AI Config
   const [provider, setProvider] = useState('anthropic');
   const [apiKey, setApiKey] = useState('');
   const [hasApiKey, setHasApiKey] = useState(false);
@@ -22,19 +21,13 @@ export default function UserProfile() {
   const [configMsg, setConfigMsg] = useState(null);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState(null);
-
-  // Global instructions
   const [instructions, setInstructions] = useState('');
   const [savingInstructions, setSavingInstructions] = useState(false);
   const [instrMsg, setInstrMsg] = useState(null);
-
-  // Files
   const [files, setFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
 
-  useEffect(() => {
-    loadConfig();
-  }, []);
+  useEffect(() => { loadConfig(); }, []);
 
   const loadConfig = async () => {
     try {
@@ -45,9 +38,7 @@ export default function UserProfile() {
       setModelChat(data.modelChat || '');
       setInstructions(data.globalInstructions || '');
       setFiles(data.globalFiles || []);
-    } catch {
-      // ignore — new user
-    }
+    } catch {}
   };
 
   const saveConfig = async () => {
@@ -125,162 +116,104 @@ export default function UserProfile() {
     : { analysis: 'gpt-4o', chat: 'gpt-4o-mini' };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-[#0a0a0a]">
       {/* Header */}
-      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700/60 px-4 py-3">
+      <header className="bg-[#0f0f0f] border-b border-white/[0.06] px-4 py-3">
         <div className="max-w-3xl mx-auto flex items-center justify-between">
-          <button onClick={() => navigate('/')} className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1">
-            &larr; Volver
+          <button onClick={() => navigate('/')} className="text-[13px] text-blue-400 hover:text-blue-300 flex items-center gap-1 transition">
+            ← Volver
           </button>
-          <p className="section-label">Mi perfil</p>
+          <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Mi perfil</p>
           <div className="w-16" />
         </div>
       </header>
 
       <div className="max-w-3xl mx-auto p-6 space-y-5">
         {/* User info */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60 p-5">
-          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase mb-3">Cuenta</h2>
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <span className="text-gray-500 dark:text-gray-400">Nombre:</span>
-              <span className="ml-2 text-gray-900 dark:text-gray-100 font-medium">{user?.nombre}</span>
-            </div>
-            <div>
-              <span className="text-gray-500 dark:text-gray-400">Email:</span>
-              <span className="ml-2 text-gray-900 dark:text-gray-100 font-medium">{user?.email}</span>
-            </div>
-            <div>
-              <span className="text-gray-500 dark:text-gray-400">Rol:</span>
-              <span className="ml-2 text-gray-900 dark:text-gray-100 font-medium capitalize">{user?.role}</span>
-            </div>
+        <div className="card p-5">
+          <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-4">Cuenta</p>
+          <div className="grid grid-cols-2 gap-4">
+            {[
+              { label: 'Nombre', value: user?.nombre },
+              { label: 'Email', value: user?.email },
+              { label: 'Rol', value: user?.role },
+            ].map(({ label, value }) => (
+              <div key={label}>
+                <p className="kpi-label">{label}</p>
+                <p className="text-[13px] text-white font-medium mt-0.5 capitalize">{value || '—'}</p>
+              </div>
+            ))}
           </div>
         </div>
 
         {/* AI Configuration */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60 p-5">
-          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase mb-4">Configuración AI</h2>
-
+        <div className="card p-5">
+          <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-4">Configuración AI</p>
           <div className="space-y-4">
-            {/* Provider */}
             <div>
-              <label className="text-xs font-medium text-gray-600 dark:text-gray-400">Proveedor</label>
-              <select
-                value={provider}
-                onChange={(e) => setProvider(e.target.value)}
-                className="w-full mt-1 px-3 py-2 text-sm border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
-              >
-                {PROVIDERS.map((p) => (
-                  <option key={p.value} value={p.value}>{p.label}</option>
-                ))}
+              <label className="kpi-label mb-1 block">Proveedor</label>
+              <select value={provider} onChange={(e) => setProvider(e.target.value)} className="input-dark w-full">
+                {PROVIDERS.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
               </select>
             </div>
-
-            {/* API Key */}
             <div>
-              <label className="text-xs font-medium text-gray-600 dark:text-gray-400">API Key</label>
-              <div className="flex items-center gap-2 mt-1">
+              <label className="kpi-label mb-1 block">API Key</label>
+              <div className="flex items-center gap-2">
                 <input
                   type="password"
                   value={apiKey}
                   onChange={(e) => setApiKey(e.target.value)}
-                  placeholder={hasApiKey ? '••••••••  (ya configurada, dejar vacío para mantener)' : 'sk-...'}
-                  className="flex-1 px-3 py-2 text-sm border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 font-mono"
+                  placeholder={hasApiKey ? '••••••••  (ya configurada)' : 'sk-...'}
+                  className="input-dark flex-1 font-mono"
                 />
-                {hasApiKey && (
-                  <span className="text-xs text-green-600 dark:text-green-400 font-medium whitespace-nowrap">Configurada</span>
-                )}
+                {hasApiKey && <span className="text-[12px] text-emerald-400 font-medium whitespace-nowrap">Configurada</span>}
               </div>
-              <p className="text-xs text-gray-400 mt-1">
-                {provider === 'anthropic'
-                  ? 'Conseguila en console.anthropic.com'
-                  : 'Conseguila en platform.openai.com'}
+              <p className="text-[11px] text-gray-600 mt-1">
+                {provider === 'anthropic' ? 'Conseguila en console.anthropic.com' : 'Conseguila en platform.openai.com'}
               </p>
             </div>
-
-            {/* Models */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-xs font-medium text-gray-600 dark:text-gray-400">Modelo análisis</label>
-                <input
-                  type="text"
-                  value={modelAnalysis}
-                  onChange={(e) => setModelAnalysis(e.target.value)}
-                  placeholder={defaultModels.analysis}
-                  className="w-full mt-1 px-3 py-2 text-sm border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 font-mono"
-                />
+                <label className="kpi-label mb-1 block">Modelo análisis</label>
+                <input type="text" value={modelAnalysis} onChange={(e) => setModelAnalysis(e.target.value)} placeholder={defaultModels.analysis} className="input-dark w-full font-mono" />
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-600 dark:text-gray-400">Modelo chat</label>
-                <input
-                  type="text"
-                  value={modelChat}
-                  onChange={(e) => setModelChat(e.target.value)}
-                  placeholder={defaultModels.chat}
-                  className="w-full mt-1 px-3 py-2 text-sm border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 font-mono"
-                />
+                <label className="kpi-label mb-1 block">Modelo chat</label>
+                <input type="text" value={modelChat} onChange={(e) => setModelChat(e.target.value)} placeholder={defaultModels.chat} className="input-dark w-full font-mono" />
               </div>
             </div>
-
-            {/* Actions */}
-            <div className="flex items-center gap-3 pt-2">
-              <button
-                onClick={saveConfig}
-                disabled={savingConfig}
-                className="px-4 py-2 bg-primary-600 text-white text-sm rounded hover:bg-primary-700 disabled:opacity-50 transition font-medium"
-              >
+            <div className="flex items-center gap-3 pt-1">
+              <button onClick={saveConfig} disabled={savingConfig} className="btn-primary disabled:opacity-50">
                 {savingConfig ? 'Guardando...' : 'Guardar configuración'}
               </button>
-              <button
-                onClick={testConnection}
-                disabled={testing}
-                className="px-4 py-2 bg-primary-600 text-white text-sm rounded hover:bg-primary-700 disabled:opacity-50 transition font-medium"
-              >
+              <button onClick={testConnection} disabled={testing} className="btn-secondary disabled:opacity-50">
                 {testing ? 'Probando...' : 'Probar conexión'}
               </button>
             </div>
-
-            {configMsg && (
-              <p className={`text-xs font-medium ${configMsg.ok ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                {configMsg.text}
-              </p>
-            )}
-            {testResult && (
-              <p className={`text-xs font-medium ${testResult.ok ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                {testResult.text}
-              </p>
-            )}
+            {configMsg && <p className={`text-[12px] font-medium ${configMsg.ok ? 'text-emerald-400' : 'text-red-400'}`}>{configMsg.text}</p>}
+            {testResult && <p className={`text-[12px] font-medium ${testResult.ok ? 'text-emerald-400' : 'text-red-400'}`}>{testResult.text}</p>}
           </div>
         </div>
 
         {/* Global Instructions */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60 p-5">
-          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase mb-2">Instrucciones globales AI</h2>
-          <p className="text-xs text-gray-400 mb-3">
-            Estas instrucciones se aplican a todas las tiendas. Definí el tono, formato, enfoque o cualquier contexto que la AI deba tener en cuenta.
+        <div className="card p-5">
+          <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Instrucciones globales AI</p>
+          <p className="text-[12px] text-gray-600 mb-3">
+            Se aplican a todas las tiendas. Definí el tono, formato, enfoque o contexto que la AI debe tener en cuenta.
           </p>
-
           <textarea
             value={instructions}
             onChange={(e) => setInstructions(e.target.value)}
             rows={6}
             maxLength={10000}
-            placeholder="Ej: Siempre incluí recomendaciones de presupuesto en pesos argentinos. Nuestro margen objetivo es 25%. Priorizá el ROAS sobre el CPA..."
-            className="w-full px-3 py-2 text-sm border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 resize-y"
+            placeholder="Ej: Siempre incluí recomendaciones en pesos argentinos. Nuestro margen objetivo es 25%..."
+            className="input-dark w-full resize-y"
           />
           <div className="flex items-center justify-between mt-2">
-            <span className="text-xs text-gray-400">{instructions.length}/10,000</span>
+            <span className="text-[11px] text-gray-600">{instructions.length}/10,000</span>
             <div className="flex items-center gap-3">
-              {instrMsg && (
-                <span className={`text-xs font-medium ${instrMsg.ok ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                  {instrMsg.text}
-                </span>
-              )}
-              <button
-                onClick={saveInstructions}
-                disabled={savingInstructions}
-                className="px-4 py-2 bg-primary-600 text-white text-sm rounded hover:bg-primary-700 disabled:opacity-50 transition font-medium"
-              >
+              {instrMsg && <span className={`text-[12px] font-medium ${instrMsg.ok ? 'text-emerald-400' : 'text-red-400'}`}>{instrMsg.text}</span>}
+              <button onClick={saveInstructions} disabled={savingInstructions} className="btn-primary disabled:opacity-50">
                 {savingInstructions ? 'Guardando...' : 'Guardar instrucciones'}
               </button>
             </div>
@@ -288,40 +221,31 @@ export default function UserProfile() {
         </div>
 
         {/* Global Files */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60 p-5">
+        <div className="card p-5">
           <div className="flex items-center justify-between mb-3">
             <div>
-              <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase">Archivos de contexto global</h2>
-              <p className="text-xs text-gray-400 mt-1">Archivos .txt o .md que se inyectan como contexto en todas las consultas AI (max 5).</p>
+              <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Archivos de contexto global</p>
+              <p className="text-[12px] text-gray-600 mt-0.5">Se inyectan como contexto en todas las consultas AI (max 5).</p>
             </div>
-            <button
-              onClick={uploadFile}
-              disabled={uploading || files.length >= 5}
-              className="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-sm rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-400 disabled:opacity-50 transition"
-            >
+            <button onClick={uploadFile} disabled={uploading || files.length >= 5} className="btn-secondary text-[12px] disabled:opacity-50">
               {uploading ? 'Subiendo...' : '+ Subir archivo'}
             </button>
           </div>
 
           {files.length === 0 ? (
-            <p className="text-sm text-gray-400">Sin archivos de contexto.</p>
+            <p className="text-[13px] text-gray-600">Sin archivos de contexto.</p>
           ) : (
             <div className="space-y-2">
               {files.map((f) => (
-                <div key={f.filename} className="flex items-center justify-between py-2 px-3 bg-gray-50 dark:bg-gray-750 rounded border border-gray-100 dark:border-gray-700/60">
+                <div key={f.filename} className="flex items-center justify-between py-2.5 px-3 bg-white/[0.03] rounded-lg border border-white/[0.05]">
                   <div className="flex items-center gap-2">
-                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
-                    <span className="text-sm text-gray-700 dark:text-gray-300">{f.filename}</span>
-                    <span className="text-xs text-gray-400">
-                      {f.uploadedAt && new Date(f.uploadedAt).toLocaleDateString('es-AR')}
-                    </span>
+                    <span className="text-[13px] text-gray-300">{f.filename}</span>
+                    <span className="text-[11px] text-gray-600">{f.uploadedAt && new Date(f.uploadedAt).toLocaleDateString('es-AR')}</span>
                   </div>
-                  <button
-                    onClick={() => deleteFile(f.filename)}
-                    className="text-xs text-red-500 hover:text-red-700 hover:underline"
-                  >
+                  <button onClick={() => deleteFile(f.filename)} className="text-[11px] text-red-500 hover:text-red-400 transition">
                     Eliminar
                   </button>
                 </div>

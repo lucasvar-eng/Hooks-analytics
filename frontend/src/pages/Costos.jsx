@@ -18,39 +18,33 @@ function PnLSection({ pnl }) {
   if (!pnl) return null;
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60 p-5">
-      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4 uppercase">
-        P&L del período
-      </h3>
+    <div className="card p-5">
+      <p className="kpi-label mb-4">P&L del período</p>
 
-      <div className="space-y-1">
-        {/* Revenue */}
-        <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700/60">
-          <span className="font-medium text-gray-900 dark:text-gray-100">Revenue</span>
-          <span className="font-bold text-gray-900 dark:text-gray-100">{fmt(pnl.revenue)}</span>
+      <div className="space-y-0.5">
+        <div className="flex justify-between py-2.5 border-b border-white/[0.06]">
+          <span className="text-[13px] font-semibold text-white">Revenue</span>
+          <span className="text-[13px] font-bold text-white">{fmt(pnl.revenue)}</span>
         </div>
 
-        {/* Cost lines */}
         {pnl.lines?.map((line) => (
-          <div key={line.label} className="flex justify-between py-1.5 text-sm">
-            <span className="text-gray-600 dark:text-gray-400">– {line.label}</span>
-            <span className="text-red-500">
-              {fmt(line.value)} <span className="text-gray-400 text-xs">({pct(line.pct)})</span>
+          <div key={line.label} className="flex justify-between py-2">
+            <span className="text-[13px] text-gray-500">– {line.label}</span>
+            <span className="text-[13px] text-red-400">
+              {fmt(line.value)} <span className="text-gray-600 text-[11px]">({pct(line.pct)})</span>
             </span>
           </div>
         ))}
 
-        {/* Total costs */}
-        <div className="flex justify-between py-2 border-t border-gray-200 dark:border-gray-600">
-          <span className="font-medium text-gray-700 dark:text-gray-300">Total Costos</span>
-          <span className="font-bold text-red-500">{fmt(pnl.totalCosts)}</span>
+        <div className="flex justify-between py-2.5 border-t border-white/[0.06]">
+          <span className="text-[13px] font-medium text-gray-400">Total Costos</span>
+          <span className="text-[13px] font-bold text-red-400">{fmt(pnl.totalCosts)}</span>
         </div>
 
-        {/* Profit */}
-        <div className="flex justify-between py-2 border-t-2 border-gray-300 dark:border-gray-500">
-          <span className="font-semibold text-gray-900 dark:text-gray-100">Profit</span>
-          <span className={`font-bold ${pnl.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-            {fmt(pnl.profit)} ({pct(pnl.profitMargin)})
+        <div className="flex justify-between py-3 border-t border-white/[0.10]">
+          <span className="text-[14px] font-bold text-white">Profit</span>
+          <span className={`text-[14px] font-bold ${pnl.profit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+            {fmt(pnl.profit)} <span className="text-[12px]">({pct(pnl.profitMargin)})</span>
           </span>
         </div>
       </div>
@@ -69,15 +63,13 @@ function BreakevenSection({ be }) {
   ];
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60 p-5">
-      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4 uppercase">
-        Breakeven
-      </h3>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div className="card p-5">
+      <p className="kpi-label mb-4">Breakeven</p>
+      <div className="grid grid-cols-2 gap-4">
         {cards.map((c) => (
-          <div key={c.label}>
-            <p className="text-xs text-gray-500 uppercase">{c.label}</p>
-            <p className="text-lg font-bold text-gray-900 dark:text-gray-100 mt-1">{c.value}</p>
+          <div key={c.label} className="bg-white/[0.03] rounded-lg p-3.5 border border-white/[0.05]">
+            <p className="text-[10px] text-gray-600 uppercase tracking-wider mb-1">{c.label}</p>
+            <p className="text-[20px] font-bold text-white">{c.value}</p>
           </div>
         ))}
       </div>
@@ -93,11 +85,9 @@ function CSVUploadSection({ storeId, onUploaded }) {
   const handleUpload = async () => {
     const file = fileRef.current?.files?.[0];
     if (!file) return;
-
     setUploading(true);
     const formData = new FormData();
     formData.append('file', file);
-
     try {
       const { data } = await api.post(
         `/api/stores/${storeId}/products/costs`,
@@ -118,17 +108,15 @@ function CSVUploadSection({ storeId, onUploaded }) {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60 p-5">
-      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase">
-        Importar costos de productos (CSV)
-      </h3>
+    <div className="card p-5">
+      <p className="kpi-label mb-4">Importar costos de productos (CSV)</p>
 
-      <div className="flex flex-wrap gap-2 mb-3">
+      <div className="flex flex-wrap gap-2 mb-4">
         {['productos', 'comisiones', 'envio', 'adicionales'].map((t) => (
           <button
             key={t}
             onClick={() => downloadTemplate(t)}
-            className="text-xs px-2 py-1 rounded border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
+            className="chip"
           >
             Plantilla {t}
           </button>
@@ -136,19 +124,24 @@ function CSVUploadSection({ storeId, onUploaded }) {
       </div>
 
       <div className="flex items-center gap-3">
-        <input ref={fileRef} type="file" accept=".csv" className="text-sm text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100" />
-        <button onClick={handleUpload} disabled={uploading} className="px-4 py-1.5 bg-primary-600 text-white text-sm rounded hover:bg-primary-700 disabled:opacity-50">
-          {uploading ? 'Subiendo...' : 'Subir'}
+        <input
+          ref={fileRef}
+          type="file"
+          accept=".csv"
+          className="text-[12px] text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-[12px] file:font-medium file:bg-blue-500/10 file:text-blue-400 hover:file:bg-blue-500/20 file:transition"
+        />
+        <button onClick={handleUpload} disabled={uploading} className="btn-primary disabled:opacity-50">
+          {uploading ? 'Subiendo...' : 'Subir CSV'}
         </button>
       </div>
 
       {result && !result.error && (
-        <p className="mt-2 text-sm text-green-600">
+        <p className="mt-3 text-[12px] text-emerald-400">
           Actualizados: {result.updated}
           {result.notFound?.length > 0 && ` | No encontrados: ${result.notFound.join(', ')}`}
         </p>
       )}
-      {result?.error && <p className="mt-2 text-sm text-red-600">{result.error}</p>}
+      {result?.error && <p className="mt-3 text-[12px] text-red-400">{result.error}</p>}
     </div>
   );
 }
@@ -166,7 +159,6 @@ export default function Costos() {
       const params = {};
       if (from) params.from = from;
       if (to) params.to = to;
-
       const [pnlRes, beRes] = await Promise.all([
         api.get(`/api/stores/${storeId}/pnl`, { params }),
         api.get(`/api/stores/${storeId}/breakeven`, { params }),
@@ -180,19 +172,20 @@ export default function Costos() {
     setLoading(false);
   }, [storeId, from, to]);
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   if (loading) {
-    return <div className="text-center py-12 text-gray-500">Cargando costos...</div>;
+    return <div className="text-center py-12 text-gray-600 text-[13px]">Cargando costos...</div>;
   }
 
   return (
     <div className="space-y-5">
-      <p className="section-label">Costos & P&L</p>
+      <div>
+        <h1 className="page-title">Costos & P&L</h1>
+        <p className="page-subtitle">Análisis de rentabilidad y punto de equilibrio del período.</p>
+      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <PnLSection pnl={pnl} />
         <BreakevenSection be={breakeven} />
       </div>

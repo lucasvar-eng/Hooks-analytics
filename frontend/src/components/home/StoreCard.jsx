@@ -23,7 +23,7 @@ const METRICS_MAP = {
 const DEFAULT_METRICS = ['ordenesPositivas', 'revenue', 'trueRoas', 'profit', 'ncPct'];
 
 function getHealthBadge(current, objetivos) {
-  if (!objetivos?.kpis) return { color: 'bg-gray-400 dark:bg-gray-600', label: 'Sin objetivos' };
+  if (!objetivos?.kpis) return { color: 'bg-gray-600', label: 'Sin objetivos' };
 
   const kpis = objetivos.kpis;
   const warn = objetivos.alertThresholds?.warningPct || 10;
@@ -45,8 +45,8 @@ function getHealthBadge(current, objetivos) {
   }
 
   if (criticals > 0) return { color: 'bg-red-500', label: 'Crítico' };
-  if (issues > 0) return { color: 'bg-yellow-500', label: 'Atención' };
-  return { color: 'bg-green-500', label: 'OK' };
+  if (issues > 0) return { color: 'bg-amber-500', label: 'Atención' };
+  return { color: 'bg-emerald-500', label: 'OK' };
 }
 
 export default function StoreCard({ store, metrics, notes, alertCount = 0 }) {
@@ -61,13 +61,13 @@ export default function StoreCard({ store, metrics, notes, alertCount = 0 }) {
   return (
     <div
       onClick={() => navigate(`/store/${store._id}/dashboard`)}
-      className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60 p-4 cursor-pointer hover:border-primary-500/40 dark:hover:border-primary-500/30 transition group flex flex-col"
+      className="card-hover p-4 cursor-pointer group flex flex-col"
     >
       {/* Header */}
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${badge.color}`} title={badge.label} />
-          <h3 className="font-bold text-[13px] text-gray-900 dark:text-white group-hover:text-primary-500 transition truncate">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <span className={`w-2 h-2 rounded-full shrink-0 ${badge.color}`} title={badge.label} />
+          <h3 className="font-bold text-[13px] text-white group-hover:text-blue-400 transition truncate">
             {store.nombre}
           </h3>
           {alertCount > 0 && (
@@ -76,6 +76,9 @@ export default function StoreCard({ store, metrics, notes, alertCount = 0 }) {
             </span>
           )}
         </div>
+        <svg className="w-3.5 h-3.5 text-gray-700 group-hover:text-blue-400 transition shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+        </svg>
       </div>
 
       {/* Metrics grid */}
@@ -96,9 +99,9 @@ export default function StoreCard({ store, metrics, notes, alertCount = 0 }) {
 
       {/* Notes */}
       {notes && notes.length > 0 && (
-        <div className="mt-auto pt-2.5 border-t border-gray-100 dark:border-gray-700/60">
+        <div className="mt-auto pt-3 border-t border-white/[0.06]">
           {notes.slice(0, 2).map((note, i) => (
-            <p key={i} className="text-[10px] text-gray-400 truncate">
+            <p key={i} className="text-[10px] text-gray-600 truncate">
               {note.icon && <span className="mr-1">{note.icon}</span>}
               {note.text}
             </p>

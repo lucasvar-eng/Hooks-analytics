@@ -8,56 +8,48 @@ function fmt(v) {
   return `$${Number(v).toLocaleString('es-AR', { maximumFractionDigits: 0 })}`;
 }
 
-const TIER_COLORS = {
-  A: 'bg-green-100 text-green-800 border-green-300',
-  B: 'bg-blue-100 text-blue-800 border-blue-300',
-  C: 'bg-yellow-100 text-yellow-800 border-yellow-300',
-  D: 'bg-orange-100 text-orange-800 border-orange-300',
-  E: 'bg-red-100 text-red-800 border-red-300',
+const TIER_STYLES = {
+  A: { badge: 'badge-green', border: 'border-l-2 border-emerald-500' },
+  B: { badge: 'badge-blue', border: 'border-l-2 border-blue-500' },
+  C: { badge: 'badge-amber', border: 'border-l-2 border-amber-500' },
+  D: { badge: 'bg-orange-500/15 text-orange-400 badge', border: 'border-l-2 border-orange-500' },
+  E: { badge: 'badge-red', border: 'border-l-2 border-red-500' },
 };
 
 function AdCard({ ad }) {
+  const tier = TIER_STYLES[ad.tier];
   return (
-    <div className={`rounded-lg border p-3 bg-white dark:bg-gray-800 ${ad.tier ? 'border-l-4' : ''} ${TIER_COLORS[ad.tier]?.split(' ')[2] || 'border-gray-200 dark:border-gray-700/60'}`}>
+    <div className={`card p-4 ${tier?.border || ''}`}>
       <div className="flex items-start gap-3">
         {ad.thumbnailUrl && (
-          <img src={ad.thumbnailUrl} alt="" className="w-16 h-16 rounded object-cover shrink-0" />
+          <img src={ad.thumbnailUrl} alt="" className="w-16 h-16 rounded-lg object-cover shrink-0" />
         )}
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 mb-1">
-            <span className={`px-2 py-0.5 rounded text-xs font-bold ${TIER_COLORS[ad.tier] || 'bg-gray-100 text-gray-600'}`}>
-              {ad.tier || '?'}
-            </span>
-            <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{ad.nombre}</span>
+          <div className="flex items-center gap-2 mb-2">
+            <span className={tier?.badge || 'badge-gray'}>{ad.tier || '?'}</span>
+            <span className="text-[13px] font-medium text-gray-200 truncate">{ad.nombre}</span>
           </div>
-          <div className="grid grid-cols-4 gap-2 text-xs">
-            <div>
-              <p className="text-gray-500">Spend</p>
-              <p className="font-medium text-gray-900 dark:text-gray-100">{fmt(ad.metrics?.spend)}</p>
-            </div>
-            <div>
-              <p className="text-gray-500">ROAS</p>
-              <p className="font-medium text-gray-900 dark:text-gray-100">{ad.metrics?.roas?.toFixed(2) || '—'}x</p>
-            </div>
-            <div>
-              <p className="text-gray-500">CPA</p>
-              <p className="font-medium text-gray-900 dark:text-gray-100">{fmt(ad.metrics?.cpa)}</p>
-            </div>
-            <div>
-              <p className="text-gray-500">CTR</p>
-              <p className="font-medium text-gray-900 dark:text-gray-100">{ad.metrics?.ctr?.toFixed(2) || '—'}%</p>
-            </div>
+          <div className="grid grid-cols-4 gap-2">
+            {[
+              { label: 'Spend', value: fmt(ad.metrics?.spend) },
+              { label: 'ROAS', value: `${ad.metrics?.roas?.toFixed(2) || '—'}x` },
+              { label: 'CPA', value: fmt(ad.metrics?.cpa) },
+              { label: 'CTR', value: `${ad.metrics?.ctr?.toFixed(2) || '—'}%` },
+            ].map(({ label, value }) => (
+              <div key={label}>
+                <p className="text-[9px] text-gray-600 uppercase tracking-wide">{label}</p>
+                <p className="text-[12px] font-semibold text-gray-200 mt-0.5">{value}</p>
+              </div>
+            ))}
           </div>
-
-          {/* Funnel */}
-          <div className="flex items-center gap-1 mt-2 text-[10px] text-gray-500">
+          <div className="flex items-center gap-1.5 mt-2.5 text-[10px] text-gray-600">
             <span>{ad.metrics?.impressions?.toLocaleString() || 0} imp</span>
-            <span>→</span>
+            <span className="text-gray-700">→</span>
             <span>{ad.metrics?.clicks?.toLocaleString() || 0} clicks</span>
-            <span>→</span>
+            <span className="text-gray-700">→</span>
             <span>{ad.metrics?.purchases || 0} compras</span>
-            <span>→</span>
-            <span>{fmt(ad.metrics?.purchaseValue)} rev</span>
+            <span className="text-gray-700">→</span>
+            <span>{fmt(ad.metrics?.purchaseValue)}</span>
           </div>
         </div>
       </div>
@@ -67,7 +59,7 @@ function AdCard({ ad }) {
 
 function CampaignResultsTable({ campaigns }) {
   if (!campaigns || campaigns.length === 0) {
-    return <p className="text-gray-500 text-sm text-center py-4">Sin datos de campañas.</p>;
+    return <p className="text-gray-600 text-[13px] text-center py-8">Sin datos de campañas.</p>;
   }
 
   const totals = campaigns.reduce(
@@ -86,40 +78,41 @@ function CampaignResultsTable({ campaigns }) {
   totals.cpa = totals.purchases > 0 ? totals.spend / totals.purchases : 0;
 
   return (
-    <table className="w-full text-sm">
-      <thead>
-        <tr className="bg-gray-50 dark:bg-gray-750">
-          {['Campaña', 'Spend', 'Reach', 'CTR', 'Compras', 'CPA', 'ROAS', 'Revenue'].map((h) => (
-            <th key={h} className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">{h}</th>
-          ))}
-        </tr>
-      </thead>
-      <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-        {campaigns.map((c) => (
-          <tr key={c._id} className="hover:bg-gray-50 dark:hover:bg-gray-750">
-            <td className="px-3 py-2 font-medium text-gray-900 dark:text-gray-100 truncate max-w-[200px]">{c.nombre}</td>
-            <td className="px-3 py-2">{fmt(c.metrics?.spend)}</td>
-            <td className="px-3 py-2 text-gray-700 dark:text-gray-300">{(c.metrics?.reach || 0).toLocaleString()}</td>
-            <td className="px-3 py-2 text-gray-700 dark:text-gray-300">{c.metrics?.ctr?.toFixed(2) || '—'}%</td>
-            <td className="px-3 py-2 text-gray-700 dark:text-gray-300">{c.metrics?.purchases || 0}</td>
-            <td className="px-3 py-2">{fmt(c.metrics?.cpa)}</td>
-            <td className="px-3 py-2 font-medium">{c.metrics?.roas?.toFixed(2) || '—'}x</td>
-            <td className="px-3 py-2 font-medium text-green-600">{fmt(c.metrics?.purchaseValue)}</td>
+    <div className="overflow-x-auto">
+      <table className="w-full table-dark">
+        <thead>
+          <tr>
+            {['Campaña', 'Spend', 'Reach', 'CTR', 'Compras', 'CPA', 'ROAS', 'Revenue'].map((h) => (
+              <th key={h}>{h}</th>
+            ))}
           </tr>
-        ))}
-        {/* Total row */}
-        <tr className="bg-gray-50 dark:bg-gray-750 font-semibold">
-          <td className="px-3 py-2 text-gray-900 dark:text-gray-100">TOTAL</td>
-          <td className="px-3 py-2">{fmt(totals.spend)}</td>
-          <td className="px-3 py-2">{totals.reach.toLocaleString()}</td>
-          <td className="px-3 py-2">{totals.impressions > 0 ? ((totals.clicks / totals.impressions) * 100).toFixed(2) : '—'}%</td>
-          <td className="px-3 py-2">{totals.purchases}</td>
-          <td className="px-3 py-2">{fmt(totals.cpa)}</td>
-          <td className="px-3 py-2">{totals.roas.toFixed(2)}x</td>
-          <td className="px-3 py-2 text-green-600">{fmt(totals.purchaseValue)}</td>
-        </tr>
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {campaigns.map((c) => (
+            <tr key={c._id}>
+              <td className="font-medium text-white truncate max-w-[200px]">{c.nombre}</td>
+              <td>{fmt(c.metrics?.spend)}</td>
+              <td>{(c.metrics?.reach || 0).toLocaleString()}</td>
+              <td>{c.metrics?.ctr?.toFixed(2) || '—'}%</td>
+              <td>{c.metrics?.purchases || 0}</td>
+              <td>{fmt(c.metrics?.cpa)}</td>
+              <td className="font-semibold">{c.metrics?.roas?.toFixed(2) || '—'}x</td>
+              <td className="text-emerald-400 font-semibold">{fmt(c.metrics?.purchaseValue)}</td>
+            </tr>
+          ))}
+          <tr className="bg-white/[0.03] font-semibold">
+            <td className="text-white">TOTAL</td>
+            <td>{fmt(totals.spend)}</td>
+            <td>{totals.reach.toLocaleString()}</td>
+            <td>{totals.impressions > 0 ? ((totals.clicks / totals.impressions) * 100).toFixed(2) : '—'}%</td>
+            <td>{totals.purchases}</td>
+            <td>{fmt(totals.cpa)}</td>
+            <td className="font-semibold">{totals.roas.toFixed(2)}x</td>
+            <td className="text-emerald-400">{fmt(totals.purchaseValue)}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   );
 }
 
@@ -129,7 +122,7 @@ export default function Creativos() {
   const [ads, setAds] = useState([]);
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState('ads'); // 'ads' | 'campaigns'
+  const [tab, setTab] = useState('ads');
   const [filterTier, setFilterTier] = useState(null);
 
   const fetchData = useCallback(async () => {
@@ -138,7 +131,6 @@ export default function Creativos() {
       const params = {};
       if (from) params.from = from;
       if (to) params.to = to;
-
       const [adsRes, campRes] = await Promise.all([
         api.get(`/api/stores/${storeId}/creativos`, { params }),
         api.get(`/api/stores/${storeId}/creativos/campaigns`, { params }),
@@ -155,12 +147,10 @@ export default function Creativos() {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   if (loading) {
-    return <div className="text-center py-12 text-gray-500">Cargando creativos...</div>;
+    return <div className="text-center py-12 text-gray-600 text-[13px]">Cargando creativos...</div>;
   }
 
   const filteredAds = filterTier ? ads.filter((a) => a.tier === filterTier) : ads;
-
-  // Tier counts
   const tierCounts = {};
   for (const a of ads) {
     tierCounts[a.tier] = (tierCounts[a.tier] || 0) + 1;
@@ -168,44 +158,63 @@ export default function Creativos() {
 
   return (
     <div className="space-y-5">
-      <p className="section-label">Creativos</p>
+      <div>
+        <h1 className="page-title">Creativos</h1>
+        <p className="page-subtitle">Clasificación ABCDE y resultados por campaña.</p>
+      </div>
 
       {/* Tabs */}
-      <div className="flex gap-2">
-        <button onClick={() => setTab('ads')} className={`px-4 py-2 text-sm rounded-lg transition ${tab === 'ads' ? 'bg-primary-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}>
-          Clasificación ABCDE ({ads.length})
-        </button>
-        <button onClick={() => setTab('campaigns')} className={`px-4 py-2 text-sm rounded-lg transition ${tab === 'campaigns' ? 'bg-primary-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}>
-          Resultados por campaña
-        </button>
+      <div className="flex gap-2 border-b border-white/[0.06] pb-0">
+        {[
+          { id: 'ads', label: `Clasificación ABCDE (${ads.length})` },
+          { id: 'campaigns', label: 'Resultados por campaña' },
+        ].map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setTab(t.id)}
+            className={`px-4 py-2.5 text-[13px] font-medium border-b-2 -mb-px transition ${
+              tab === t.id
+                ? 'border-blue-500 text-blue-400'
+                : 'border-transparent text-gray-500 hover:text-gray-300'
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
       </div>
 
       {tab === 'ads' ? (
         <>
           {/* Tier filters */}
-          <div className="flex gap-2">
-            <button onClick={() => setFilterTier(null)} className={`px-3 py-1 text-xs rounded ${!filterTier ? 'bg-gray-800 text-white dark:bg-gray-200 dark:text-gray-800' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}`}>
+          <div className="flex gap-2 flex-wrap">
+            <button
+              onClick={() => setFilterTier(null)}
+              className={!filterTier ? 'chip-active' : 'chip'}
+            >
               Todos ({ads.length})
             </button>
             {['A', 'B', 'C', 'D', 'E'].map((t) => (
-              <button key={t} onClick={() => setFilterTier(filterTier === t ? null : t)} className={`px-3 py-1 text-xs rounded font-bold ${filterTier === t ? TIER_COLORS[t] : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}`}>
-                {t} ({tierCounts[t] || 0})
+              <button
+                key={t}
+                onClick={() => setFilterTier(filterTier === t ? null : t)}
+                className={filterTier === t ? 'chip-active' : 'chip'}
+              >
+                Tier {t} ({tierCounts[t] || 0})
               </button>
             ))}
           </div>
 
-          {/* Ad grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {filteredAds.map((ad) => (
               <AdCard key={ad._id} ad={ad} />
             ))}
           </div>
           {filteredAds.length === 0 && (
-            <p className="text-gray-500 text-sm text-center py-8">No hay ads para mostrar.</p>
+            <p className="text-gray-600 text-[13px] text-center py-10">No hay ads para mostrar.</p>
           )}
         </>
       ) : (
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60 overflow-x-auto">
+        <div className="card">
           <CampaignResultsTable campaigns={campaigns} />
         </div>
       )}

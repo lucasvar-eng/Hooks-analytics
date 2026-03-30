@@ -5,8 +5,8 @@ function formatMessage(text) {
   return text
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.*?)\*/g, '<em>$1</em>')
-    .replace(/^### (.*)/gm, '<h4 class="font-semibold text-gray-800 dark:text-gray-200 mt-2">$1</h4>')
-    .replace(/^## (.*)/gm, '<h3 class="font-bold text-gray-900 dark:text-gray-100 mt-2">$1</h3>')
+    .replace(/^### (.*)/gm, '<h4 class="font-semibold text-gray-300 mt-2">$1</h4>')
+    .replace(/^## (.*)/gm, '<h3 class="font-bold text-white mt-2">$1</h3>')
     .replace(/^- (.*)/gm, '<li class="ml-4">$1</li>')
     .replace(/\n/g, '<br>');
 }
@@ -63,7 +63,7 @@ export default function AIChatPanel({ storeId, from, to }) {
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-5 right-5 w-12 h-12 bg-primary-600 text-white rounded-full shadow-lg shadow-primary-600/20 hover:bg-primary-700 transition flex items-center justify-center z-40"
+        className="fixed bottom-5 right-5 w-12 h-12 bg-blue-500 text-white rounded-full shadow-lg shadow-blue-500/20 hover:bg-blue-600 transition flex items-center justify-center z-40"
         title="Chat con AI"
       >
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -74,14 +74,14 @@ export default function AIChatPanel({ storeId, from, to }) {
   }
 
   return (
-    <div className="fixed bottom-5 right-5 w-[360px] h-[480px] bg-white dark:bg-gray-900 rounded-lg shadow-2xl shadow-black/30 border border-gray-200 dark:border-gray-700/60 flex flex-col z-40 overflow-hidden">
+    <div className="fixed bottom-5 right-5 w-[360px] h-[480px] bg-[#161616] border border-white/[0.08] rounded-xl shadow-2xl shadow-black/50 flex flex-col z-40 overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-200 dark:border-gray-700/60 bg-primary-600 text-white">
+      <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/[0.06] bg-blue-500">
         <div className="flex items-center gap-2">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
           </svg>
-          <span className="text-[12px] font-bold tracking-wide">CHAT AI</span>
+          <span className="text-[11px] font-bold tracking-wide text-white">CHAT AI</span>
         </div>
         <div className="flex items-center gap-2">
           {messages.length > 0 && (
@@ -105,7 +105,7 @@ export default function AIChatPanel({ storeId, from, to }) {
       <div className="flex-1 overflow-y-auto p-3 space-y-2.5">
         {messages.length === 0 && (
           <div className="space-y-3 pt-2">
-            <p className="text-[11px] text-gray-500 dark:text-gray-500 text-center">
+            <p className="text-[11px] text-gray-600 text-center">
               Preguntale cualquier cosa sobre los datos de tu tienda.
             </p>
             <div className="space-y-1.5">
@@ -116,7 +116,7 @@ export default function AIChatPanel({ storeId, from, to }) {
                     setInput(s);
                     setTimeout(() => inputRef.current?.focus(), 0);
                   }}
-                  className="block w-full text-left px-2.5 py-1.5 text-[11px] rounded border border-gray-200 dark:border-gray-700/60 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/[0.03] transition"
+                  className="block w-full text-left px-2.5 py-1.5 text-[11px] rounded border border-white/[0.06] text-gray-500 hover:bg-white/[0.03] hover:text-gray-300 transition"
                 >
                   {s}
                 </button>
@@ -133,15 +133,15 @@ export default function AIChatPanel({ storeId, from, to }) {
             <div
               className={`max-w-[85%] px-2.5 py-1.5 rounded-lg text-[11px] leading-relaxed ${
                 msg.role === 'user'
-                  ? 'bg-primary-600 text-white'
-                  : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700/60'
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-white/[0.05] text-gray-300 border border-white/[0.06]'
               }`}
             >
               {msg.role === 'user' ? (
                 msg.content
               ) : (
                 <div
-                  className="prose prose-xs dark:prose-invert max-w-none [&_li]:list-disc"
+                  className="prose prose-xs max-w-none [&_li]:list-disc [&_li]:text-gray-300 [&_strong]:text-white"
                   dangerouslySetInnerHTML={{ __html: formatMessage(msg.content) }}
                 />
               )}
@@ -151,11 +151,11 @@ export default function AIChatPanel({ storeId, from, to }) {
 
         {loading && (
           <div className="flex justify-start">
-            <div className="bg-gray-100 dark:bg-gray-800 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700/60">
+            <div className="bg-white/[0.05] px-3 py-2 rounded-lg border border-white/[0.06]">
               <div className="flex gap-1">
-                <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                <span className="w-1.5 h-1.5 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                <span className="w-1.5 h-1.5 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                <span className="w-1.5 h-1.5 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
               </div>
             </div>
           </div>
@@ -165,7 +165,7 @@ export default function AIChatPanel({ storeId, from, to }) {
       </div>
 
       {/* Input */}
-      <div className="border-t border-gray-200 dark:border-gray-700/60 p-2.5">
+      <div className="border-t border-white/[0.06] p-2.5">
         <div className="flex gap-1.5">
           <input
             ref={inputRef}
@@ -174,12 +174,12 @@ export default function AIChatPanel({ storeId, from, to }) {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
             placeholder="Preguntá sobre tus datos..."
-            className="flex-1 px-2.5 py-1.5 text-[11px] border border-gray-200 dark:border-gray-700/60 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-primary-500 focus:border-primary-500 outline-none transition"
+            className="flex-1 input-dark text-[11px] py-1.5"
           />
           <button
             onClick={sendMessage}
             disabled={!input.trim() || loading}
-            className="px-2.5 py-1.5 bg-primary-600 text-white rounded hover:bg-primary-700 disabled:opacity-50 transition"
+            className="px-2.5 py-1.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 transition"
           >
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />

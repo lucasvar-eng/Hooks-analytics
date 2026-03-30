@@ -2,34 +2,17 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 
-const ROLE_LABELS = {
-  admin: 'Admin',
-  analyst: 'Analista',
-  viewer: 'Visor',
-};
+const ROLE_LABELS = { admin: 'Admin', analyst: 'Analista', viewer: 'Visor' };
+const ROLE_BADGE = { admin: 'badge-red', analyst: 'badge-blue', viewer: 'badge-gray' };
 
-const ROLE_BADGE = {
-  admin: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400',
-  analyst: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400',
-  viewer: 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400',
-};
-
-const EMPTY_FORM = {
-  email: '',
-  password: '',
-  nombre: '',
-  role: 'viewer',
-  storeAccess: [],
-};
+const EMPTY_FORM = { email: '', password: '', nombre: '', role: 'viewer', storeAccess: [] };
 
 export default function UserManagement() {
   const navigate = useNavigate();
-
   const [users, setUsers] = useState([]);
   const [stores, setStores] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -39,8 +22,7 @@ export default function UserManagement() {
 
   const loadUsers = useCallback(async () => {
     try {
-      setLoading(true);
-      setError(null);
+      setLoading(true); setError(null);
       const { data } = await api.get('/api/admin/users');
       setUsers(data);
     } catch (err) {
@@ -50,50 +32,20 @@ export default function UserManagement() {
     }
   }, []);
 
-  useEffect(() => {
-    loadUsers();
-  }, [loadUsers]);
+  useEffect(() => { loadUsers(); }, [loadUsers]);
+  useEffect(() => { api.get('/api/stores').then(({ data }) => setStores(data)).catch(() => {}); }, []);
 
-  useEffect(() => {
-    api.get('/api/stores').then(({ data }) => setStores(data)).catch(() => {});
-  }, []);
-
-  const openCreate = () => {
-    setEditingId(null);
-    setForm(EMPTY_FORM);
-    setFormError(null);
-    setFormSuccess(null);
-    setShowForm(true);
-  };
-
+  const openCreate = () => { setEditingId(null); setForm(EMPTY_FORM); setFormError(null); setFormSuccess(null); setShowForm(true); };
   const openEdit = (user) => {
     setEditingId(user._id);
-    setForm({
-      email: user.email,
-      password: '',
-      nombre: user.nombre,
-      role: user.role,
-      storeAccess: user.storeAccess?.map((s) => (typeof s === 'object' ? s._id : s)) || [],
-    });
-    setFormError(null);
-    setFormSuccess(null);
-    setShowForm(true);
+    setForm({ email: user.email, password: '', nombre: user.nombre, role: user.role, storeAccess: user.storeAccess?.map((s) => (typeof s === 'object' ? s._id : s)) || [] });
+    setFormError(null); setFormSuccess(null); setShowForm(true);
   };
-
-  const cancelForm = () => {
-    setShowForm(false);
-    setEditingId(null);
-    setForm(EMPTY_FORM);
-    setFormError(null);
-    setFormSuccess(null);
-  };
+  const cancelForm = () => { setShowForm(false); setEditingId(null); setForm(EMPTY_FORM); setFormError(null); setFormSuccess(null); };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setSaving(true);
-    setFormError(null);
-    setFormSuccess(null);
-
+    setSaving(true); setFormError(null); setFormSuccess(null);
     try {
       if (editingId) {
         await api.put(`/api/admin/users/${editingId}`, form);
@@ -103,9 +55,7 @@ export default function UserManagement() {
         setFormSuccess('Usuario creado correctamente');
       }
       await loadUsers();
-      if (!editingId) {
-        setForm(EMPTY_FORM);
-      }
+      if (!editingId) setForm(EMPTY_FORM);
     } catch (err) {
       setFormError(err.response?.data?.error || 'Error al guardar');
     } finally {
@@ -134,102 +84,49 @@ export default function UserManagement() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700/60 px-4 py-3">
+    <div className="min-h-screen bg-[#0a0a0a]">
+      <header className="bg-[#0f0f0f] border-b border-white/[0.06] px-4 py-3">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <button
-            onClick={() => navigate('/')}
-            className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1"
-          >
-            &larr; Volver
+          <button onClick={() => navigate('/')} className="text-[13px] text-blue-400 hover:text-blue-300 flex items-center gap-1 transition">
+            ← Volver
           </button>
-          <p className="section-label">
-            Gestión de Usuarios
-          </p>
+          <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Gestión de Usuarios</p>
           <div className="w-16" />
         </div>
       </header>
 
       <div className="max-w-4xl mx-auto p-6 space-y-5">
-        {/* Top bar */}
         <div className="flex items-center justify-between">
-          <p className="text-sm text-gray-500 dark:text-gray-400">
+          <p className="text-[13px] text-gray-500">
             {users.length} usuario{users.length !== 1 ? 's' : ''} registrado{users.length !== 1 ? 's' : ''}
           </p>
-          <button
-            onClick={openCreate}
-            className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded transition"
-          >
-            + Nuevo usuario
-          </button>
+          <button onClick={openCreate} className="btn-primary">+ Nuevo usuario</button>
         </div>
 
         {/* Form */}
         {showForm && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60 p-5 space-y-4">
-            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase">
+          <div className="card p-5 space-y-4">
+            <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
               {editingId ? 'Editar usuario' : 'Crear usuario'}
-            </h2>
+            </p>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Nombre */}
                 <div>
-                  <label className="text-xs font-medium text-gray-600 dark:text-gray-400">
-                    Nombre <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={form.nombre}
-                    onChange={(e) => setForm({ ...form, nombre: e.target.value })}
-                    className="w-full mt-1 px-3 py-2 text-sm border rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                    placeholder="Nombre completo"
-                  />
+                  <label className="kpi-label mb-1 block">Nombre <span className="text-red-500">*</span></label>
+                  <input type="text" required value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} className="input-dark w-full" placeholder="Nombre completo" />
                 </div>
-
-                {/* Email */}
                 <div>
-                  <label className="text-xs font-medium text-gray-600 dark:text-gray-400">
-                    Email <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    value={form.email}
-                    onChange={(e) => setForm({ ...form, email: e.target.value })}
-                    className="w-full mt-1 px-3 py-2 text-sm border rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                    placeholder="usuario@ejemplo.com"
-                  />
+                  <label className="kpi-label mb-1 block">Email <span className="text-red-500">*</span></label>
+                  <input type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="input-dark w-full" placeholder="usuario@ejemplo.com" />
                 </div>
-
-                {/* Password */}
                 <div>
-                  <label className="text-xs font-medium text-gray-600 dark:text-gray-400">
-                    Contraseña {!editingId && <span className="text-red-500">*</span>}
-                  </label>
-                  <input
-                    type="password"
-                    required={!editingId}
-                    value={form.password}
-                    onChange={(e) => setForm({ ...form, password: e.target.value })}
-                    className="w-full mt-1 px-3 py-2 text-sm border rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                    placeholder={editingId ? 'Dejar vacío para no cambiar' : 'Mínimo 6 caracteres'}
-                  />
+                  <label className="kpi-label mb-1 block">Contraseña {!editingId && <span className="text-red-500">*</span>}</label>
+                  <input type="password" required={!editingId} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="input-dark w-full" placeholder={editingId ? 'Dejar vacío para no cambiar' : 'Mínimo 6 caracteres'} />
                 </div>
-
-                {/* Rol */}
                 <div>
-                  <label className="text-xs font-medium text-gray-600 dark:text-gray-400">
-                    Rol <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    required
-                    value={form.role}
-                    onChange={(e) => setForm({ ...form, role: e.target.value })}
-                    className="w-full mt-1 px-3 py-2 text-sm border rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                  >
+                  <label className="kpi-label mb-1 block">Rol <span className="text-red-500">*</span></label>
+                  <select required value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} className="input-dark w-full">
                     <option value="viewer">Visor</option>
                     <option value="analyst">Analista</option>
                     <option value="admin">Admin</option>
@@ -237,147 +134,79 @@ export default function UserManagement() {
                 </div>
               </div>
 
-              {/* Tiendas */}
               <div>
-                <label className="text-xs font-medium text-gray-600 dark:text-gray-400">
-                  Acceso a tiendas
-                </label>
+                <label className="kpi-label mb-2 block">Acceso a tiendas</label>
                 {stores.length === 0 ? (
-                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Sin tiendas disponibles</p>
+                  <p className="text-[12px] text-gray-600">Sin tiendas disponibles</p>
                 ) : (
-                  <div className="mt-1 max-h-32 overflow-y-auto border rounded p-2 border-gray-300 dark:border-gray-600 dark:bg-gray-700">
+                  <div className="max-h-32 overflow-y-auto bg-white/[0.03] border border-white/[0.06] rounded-lg p-3 space-y-2">
                     {stores.map((s) => (
-                      <label
-                        key={s._id}
-                        className="flex items-center gap-2 py-1 text-sm text-gray-700 dark:text-gray-300 cursor-pointer"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={form.storeAccess.includes(s._id)}
-                          onChange={() => toggleStore(s._id)}
-                          className="accent-indigo-600"
-                        />
-                        {s.nombre}
+                      <label key={s._id} className="flex items-center gap-2.5 cursor-pointer">
+                        <input type="checkbox" checked={form.storeAccess.includes(s._id)} onChange={() => toggleStore(s._id)} className="w-4 h-4 accent-blue-500" />
+                        <span className="text-[13px] text-gray-300">{s.nombre}</span>
                       </label>
                     ))}
                   </div>
                 )}
               </div>
 
-              {/* Feedback */}
-              {formError && (
-                <p className="text-xs font-medium text-red-600 dark:text-red-400">{formError}</p>
-              )}
-              {formSuccess && (
-                <p className="text-xs font-medium text-green-600 dark:text-green-400">{formSuccess}</p>
-              )}
+              {formError && <p className="text-[12px] font-medium text-red-400">{formError}</p>}
+              {formSuccess && <p className="text-[12px] font-medium text-emerald-400">{formSuccess}</p>}
 
-              {/* Actions */}
-              <div className="flex items-center gap-3 pt-1">
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="px-4 py-2 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white text-sm font-medium rounded transition"
-                >
+              <div className="flex items-center gap-3">
+                <button type="submit" disabled={saving} className="btn-primary disabled:opacity-50">
                   {saving ? 'Guardando...' : editingId ? 'Guardar cambios' : 'Crear usuario'}
                 </button>
-                <button
-                  type="button"
-                  onClick={cancelForm}
-                  className="px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-sm rounded transition"
-                >
-                  Cancelar
-                </button>
+                <button type="button" onClick={cancelForm} className="btn-ghost">Cancelar</button>
               </div>
             </form>
           </div>
         )}
 
         {/* Users table */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60 overflow-hidden">
+        <div className="card">
           {loading ? (
-            <div className="p-8 text-center text-sm text-gray-400 dark:text-gray-500">
-              Cargando usuarios...
-            </div>
+            <div className="p-8 text-center text-[13px] text-gray-600">Cargando usuarios...</div>
           ) : error ? (
-            <div className="p-8 text-center text-sm text-red-500 dark:text-red-400">{error}</div>
+            <div className="p-8 text-center text-[13px] text-red-400">{error}</div>
           ) : users.length === 0 ? (
-            <div className="p-8 text-center text-sm text-gray-400 dark:text-gray-500">
-              No hay usuarios registrados.
-            </div>
+            <div className="p-8 text-center text-[13px] text-gray-600">No hay usuarios registrados.</div>
           ) : (
-            <table className="w-full text-sm">
+            <table className="w-full table-dark">
               <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-700/60 bg-gray-50 dark:bg-gray-750">
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Nombre
-                  </th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Email
-                  </th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Rol
-                  </th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Tiendas
-                  </th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Fecha
-                  </th>
-                  <th className="px-4 py-3" />
+                <tr>
+                  <th className="text-left">Nombre</th>
+                  <th className="text-left">Email</th>
+                  <th className="text-left">Rol</th>
+                  <th className="text-left">Tiendas</th>
+                  <th className="text-left">Fecha</th>
+                  <th />
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+              <tbody>
                 {users.map((user) => (
-                  <tr
-                    key={user._id}
-                    className="hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors"
-                  >
-                    <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">
-                      {user.nombre}
-                    </td>
-                    <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
-                      {user.email}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                          ROLE_BADGE[user.role] || ROLE_BADGE.viewer
-                        }`}
-                      >
+                  <tr key={user._id}>
+                    <td className="font-medium text-white">{user.nombre}</td>
+                    <td className="text-[11px]">{user.email}</td>
+                    <td>
+                      <span className={ROLE_BADGE[user.role] || ROLE_BADGE.viewer}>
                         {ROLE_LABELS[user.role] || user.role}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
+                    <td>
                       {user.storeAccess?.length > 0 ? (
                         <span title={user.storeAccess.map((s) => s.nombre).join(', ')}>
-                          {user.storeAccess.length === 1
-                            ? user.storeAccess[0].nombre
-                            : `${user.storeAccess.length} tiendas`}
+                          {user.storeAccess.length === 1 ? user.storeAccess[0].nombre : `${user.storeAccess.length} tiendas`}
                         </span>
                       ) : (
-                        <span className="text-gray-400 dark:text-gray-500 italic">Ninguna</span>
+                        <span className="text-gray-700 italic">Ninguna</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-gray-500 dark:text-gray-400 text-xs">
-                      {user.createdAt
-                        ? new Date(user.createdAt).toLocaleDateString('es-AR')
-                        : '—'}
-                    </td>
-                    <td className="px-4 py-3">
+                    <td className="text-[11px]">{user.createdAt ? new Date(user.createdAt).toLocaleDateString('es-AR') : '—'}</td>
+                    <td>
                       <div className="flex items-center justify-end gap-3">
-                        <button
-                          onClick={() => openEdit(user)}
-                          className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-medium"
-                        >
-                          Editar
-                        </button>
-                        <button
-                          onClick={() => handleDelete(user)}
-                          className="text-xs text-red-500 dark:text-red-400 hover:underline font-medium"
-                        >
-                          Eliminar
-                        </button>
+                        <button onClick={() => openEdit(user)} className="text-[11px] text-blue-400 hover:text-blue-300 transition font-medium">Editar</button>
+                        <button onClick={() => handleDelete(user)} className="text-[11px] text-red-500 hover:text-red-400 transition font-medium">Eliminar</button>
                       </div>
                     </td>
                   </tr>

@@ -3,16 +3,12 @@ import api from '../../services/api';
 import WidgetRenderer from './WidgetRenderer';
 import WidgetLibrary from './WidgetLibrary';
 
-// ─── Size → CSS grid classes ─────────────────────────────────────────────────
-
 const SIZE_CLASSES = {
   sm: 'col-span-1',
   md: 'col-span-1 sm:col-span-2',
   lg: 'col-span-1 sm:col-span-2 lg:col-span-3',
   full: 'col-span-1 sm:col-span-2 lg:col-span-4',
 };
-
-// ─── Component ───────────────────────────────────────────────────────────────
 
 export default function WidgetGrid({ storeId, pageId = 'dashboard', metrics, objetivos, from, to }) {
   const [widgets, setWidgets] = useState([]);
@@ -23,12 +19,10 @@ export default function WidgetGrid({ storeId, pageId = 'dashboard', metrics, obj
   const current = metrics?.current || {};
   const deltas = metrics?.deltas || {};
 
-  // ── Fetch widgets (or seed defaults) ──────────────────────────────────────
   const fetchWidgets = useCallback(async () => {
     try {
       let { data } = await api.get(`/api/stores/${storeId}/widgets`, { params: { pageId } });
 
-      // Auto-seed defaults on first load
       if (data.length === 0) {
         const seedRes = await api.post(`/api/stores/${storeId}/widgets/seed`, { pageId });
         data = seedRes.data;
@@ -42,8 +36,6 @@ export default function WidgetGrid({ storeId, pageId = 'dashboard', metrics, obj
   }, [storeId, pageId]);
 
   useEffect(() => { fetchWidgets(); }, [fetchWidgets]);
-
-  // ── CRUD handlers ─────────────────────────────────────────────────────────
 
   const handleAdd = async (widgetData) => {
     try {
@@ -84,10 +76,8 @@ export default function WidgetGrid({ storeId, pageId = 'dashboard', metrics, obj
     } catch {}
   };
 
-  // ── Render ────────────────────────────────────────────────────────────────
-
   if (loading) {
-    return <div className="text-center py-12 text-xs text-gray-500 dark:text-gray-500">Cargando dashboard...</div>;
+    return <div className="text-center py-12 text-[12px] text-gray-600">Cargando dashboard...</div>;
   }
 
   return (
@@ -99,8 +89,8 @@ export default function WidgetGrid({ storeId, pageId = 'dashboard', metrics, obj
             onClick={() => setEditMode(!editMode)}
             className={`px-2.5 py-1 text-[10px] font-semibold rounded transition ${
               editMode
-                ? 'bg-primary-600 text-white'
-                : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                ? 'bg-blue-500 text-white'
+                : 'bg-white/[0.05] text-gray-500 hover:text-gray-300 border border-white/[0.06]'
             }`}
           >
             {editMode ? '✓ Listo' : '✎ Editar dashboard'}
@@ -109,20 +99,20 @@ export default function WidgetGrid({ storeId, pageId = 'dashboard', metrics, obj
             <>
               <button
                 onClick={() => setShowLibrary(!showLibrary)}
-                className="px-2.5 py-1 text-[10px] font-semibold rounded bg-primary-600 text-white hover:bg-primary-700 transition"
+                className="btn-primary text-[10px]"
               >
                 + Agregar widget
               </button>
               <button
                 onClick={handleReset}
-                className="px-2.5 py-1 text-[10px] font-semibold rounded bg-gray-100 dark:bg-gray-800 text-gray-400 hover:text-red-500 transition"
+                className="px-2.5 py-1 text-[10px] font-semibold rounded bg-white/[0.05] border border-white/[0.06] text-gray-500 hover:text-red-400 transition"
               >
                 ↻ Reset
               </button>
             </>
           )}
         </div>
-        <span className="text-[9px] text-gray-400 dark:text-gray-500">{widgets.length} widgets</span>
+        <span className="text-[9px] text-gray-600">{widgets.length} widgets</span>
       </div>
 
       {/* Library panel */}
@@ -135,8 +125,8 @@ export default function WidgetGrid({ storeId, pageId = 'dashboard', metrics, obj
         {widgets.map((widget, idx) => {
           const isSeparator = widget.type === 'separator';
           const sizeClass = SIZE_CLASSES[widget.size] || SIZE_CLASSES.sm;
+          const isTable = widget.type === 'table';
 
-          // Separators render differently
           if (isSeparator) {
             return (
               <div key={widget._id} className={`${SIZE_CLASSES.full} ${editMode ? 'relative group' : ''}`}>
@@ -146,13 +136,10 @@ export default function WidgetGrid({ storeId, pageId = 'dashboard', metrics, obj
             );
           }
 
-          // Table widgets don't need the card wrapper padding
-          const isTable = widget.type === 'table';
-
           return (
             <div
               key={widget._id}
-              className={`${sizeClass} bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60 ${isTable ? '' : 'p-3.5'} ${editMode ? 'relative group ring-1 ring-transparent hover:ring-primary-500/30' : 'hover:border-gray-300 dark:hover:border-gray-700'} transition`}
+              className={`${sizeClass} card ${isTable ? '' : 'p-3.5'} ${editMode ? 'relative group ring-1 ring-transparent hover:ring-blue-500/30' : ''} transition`}
             >
               <WidgetRenderer widget={widget} current={current} deltas={deltas} objetivos={objetivos} storeId={storeId} from={from} to={to} />
               {editMode && <WidgetControls idx={idx} total={widgets.length} onMove={handleMove} onRemove={() => handleRemove(widget._id)} />}
@@ -164,15 +151,13 @@ export default function WidgetGrid({ storeId, pageId = 'dashboard', metrics, obj
   );
 }
 
-// ─── Widget Controls (edit mode overlay) ─────────────────────────────────────
-
 function WidgetControls({ idx, total, onMove, onRemove }) {
   return (
-    <div className="absolute top-1.5 right-1.5 flex gap-0.5 opacity-0 group-hover:opacity-100 transition bg-gray-900/80 rounded px-1 py-0.5">
+    <div className="absolute top-1.5 right-1.5 flex gap-0.5 opacity-0 group-hover:opacity-100 transition bg-black/80 rounded px-1 py-0.5">
       <button
         onClick={() => onMove(idx, -1)}
         disabled={idx === 0}
-        className="p-0.5 text-gray-300 hover:text-white disabled:opacity-30 transition"
+        className="p-0.5 text-gray-400 hover:text-white disabled:opacity-30 transition"
         title="Mover antes"
       >
         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -182,7 +167,7 @@ function WidgetControls({ idx, total, onMove, onRemove }) {
       <button
         onClick={() => onMove(idx, 1)}
         disabled={idx === total - 1}
-        className="p-0.5 text-gray-300 hover:text-white disabled:opacity-30 transition"
+        className="p-0.5 text-gray-400 hover:text-white disabled:opacity-30 transition"
         title="Mover después"
       >
         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -191,7 +176,7 @@ function WidgetControls({ idx, total, onMove, onRemove }) {
       </button>
       <button
         onClick={onRemove}
-        className="p-0.5 text-gray-300 hover:text-red-400 transition"
+        className="p-0.5 text-gray-400 hover:text-red-400 transition"
         title="Eliminar"
       >
         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">

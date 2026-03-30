@@ -8,15 +8,15 @@ function fmt(v) {
   return `$${Number(v).toLocaleString('es-AR', { maximumFractionDigits: 0 })}`;
 }
 
-const SEGMENT_COLORS = {
-  champions: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-  loyal: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-  new: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-400',
-  promising: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400',
-  potential: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
-  at_risk: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
-  lost: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-  hibernating: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400',
+const SEGMENT_STYLES = {
+  champions: 'badge-green',
+  loyal: 'badge-blue',
+  new: 'bg-cyan-500/15 text-cyan-400 badge',
+  promising: 'badge-blue',
+  potential: 'bg-purple-500/15 text-purple-400 badge',
+  at_risk: 'badge-amber',
+  lost: 'badge-red',
+  hibernating: 'badge-gray',
 };
 
 const SEGMENT_LABELS = {
@@ -37,17 +37,15 @@ function SegmentCards({ segments, selected, onSelect }) {
         <button
           key={s._id}
           onClick={() => onSelect(selected === s._id ? null : s._id)}
-          className={`p-3 rounded-lg border text-left transition ${
-            selected === s._id
-              ? 'ring-2 ring-indigo-500 border-indigo-300'
-              : 'border-gray-200 dark:border-gray-700/60'
-          } bg-white dark:bg-gray-800`}
+          className={`card p-3.5 text-left transition ${
+            selected === s._id ? 'ring-1 ring-blue-500' : ''
+          }`}
         >
-          <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${SEGMENT_COLORS[s._id] || 'bg-gray-100 text-gray-600'}`}>
+          <span className={`${SEGMENT_STYLES[s._id] || 'badge-gray'}`}>
             {SEGMENT_LABELS[s._id] || s._id}
           </span>
-          <p className="text-xl font-bold text-gray-900 dark:text-gray-100 mt-1">{s.count}</p>
-          <p className="text-xs text-gray-500">{fmt(s.totalRevenue)} revenue</p>
+          <p className="text-[22px] font-bold text-white mt-2 leading-none">{s.count}</p>
+          <p className="text-[11px] text-gray-600 mt-1">{fmt(s.totalRevenue)} revenue</p>
         </button>
       ))}
     </div>
@@ -56,7 +54,7 @@ function SegmentCards({ segments, selected, onSelect }) {
 
 function CohortTableView({ cohorts }) {
   if (!cohorts || cohorts.length === 0) {
-    return <p className="text-gray-500 text-sm text-center py-4">Sin datos de cohorts.</p>;
+    return <p className="text-gray-600 text-[13px] text-center py-4">Sin datos de cohorts.</p>;
   }
 
   const maxMonth = Math.max(...cohorts.flatMap((c) => Object.keys(c.retention).map(Number)));
@@ -64,26 +62,26 @@ function CohortTableView({ cohorts }) {
 
   return (
     <div className="overflow-x-auto">
-      <table className="text-xs w-full">
+      <table className="w-full table-dark">
         <thead>
-          <tr className="bg-gray-50 dark:bg-gray-750">
-            <th className="px-2 py-1.5 text-left text-gray-500 uppercase">Cohorte</th>
-            <th className="px-2 py-1.5 text-center text-gray-500">Total</th>
+          <tr>
+            <th className="text-left">Cohorte</th>
+            <th>Total</th>
             {monthHeaders.map((m) => (
-              <th key={m} className="px-2 py-1.5 text-center text-gray-500">M{m}</th>
+              <th key={m}>M{m}</th>
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+        <tbody>
           {cohorts.map((c) => (
             <tr key={c.cohortMonth}>
-              <td className="px-2 py-1.5 font-medium text-gray-900 dark:text-gray-100">{c.cohortMonth}</td>
-              <td className="px-2 py-1.5 text-center text-gray-700 dark:text-gray-300">{c.total}</td>
+              <td className="font-medium text-white">{c.cohortMonth}</td>
+              <td className="text-center">{c.total}</td>
               {monthHeaders.map((m) => {
                 const val = c.retention[m];
-                const bg = val > 50 ? 'bg-green-100 dark:bg-green-900/30' : val > 20 ? 'bg-yellow-50 dark:bg-yellow-900/20' : '';
+                const bg = val > 50 ? 'bg-emerald-500/15 text-emerald-400' : val > 20 ? 'bg-amber-500/10 text-amber-400' : '';
                 return (
-                  <td key={m} className={`px-2 py-1.5 text-center ${bg}`}>
+                  <td key={m} className={`text-center ${bg}`}>
                     {val != null ? `${val.toFixed(0)}%` : ''}
                   </td>
                 );
@@ -98,33 +96,35 @@ function CohortTableView({ cohorts }) {
 
 function CustomerTable({ customers }) {
   return (
-    <table className="w-full text-sm">
-      <thead>
-        <tr className="bg-gray-50 dark:bg-gray-750">
-          {['Cliente', 'Email', 'Órdenes', 'Total gastado', 'LTV', 'Segmento', 'Recencia (días)', 'Primera compra'].map((h) => (
-            <th key={h} className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">{h}</th>
-          ))}
-        </tr>
-      </thead>
-      <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-        {customers.map((c) => (
-          <tr key={c._id} className="hover:bg-gray-50 dark:hover:bg-gray-750">
-            <td className="px-3 py-2 font-medium text-gray-900 dark:text-gray-100">{c.name || '—'}</td>
-            <td className="px-3 py-2 text-gray-600 dark:text-gray-400 text-xs">{c.email}</td>
-            <td className="px-3 py-2 text-gray-700 dark:text-gray-300">{c.totalOrders}</td>
-            <td className="px-3 py-2 text-gray-700 dark:text-gray-300">{fmt(c.totalSpent)}</td>
-            <td className="px-3 py-2 font-medium text-gray-900 dark:text-gray-100">{fmt(c.ltv)}</td>
-            <td className="px-3 py-2">
-              <span className={`px-2 py-0.5 rounded text-xs font-medium ${SEGMENT_COLORS[c.rfmSegment] || 'bg-gray-100 text-gray-600'}`}>
-                {SEGMENT_LABELS[c.rfmSegment] || c.rfmSegment || '—'}
-              </span>
-            </td>
-            <td className="px-3 py-2 text-gray-700 dark:text-gray-300">{c.recency ?? '—'}</td>
-            <td className="px-3 py-2 text-gray-500 text-xs">{c.firstPurchase ? new Date(c.firstPurchase).toLocaleDateString('es-AR') : '—'}</td>
+    <div className="overflow-x-auto">
+      <table className="w-full table-dark">
+        <thead>
+          <tr>
+            {['Cliente', 'Email', 'Órdenes', 'Total gastado', 'LTV', 'Segmento', 'Recencia (días)', 'Primera compra'].map((h) => (
+              <th key={h} className="text-left whitespace-nowrap">{h}</th>
+            ))}
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {customers.map((c) => (
+            <tr key={c._id}>
+              <td className="font-medium text-white">{c.name || '—'}</td>
+              <td className="text-[11px]">{c.email}</td>
+              <td>{c.totalOrders}</td>
+              <td>{fmt(c.totalSpent)}</td>
+              <td className="font-semibold text-white">{fmt(c.ltv)}</td>
+              <td>
+                <span className={SEGMENT_STYLES[c.rfmSegment] || 'badge-gray'}>
+                  {SEGMENT_LABELS[c.rfmSegment] || c.rfmSegment || '—'}
+                </span>
+              </td>
+              <td>{c.recency ?? '—'}</td>
+              <td className="text-[11px]">{c.firstPurchase ? new Date(c.firstPurchase).toLocaleDateString('es-AR') : '—'}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
@@ -135,7 +135,7 @@ export default function Clientes() {
   const [customerData, setCustomerData] = useState({ customers: [], total: 0 });
   const [loading, setLoading] = useState(true);
   const [selectedSegment, setSelectedSegment] = useState(null);
-  const [tab, setTab] = useState('segments'); // 'segments' | 'cohorts' | 'list'
+  const [tab, setTab] = useState('segments');
   const [page, setPage] = useState(1);
 
   const fetchData = useCallback(async () => {
@@ -164,19 +164,20 @@ export default function Clientes() {
   useEffect(() => { fetchCustomers(); }, [fetchCustomers]);
 
   if (loading) {
-    return <div className="text-center py-12 text-gray-500">Cargando clientes...</div>;
+    return <div className="text-center py-12 text-[13px] text-gray-600">Cargando clientes...</div>;
   }
 
   return (
     <div className="space-y-5">
-      <p className="section-label">
-        Clientes ({customerData.total})
-      </p>
+      <div>
+        <h1 className="page-title">Clientes</h1>
+        <p className="page-subtitle">Segmentación RFM, cohorts de retención y lista de clientes ({customerData.total}).</p>
+      </div>
 
       <SegmentCards segments={segments} selected={selectedSegment} onSelect={(s) => { setSelectedSegment(s); setPage(1); }} />
 
       {/* Tabs */}
-      <div className="flex gap-2">
+      <div className="flex gap-2 border-b border-white/[0.06] pb-0">
         {[
           { key: 'segments', label: 'Lista de clientes' },
           { key: 'cohorts', label: 'Cohorts (retención)' },
@@ -184,10 +185,10 @@ export default function Clientes() {
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className={`px-4 py-2 text-sm rounded-lg transition ${
+            className={`px-4 py-2.5 text-[13px] font-medium border-b-2 -mb-px transition ${
               tab === t.key
-                ? 'bg-primary-600 text-white'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                ? 'border-blue-500 text-blue-400'
+                : 'border-transparent text-gray-500 hover:text-gray-300'
             }`}
           >
             {t.label}
@@ -195,7 +196,7 @@ export default function Clientes() {
         ))}
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60 overflow-x-auto">
+      <div className="card">
         {tab === 'cohorts' ? (
           <CohortTableView cohorts={cohorts} />
         ) : (
@@ -203,12 +204,24 @@ export default function Clientes() {
         )}
       </div>
 
-      {/* Pagination for customer list */}
+      {/* Pagination */}
       {tab === 'segments' && customerData.total > 50 && (
-        <div className="flex justify-center gap-2">
-          <button disabled={page <= 1} onClick={() => setPage(page - 1)} className="px-3 py-1 text-sm rounded border disabled:opacity-50">Anterior</button>
-          <span className="px-3 py-1 text-sm text-gray-500">Pág. {page} de {Math.ceil(customerData.total / 50)}</span>
-          <button disabled={page >= Math.ceil(customerData.total / 50)} onClick={() => setPage(page + 1)} className="px-3 py-1 text-sm rounded border disabled:opacity-50">Siguiente</button>
+        <div className="flex justify-center items-center gap-2">
+          <button
+            disabled={page <= 1}
+            onClick={() => setPage(page - 1)}
+            className="btn-ghost text-[12px] py-1.5 px-3 disabled:opacity-40"
+          >
+            Anterior
+          </button>
+          <span className="text-[12px] text-gray-500">Pág. {page} de {Math.ceil(customerData.total / 50)}</span>
+          <button
+            disabled={page >= Math.ceil(customerData.total / 50)}
+            onClick={() => setPage(page + 1)}
+            className="btn-ghost text-[12px] py-1.5 px-3 disabled:opacity-40"
+          >
+            Siguiente
+          </button>
         </div>
       )}
 

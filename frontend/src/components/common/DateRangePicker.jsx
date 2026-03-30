@@ -24,8 +24,8 @@ export default function DateRangePicker() {
             onClick={() => dispatch(setPreset(key))}
             className={`px-2.5 py-1 text-[10px] rounded-md transition font-semibold ${
               preset === key
-                ? 'bg-primary-600 text-white'
-                : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-750 hover:text-gray-700 dark:hover:text-gray-300 border border-transparent dark:border-gray-700/60'
+                ? 'bg-blue-500 text-white'
+                : 'bg-white/[0.05] text-gray-500 hover:text-gray-300 border border-white/[0.06]'
             }`}
           >
             {label}
@@ -41,16 +41,16 @@ export default function DateRangePicker() {
           onChange={(e) =>
             dispatch(setCustomRange({ from: e.target.value, to }))
           }
-          className="px-2 py-1 text-[11px] rounded-md border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-medium"
+          className="bg-[#111111] border border-white/[0.08] text-gray-300 text-[11px] rounded-md px-2 py-1 font-medium"
         />
-        <span className="text-gray-400 dark:text-gray-600 text-[10px]">—</span>
+        <span className="text-gray-600 text-[10px]">—</span>
         <input
           type="date"
           value={to}
           onChange={(e) =>
             dispatch(setCustomRange({ from, to: e.target.value }))
           }
-          className="px-2 py-1 text-[11px] rounded-md border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-medium"
+          className="bg-[#111111] border border-white/[0.08] text-gray-300 text-[11px] rounded-md px-2 py-1 font-medium"
         />
       </div>
     </div>

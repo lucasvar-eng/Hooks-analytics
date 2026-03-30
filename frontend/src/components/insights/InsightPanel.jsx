@@ -75,7 +75,6 @@ export default function InsightPanel({ storeId, section, onClose }) {
   const currentTab = TABS.find((t) => t.key === activeTab);
   const filtered = currentTab?.filter ? insights.filter(currentTab.filter) : insights;
 
-  // Group insights by category for "all" tab
   const alertas = insights.filter((i) => i.severidad === 'critical' || i.severidad === 'warning');
   const wins = insights.filter((i) => i.severidad === 'positive');
   const diagnosticos = insights.filter((i) => i.severidad === 'diagnostic');
@@ -84,23 +83,23 @@ export default function InsightPanel({ storeId, section, onClose }) {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700/60 flex items-center justify-between shrink-0">
-        <h3 className="text-[12px] font-bold text-gray-700 dark:text-white uppercase tracking-wide">Análisis</h3>
+      <div className="px-4 py-3 border-b border-white/[0.06] flex items-center justify-between shrink-0">
+        <h3 className="kpi-label">Análisis</h3>
         {onClose && (
-          <button onClick={onClose} className="text-[10px] text-gray-400 hover:text-gray-300 px-2 py-0.5 rounded border border-gray-200 dark:border-gray-700/60 hover:border-gray-600 transition">✕</button>
+          <button onClick={onClose} className="text-[10px] text-gray-600 hover:text-gray-400 px-2 py-0.5 rounded border border-white/[0.06] hover:border-white/[0.12] transition">✕</button>
         )}
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-[2px] px-3 py-2 border-b border-gray-200 dark:border-gray-700/60 bg-gray-50 dark:bg-gray-900 shrink-0">
+      <div className="flex gap-[2px] px-3 py-2 border-b border-white/[0.06] bg-black/10 shrink-0">
         {TABS.map((t) => (
           <button
             key={t.key}
             onClick={() => setActiveTab(t.key)}
             className={`px-2.5 py-1 rounded text-[10px] font-semibold transition ${
               activeTab === t.key
-                ? 'bg-primary-600 text-white'
-                : 'text-gray-400 dark:text-gray-600 hover:text-gray-600 dark:hover:text-gray-400'
+                ? 'bg-blue-500 text-white'
+                : 'text-gray-600 hover:text-gray-400'
             }`}
           >
             {t.label}
@@ -111,26 +110,26 @@ export default function InsightPanel({ storeId, section, onClose }) {
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-3">
         {loading ? (
-          <p className="text-xs text-gray-400 text-center py-8">Cargando...</p>
+          <p className="text-[11px] text-gray-600 text-center py-8">Cargando...</p>
         ) : activeTab === 'notes' ? (
           <>
             {notes.length === 0 ? (
-              <p className="text-xs text-gray-400 text-center py-4">Sin notas para esta sección.</p>
+              <p className="text-[11px] text-gray-600 text-center py-4">Sin notas para esta sección.</p>
             ) : (
               notes.map((note) => (
-                <div key={note._id} className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 border-l-[3px] border-l-gray-400 rounded-lg p-3 mb-2">
+                <div key={note._id} className="bg-white/[0.03] border border-white/[0.06] border-l-[3px] border-l-gray-500 rounded-lg p-3 mb-2">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] font-semibold text-gray-600 dark:text-gray-400">
+                    <span className="text-[10px] font-semibold text-gray-500">
                       {note.author?.nombre || 'Equipo'}
                     </span>
-                    <span className="text-[9px] text-gray-400">
+                    <span className="text-[9px] text-gray-600">
                       {new Date(note.createdAt).toLocaleDateString('es-AR')}
                     </span>
                   </div>
-                  <p className="text-[11px] text-gray-600 dark:text-gray-300 leading-relaxed">{note.text}</p>
+                  <p className="text-[11px] text-gray-400 leading-relaxed">{note.text}</p>
                   <button
                     onClick={() => handleDeleteNote(note._id)}
-                    className="text-[9px] text-red-400 hover:text-red-600 mt-1"
+                    className="text-[9px] text-red-500 hover:text-red-400 mt-1 transition"
                   >
                     Eliminar
                   </button>
@@ -142,36 +141,36 @@ export default function InsightPanel({ storeId, section, onClose }) {
           <>
             {alertas.length > 0 && (
               <>
-                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-2 mt-1">Alertas y problemas</p>
+                <p className="text-[9px] font-bold text-gray-600 uppercase tracking-widest mb-2 mt-1">Alertas y problemas</p>
                 {alertas.map((i) => <InsightCard key={i._id} insight={i} onDismiss={handleDismiss} />)}
               </>
             )}
             {wins.length > 0 && (
               <>
-                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-2 mt-3">Wins</p>
+                <p className="text-[9px] font-bold text-gray-600 uppercase tracking-widest mb-2 mt-3">Wins</p>
                 {wins.map((i) => <InsightCard key={i._id} insight={i} onDismiss={handleDismiss} />)}
               </>
             )}
             {diagnosticos.length > 0 && (
               <>
-                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-2 mt-3">Diagnóstico</p>
+                <p className="text-[9px] font-bold text-gray-600 uppercase tracking-widest mb-2 mt-3">Diagnóstico</p>
                 {diagnosticos.map((i) => <InsightCard key={i._id} insight={i} onDismiss={handleDismiss} />)}
               </>
             )}
             {acciones.length > 0 && (
               <>
-                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-2 mt-3">Acciones recomendadas</p>
+                <p className="text-[9px] font-bold text-gray-600 uppercase tracking-widest mb-2 mt-3">Acciones recomendadas</p>
                 {acciones.map((i) => <InsightCard key={i._id} insight={i} onDismiss={handleDismiss} />)}
               </>
             )}
             {insights.length === 0 && (
-              <p className="text-xs text-gray-400 text-center py-8">Sin insights para esta sección. Generá un análisis con AI.</p>
+              <p className="text-[11px] text-gray-600 text-center py-8">Sin insights para esta sección. Generá un análisis con AI.</p>
             )}
           </>
         ) : (
           <>
             {filtered.length === 0 ? (
-              <p className="text-xs text-gray-400 text-center py-8">Sin resultados en este filtro.</p>
+              <p className="text-[11px] text-gray-600 text-center py-8">Sin resultados en este filtro.</p>
             ) : (
               filtered.map((i) => <InsightCard key={i._id} insight={i} onDismiss={handleDismiss} />)
             )}
@@ -180,7 +179,7 @@ export default function InsightPanel({ storeId, section, onClose }) {
       </div>
 
       {/* Footer */}
-      <div className="px-3 py-2 border-t border-gray-200 dark:border-gray-700 shrink-0 space-y-2">
+      <div className="px-3 py-2 border-t border-white/[0.06] shrink-0 space-y-2">
         {activeTab === 'notes' && (
           <div className="flex gap-2">
             <input
@@ -188,10 +187,10 @@ export default function InsightPanel({ storeId, section, onClose }) {
               value={noteText}
               onChange={(e) => setNoteText(e.target.value)}
               placeholder="Escribir nota..."
-              className="flex-1 px-2 py-1.5 text-xs border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+              className="input-dark flex-1 text-[11px]"
               onKeyDown={(e) => e.key === 'Enter' && handleAddNote()}
             />
-            <button onClick={handleAddNote} disabled={addingNote || !noteText.trim()} className="px-2 py-1.5 text-xs bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-400 disabled:opacity-50">
+            <button onClick={handleAddNote} disabled={addingNote || !noteText.trim()} className="btn-ghost text-[10px] disabled:opacity-50">
               {addingNote ? '...' : 'Agregar'}
             </button>
           </div>
@@ -200,7 +199,7 @@ export default function InsightPanel({ storeId, section, onClose }) {
           <button
             onClick={handleGenerateAI}
             disabled={generating}
-            className="flex-1 py-1.5 rounded text-[11px] font-semibold bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 disabled:opacity-50 transition"
+            className="flex-1 py-1.5 rounded text-[11px] font-semibold bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/20 disabled:opacity-50 transition"
           >
             {generating ? 'Generando...' : 'Generar análisis AI'}
           </button>

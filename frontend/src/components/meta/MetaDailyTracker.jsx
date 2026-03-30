@@ -42,13 +42,13 @@ export default function MetaDailyTracker({ storeId, from, to }) {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  if (loading) return <div className="text-center py-8 text-gray-500">Cargando...</div>;
+  if (loading) return <div className="text-center py-8 text-[13px] text-gray-600">Cargando...</div>;
 
   const metrics = Object.keys(META_METRICS);
 
   if (days.length === 0) {
     return (
-      <p className="text-gray-500 text-sm text-center py-8">
+      <p className="text-[13px] text-gray-600 text-center py-8">
         Sin datos diarios de Meta para el período seleccionado.
       </p>
     );
@@ -56,21 +56,21 @@ export default function MetaDailyTracker({ storeId, from, to }) {
 
   return (
     <div className="overflow-x-auto">
-      <table className="text-xs w-full">
+      <table className="text-[11px] w-full table-dark">
         <thead>
-          <tr className="bg-gray-50 dark:bg-gray-750">
-            <th className="px-2 py-2 text-left text-gray-500 uppercase sticky left-0 bg-gray-50 dark:bg-gray-750 z-10">Métrica</th>
+          <tr>
+            <th className="text-left sticky left-0 bg-[#161616] z-10">Métrica</th>
             {days.map((d) => (
-              <th key={d.date || d._id} className="px-2 py-2 text-center text-gray-500 whitespace-nowrap">
+              <th key={d.date || d._id} className="text-center whitespace-nowrap">
                 {new Date(d.date || d._id).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })}
               </th>
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+        <tbody>
           {metrics.map((key) => (
-            <tr key={key} className="hover:bg-gray-50 dark:hover:bg-gray-750">
-              <td className="px-2 py-1.5 font-medium text-gray-700 dark:text-gray-300 sticky left-0 bg-white dark:bg-gray-800 z-10 whitespace-nowrap">
+            <tr key={key}>
+              <td className="font-medium text-gray-300 sticky left-0 bg-[#161616] z-10 whitespace-nowrap">
                 {META_METRICS[key]}
               </td>
               {days.map((d) => {
@@ -83,7 +83,7 @@ export default function MetaDailyTracker({ storeId, from, to }) {
                 else display = val ?? '—';
 
                 return (
-                  <td key={d.date || d._id} className="px-2 py-1.5 text-center text-gray-700 dark:text-gray-300">
+                  <td key={d.date || d._id} className="text-center">
                     {display}
                   </td>
                 );

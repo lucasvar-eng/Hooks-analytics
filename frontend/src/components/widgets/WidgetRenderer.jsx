@@ -1,8 +1,5 @@
-import { useState, useEffect } from 'react';
-import api from '../../services/api';
+import { useState } from 'react';
 import LatestSalesTable from '../dashboard/LatestSalesTable';
-
-// ─── Formatters ──────────────────────────────────────────────────────────────
 
 function formatValue(value, prefix = '', suffix = '', decimals = 0, compact = false) {
   if (value == null || isNaN(value)) return '—';
@@ -14,8 +11,6 @@ function formatValue(value, prefix = '', suffix = '', decimals = 0, compact = fa
   return `${prefix}${formatted}${suffix}`;
 }
 
-// ─── TargetBar ───────────────────────────────────────────────────────────────
-
 function TargetBar({ value, target, inverse }) {
   if (!target || value == null) return null;
   let pct;
@@ -24,27 +19,24 @@ function TargetBar({ value, target, inverse }) {
   } else {
     pct = Math.min(100, (value / target) * 100);
   }
-  const color = pct >= 90 ? 'bg-green-500' : pct >= 60 ? 'bg-yellow-500' : 'bg-red-500';
-  const dot = pct >= 90 ? '🟢' : pct >= 60 ? '🟡' : '🔴';
+  const color = pct >= 90 ? 'bg-emerald-500' : pct >= 60 ? 'bg-amber-500' : 'bg-red-500';
 
   return (
     <div className="mt-2">
-      <div className="h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+      <div className="h-0.5 bg-white/[0.06] rounded-full overflow-hidden">
         <div className={`h-full rounded-full transition-all duration-500 ${color}`} style={{ width: `${pct}%` }} />
       </div>
       <div className="flex justify-between mt-1">
-        <span className="text-[9px] text-gray-400 dark:text-gray-500">
+        <span className="text-[9px] text-gray-600">
           Target: {inverse ? 'máx ' : ''}{formatValue(target, '', inverse ? '' : '', 1)}
         </span>
-        <span className="text-[9px] text-gray-400 dark:text-gray-500">
-          {dot} {pct >= 100 ? '+' : ''}{Math.round(pct - 100)}%
+        <span className="text-[9px] text-gray-600">
+          {pct >= 100 ? '+' : ''}{Math.round(pct - 100)}%
         </span>
       </div>
     </div>
   );
 }
-
-// ─── KPI Widget (single metric) ──────────────────────────────────────────────
 
 function KPIWidget({ widget, current, deltas, objetivos }) {
   const cfg = widget.config || {};
@@ -52,15 +44,13 @@ function KPIWidget({ widget, current, deltas, objetivos }) {
   const delta = deltas[cfg.metricKey];
   const kpis = objetivos?.kpis || {};
   const target = cfg.targetKey ? kpis[cfg.targetKey] : null;
-  const deltaColor = delta > 0 ? 'text-green-500' : delta < 0 ? 'text-red-500' : 'text-gray-500';
+  const deltaColor = delta > 0 ? 'text-emerald-400' : delta < 0 ? 'text-red-400' : 'text-gray-600';
   const deltaArrow = delta > 0 ? '↑' : delta < 0 ? '↓' : '';
 
   return (
     <div>
-      <p className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1.5">
-        {widget.title}
-      </p>
-      <p className="text-[22px] font-bold text-gray-900 dark:text-white leading-none tracking-tight tabular-nums">
+      <p className="kpi-label mb-1.5">{widget.title}</p>
+      <p className="text-[22px] font-bold text-white leading-none tracking-tight tabular-nums">
         {formatValue(value, cfg.prefix, cfg.suffix, cfg.decimals, cfg.compact)}
       </p>
       {delta !== undefined && delta !== null && (
@@ -73,29 +63,23 @@ function KPIWidget({ widget, current, deltas, objetivos }) {
   );
 }
 
-// ─── KPI Group Widget (multiple metrics in one card) ─────────────────────────
-
 function KPIGroupWidget({ widget, current, deltas }) {
   const metrics = widget.config?.metrics || [];
 
   return (
     <div>
-      <p className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-3">
-        {widget.title}
-      </p>
+      <p className="kpi-label mb-3">{widget.title}</p>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-5 gap-y-3">
         {metrics.map((m) => {
           const value = current[m.key];
           const delta = deltas[m.key];
-          const deltaColor = delta > 0 ? 'text-green-500' : delta < 0 ? 'text-red-500' : 'text-gray-400';
+          const deltaColor = delta > 0 ? 'text-emerald-400' : delta < 0 ? 'text-red-400' : 'text-gray-600';
           const deltaArrow = delta > 0 ? '↑' : delta < 0 ? '↓' : '';
 
           return (
             <div key={m.key + m.label}>
-              <p className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
-                {m.label}
-              </p>
-              <p className="text-base font-bold text-gray-900 dark:text-white tabular-nums leading-tight mt-0.5">
+              <p className="kpi-label">{m.label}</p>
+              <p className="text-[15px] font-bold text-white tabular-nums leading-tight mt-0.5">
                 {formatValue(value, m.prefix, m.suffix, m.decimals, m.compact)}
               </p>
               {delta !== undefined && delta !== null && (
@@ -110,8 +94,6 @@ function KPIGroupWidget({ widget, current, deltas }) {
     </div>
   );
 }
-
-// ─── Table Widget ────────────────────────────────────────────────────────────
 
 function TableWidget({ widget, storeId, from, to }) {
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -129,36 +111,28 @@ function TableWidget({ widget, storeId, from, to }) {
   }
 
   return (
-    <div className="text-[11px] text-gray-400 dark:text-gray-500 text-center py-6">
+    <div className="text-[11px] text-gray-600 text-center py-6">
       Tabla: {cfg.dataSource || 'sin configurar'}
     </div>
   );
 }
 
-// ─── Note Widget ─────────────────────────────────────────────────────────────
-
 function NoteWidget({ widget }) {
   return (
     <div>
-      <p className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-2">
-        {widget.title}
-      </p>
-      <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed whitespace-pre-wrap">
+      <p className="kpi-label mb-2">{widget.title}</p>
+      <p className="text-[11px] text-gray-500 leading-relaxed whitespace-pre-wrap">
         {widget.config?.text || 'Sin contenido.'}
       </p>
     </div>
   );
 }
 
-// ─── Separator Widget ────────────────────────────────────────────────────────
-
 function SeparatorWidget({ widget }) {
   return (
     <p className="section-label">{widget.title}</p>
   );
 }
-
-// ─── Main Router ─────────────────────────────────────────────────────────────
 
 export default function WidgetRenderer({ widget, current, deltas, objetivos, storeId, from, to }) {
   switch (widget.type) {
@@ -172,12 +146,11 @@ export default function WidgetRenderer({ widget, current, deltas, objetivos, sto
       return <NoteWidget widget={widget} />;
     case 'separator':
       return <SeparatorWidget widget={widget} />;
-    // Legacy support
     case 'metric-card':
       return <KPIWidget widget={widget} current={current} deltas={deltas} objetivos={objetivos} />;
     case 'mini-analysis':
       return <NoteWidget widget={widget} />;
     default:
-      return <div className="text-[11px] text-gray-400">Tipo desconocido: {widget.type}</div>;
+      return <div className="text-[11px] text-gray-600">Tipo desconocido: {widget.type}</div>;
   }
 }

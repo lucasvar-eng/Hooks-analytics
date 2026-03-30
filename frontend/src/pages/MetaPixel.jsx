@@ -26,38 +26,27 @@ export default function MetaPixel() {
     setLoading(false);
   }, [storeId, from, to]);
 
-  useEffect(() => {
-    fetchCampaigns();
-  }, [fetchCampaigns]);
+  useEffect(() => { fetchCampaigns(); }, [fetchCampaigns]);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <div className="flex items-center justify-between">
-        <p className="section-label">
-          Meta Ads — Campañas
-        </p>
-        <button
-          onClick={() => setShowImport(!showImport)}
-          className="text-sm px-3 py-1.5 rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-750 transition"
-        >
+        <div>
+          <h1 className="page-title">Meta Ads</h1>
+          <p className="page-subtitle">Campañas y rendimiento de anuncios.</p>
+        </div>
+        <button onClick={() => setShowImport(!showImport)} className="btn-secondary">
           {showImport ? 'Ocultar importador' : 'Importar CSV'}
         </button>
       </div>
 
-      {showImport && (
-        <CSVImportMeta storeId={storeId} onImported={fetchCampaigns} />
-      )}
+      {showImport && <CSVImportMeta storeId={storeId} onImported={fetchCampaigns} />}
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60">
+      <div className="card">
         {loading ? (
-          <div className="text-center py-12 text-gray-500">Cargando campañas...</div>
+          <div className="text-center py-12 text-[13px] text-gray-600">Cargando campañas...</div>
         ) : (
-          <CampaignTable
-            campaigns={campaigns}
-            storeId={storeId}
-            from={from}
-            to={to}
-          />
+          <CampaignTable campaigns={campaigns} storeId={storeId} from={from} to={to} />
         )}
       </div>
     </div>

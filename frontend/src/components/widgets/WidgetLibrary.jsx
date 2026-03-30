@@ -1,7 +1,5 @@
 import { useState } from 'react';
 
-// ─── Available metrics ───────────────────────────────────────────────────────
-
 const METRIC_CATALOG = [
   { section: 'Ventas', items: [
     { key: 'ordenesPositivas', label: 'Órdenes', prefix: '', suffix: '', decimals: 0 },
@@ -65,29 +63,19 @@ const TABLE_SOURCES = [
   { value: 'latest-sales', label: 'Últimas Ventas' },
 ];
 
-// ─── Component ───────────────────────────────────────────────────────────────
-
 export default function WidgetLibrary({ onAdd, onClose }) {
-  const [step, setStep] = useState(1); // 1=type, 2=config
+  const [step, setStep] = useState(1);
   const [selectedType, setSelectedType] = useState(null);
   const [title, setTitle] = useState('');
   const [size, setSize] = useState('sm');
 
-  // KPI config
   const [selectedMetric, setSelectedMetric] = useState('');
-
-  // KPI-group config
   const [groupMetrics, setGroupMetrics] = useState([]);
-
-  // Table config
   const [dataSource, setDataSource] = useState('latest-sales');
-
-  // Note config
   const [noteText, setNoteText] = useState('');
 
   const handleSelectType = (type) => {
     setSelectedType(type);
-    // Auto-set appropriate defaults
     if (type === 'kpi') setSize('sm');
     else if (type === 'kpi-group') setSize('md');
     else if (type === 'table' || type === 'separator') setSize('full');
@@ -148,18 +136,18 @@ export default function WidgetLibrary({ onAdd, onClose }) {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60 p-4">
+    <div className="card p-4">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
+        <h3 className="kpi-label">
           {step === 1 ? 'Agregar Widget' : `Configurar ${WIDGET_TYPES.find((t) => t.type === selectedType)?.label}`}
         </h3>
         <div className="flex gap-2">
           {step === 2 && (
-            <button onClick={() => setStep(1)} className="text-[10px] text-gray-400 hover:text-primary-500 transition">
+            <button onClick={() => setStep(1)} className="text-[10px] text-gray-500 hover:text-blue-400 transition">
               ← Volver
             </button>
           )}
-          <button onClick={onClose} className="text-[10px] text-gray-400 hover:text-gray-600 transition">Cancelar</button>
+          <button onClick={onClose} className="text-[10px] text-gray-500 hover:text-gray-300 transition">Cancelar</button>
         </div>
       </div>
 
@@ -170,11 +158,11 @@ export default function WidgetLibrary({ onAdd, onClose }) {
             <button
               key={wt.type}
               onClick={() => handleSelectType(wt.type)}
-              className="p-3 rounded-lg border border-gray-200 dark:border-gray-700/60 hover:border-primary-500/40 dark:hover:border-primary-500/30 text-left transition group"
+              className="p-3 rounded-lg border border-white/[0.06] hover:border-blue-500/30 bg-white/[0.02] hover:bg-blue-500/[0.05] text-left transition"
             >
               <span className="text-lg">{wt.icon}</span>
-              <p className="text-[11px] font-semibold text-gray-900 dark:text-white mt-1">{wt.label}</p>
-              <p className="text-[9px] text-gray-400 dark:text-gray-500 mt-0.5">{wt.description}</p>
+              <p className="text-[11px] font-semibold text-white mt-1">{wt.label}</p>
+              <p className="text-[9px] text-gray-600 mt-0.5">{wt.description}</p>
             </button>
           ))}
         </div>
@@ -185,12 +173,12 @@ export default function WidgetLibrary({ onAdd, onClose }) {
         <div className="space-y-4">
           {/* Title */}
           <div>
-            <label className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Título</label>
+            <label className="kpi-label mb-1 block">Título</label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full mt-1 px-2.5 py-1.5 text-[12px] border border-gray-200 dark:border-gray-700/60 rounded bg-white dark:bg-gray-900 dark:text-gray-100"
+              className="input-dark w-full"
               placeholder="Se auto-genera si lo dejás vacío"
             />
           </div>
@@ -198,7 +186,7 @@ export default function WidgetLibrary({ onAdd, onClose }) {
           {/* Size */}
           {selectedType !== 'separator' && (
             <div>
-              <label className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Tamaño</label>
+              <label className="kpi-label mb-1 block">Tamaño</label>
               <div className="flex gap-1 mt-1">
                 {SIZE_OPTIONS.map((s) => (
                   <button
@@ -206,8 +194,8 @@ export default function WidgetLibrary({ onAdd, onClose }) {
                     onClick={() => setSize(s.value)}
                     className={`px-2.5 py-1 text-[10px] font-semibold rounded transition ${
                       size === s.value
-                        ? 'bg-primary-600 text-white'
-                        : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-white/[0.05] text-gray-500 hover:text-gray-300 border border-white/[0.06]'
                     }`}
                   >
                     {s.label}
@@ -220,11 +208,11 @@ export default function WidgetLibrary({ onAdd, onClose }) {
           {/* KPI: metric selector */}
           {selectedType === 'kpi' && (
             <div>
-              <label className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Métrica</label>
+              <label className="kpi-label mb-1 block">Métrica</label>
               <div className="mt-1 max-h-48 overflow-y-auto space-y-2">
                 {METRIC_CATALOG.map((group) => (
                   <div key={group.section}>
-                    <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-1">{group.section}</p>
+                    <p className="text-[9px] font-bold text-gray-600 uppercase tracking-wider mb-1">{group.section}</p>
                     <div className="flex flex-wrap gap-1">
                       {group.items.map((m) => (
                         <button
@@ -232,8 +220,8 @@ export default function WidgetLibrary({ onAdd, onClose }) {
                           onClick={() => setSelectedMetric(m.key)}
                           className={`px-2 py-1 text-[10px] font-medium rounded transition ${
                             selectedMetric === m.key
-                              ? 'bg-primary-600 text-white'
-                              : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                              ? 'bg-blue-500 text-white'
+                              : 'bg-white/[0.05] text-gray-400 hover:text-gray-200 border border-white/[0.06]'
                           }`}
                         >
                           {m.label}
@@ -249,13 +237,13 @@ export default function WidgetLibrary({ onAdd, onClose }) {
           {/* KPI-group: multi metric selector */}
           {selectedType === 'kpi-group' && (
             <div>
-              <label className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+              <label className="kpi-label mb-1 block">
                 Métricas ({groupMetrics.length} seleccionadas)
               </label>
               <div className="mt-1 max-h-48 overflow-y-auto space-y-2">
                 {METRIC_CATALOG.map((group) => (
                   <div key={group.section}>
-                    <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-1">{group.section}</p>
+                    <p className="text-[9px] font-bold text-gray-600 uppercase tracking-wider mb-1">{group.section}</p>
                     <div className="flex flex-wrap gap-1">
                       {group.items.map((m) => {
                         const selected = groupMetrics.some((gm) => gm.key === m.key);
@@ -265,8 +253,8 @@ export default function WidgetLibrary({ onAdd, onClose }) {
                             onClick={() => toggleGroupMetric(m)}
                             className={`px-2 py-1 text-[10px] font-medium rounded transition ${
                               selected
-                                ? 'bg-primary-600 text-white'
-                                : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                ? 'bg-blue-500 text-white'
+                                : 'bg-white/[0.05] text-gray-400 hover:text-gray-200 border border-white/[0.06]'
                             }`}
                           >
                             {m.label}
@@ -283,11 +271,11 @@ export default function WidgetLibrary({ onAdd, onClose }) {
           {/* Table: data source */}
           {selectedType === 'table' && (
             <div>
-              <label className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Fuente de datos</label>
+              <label className="kpi-label mb-1 block">Fuente de datos</label>
               <select
                 value={dataSource}
                 onChange={(e) => setDataSource(e.target.value)}
-                className="w-full mt-1 px-2.5 py-1.5 text-[12px] border border-gray-200 dark:border-gray-700/60 rounded bg-white dark:bg-gray-900 dark:text-gray-100"
+                className="input-dark w-full"
               >
                 {TABLE_SOURCES.map((s) => (
                   <option key={s.value} value={s.value}>{s.label}</option>
@@ -299,22 +287,21 @@ export default function WidgetLibrary({ onAdd, onClose }) {
           {/* Note: text */}
           {selectedType === 'note' && (
             <div>
-              <label className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Contenido</label>
+              <label className="kpi-label mb-1 block">Contenido</label>
               <textarea
                 value={noteText}
                 onChange={(e) => setNoteText(e.target.value)}
                 rows={3}
-                className="w-full mt-1 px-2.5 py-1.5 text-[12px] border border-gray-200 dark:border-gray-700/60 rounded bg-white dark:bg-gray-900 dark:text-gray-100"
+                className="input-dark w-full resize-none"
                 placeholder="Escribí notas, observaciones, análisis..."
               />
             </div>
           )}
 
-          {/* Add button */}
           <button
             onClick={handleAdd}
             disabled={!canAdd()}
-            className="w-full py-2 bg-primary-600 text-white text-[11px] font-semibold rounded hover:bg-primary-700 disabled:opacity-40 transition"
+            className="btn-primary w-full disabled:opacity-40"
           >
             Agregar widget
           </button>

@@ -12,10 +12,8 @@ const TIENDA_METRICS = [
 
 export default function TiendaSection({ current, deltas }) {
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60 p-4">
-      <h3 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">
-        Tienda
-      </h3>
+    <div className="card p-4">
+      <h3 className="kpi-label mb-3">Tienda</h3>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
         {TIENDA_METRICS.map((m) => (
           <MetricValue

@@ -2,11 +2,11 @@ import { useState } from 'react';
 import ExpandableRow from './ExpandableRow';
 
 const VERDICT_COLORS = {
-  ESCALAR: 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400',
-  PAUSAR: 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400',
-  TESTEAR: 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400',
-  REVISAR: 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400',
-  MANTENER: 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400',
+  ESCALAR: 'bg-emerald-500/10 text-emerald-400',
+  PAUSAR: 'bg-red-500/10 text-red-400',
+  TESTEAR: 'bg-blue-500/10 text-blue-400',
+  REVISAR: 'bg-amber-500/10 text-amber-400',
+  MANTENER: 'bg-white/[0.05] text-gray-500',
 };
 
 const DEFAULT_COLUMNS = [
@@ -46,7 +46,7 @@ export default function CampaignTable({ campaigns, storeId, from, to }) {
 
   if (!campaigns || campaigns.length === 0) {
     return (
-      <div className="text-center py-8 text-gray-500 dark:text-gray-500 text-sm">
+      <div className="text-center py-8 text-[13px] text-gray-600">
         No hay campañas. Conectá Meta Ads o importá un CSV.
       </div>
     );
@@ -54,14 +54,14 @@ export default function CampaignTable({ campaigns, storeId, from, to }) {
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-[11px]">
+      <table className="w-full table-dark">
         <thead>
-          <tr className="bg-gray-50/50 dark:bg-white/[0.02]">
+          <tr>
             <th className="w-7 px-2 py-2.5" />
             {columns.map((col) => (
               <th
                 key={col.key}
-                className={`px-3 py-2.5 ${col.align === 'left' ? 'text-left' : 'text-right'} text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider whitespace-nowrap border-b border-gray-200 dark:border-gray-700/60`}
+                className={col.align === 'left' ? 'text-left' : 'text-right'}
               >
                 {col.label}
               </th>
@@ -75,6 +75,7 @@ export default function CampaignTable({ campaigns, storeId, from, to }) {
               item={campaign}
               columns={columns}
               formatValue={formatValue}
+              verdictColors={VERDICT_COLORS}
               storeId={storeId}
               from={from}
               to={to}

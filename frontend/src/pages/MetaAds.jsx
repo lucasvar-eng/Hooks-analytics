@@ -35,26 +35,27 @@ export default function MetaAds() {
     setLoading(false);
   }, [storeId, from, to]);
 
-  useEffect(() => {
-    fetchCampaigns();
-  }, [fetchCampaigns]);
+  useEffect(() => { fetchCampaigns(); }, [fetchCampaigns]);
 
   return (
     <div className="space-y-5">
-      <p className="section-label">Meta Ads</p>
+      <div>
+        <h1 className="page-title">Meta Ads</h1>
+        <p className="page-subtitle">Campañas, sets de anuncios y performance de creativos.</p>
+      </div>
 
       <TopInsightBar storeId={storeId} />
 
       {/* Tabs */}
-      <div className="flex gap-[2px] bg-gray-100 dark:bg-gray-800 rounded p-0.5 w-fit">
+      <div className="flex gap-2 border-b border-white/[0.06] pb-0">
         {TABS.map((t) => (
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className={`px-3 py-1.5 text-[11px] font-semibold rounded transition ${
+            className={`px-4 py-2.5 text-[13px] font-medium border-b-2 -mb-px transition ${
               tab === t.key
-                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
-                : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
+                ? 'border-blue-500 text-blue-400'
+                : 'border-transparent text-gray-500 hover:text-gray-300'
             }`}
           >
             {t.label}
@@ -64,22 +65,17 @@ export default function MetaAds() {
 
       {/* Tab content */}
       {tab === 'campaigns' && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60">
+        <div className="card">
           {loading ? (
-            <div className="text-center py-12 text-xs text-gray-500 dark:text-gray-500">Cargando campañas...</div>
+            <div className="text-center py-12 text-[13px] text-gray-600">Cargando campañas...</div>
           ) : (
-            <CampaignTable
-              campaigns={campaigns}
-              storeId={storeId}
-              from={from}
-              to={to}
-            />
+            <CampaignTable campaigns={campaigns} storeId={storeId} from={from} to={to} />
           )}
         </div>
       )}
 
       {tab === 'daily' && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60">
+        <div className="card">
           <MetaDailyTracker storeId={storeId} from={from} to={to} />
         </div>
       )}
@@ -88,7 +84,6 @@ export default function MetaAds() {
         <CSVImportMeta storeId={storeId} onImported={fetchCampaigns} />
       )}
 
-      {/* AI Analysis */}
       <AIAnalysisPanel storeId={storeId} section="meta" from={from} to={to} />
     </div>
   );

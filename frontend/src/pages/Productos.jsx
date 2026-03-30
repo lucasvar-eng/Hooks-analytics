@@ -29,85 +29,81 @@ function ProductProfileModal({ storeId, product, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="dark:bg-gray-900 bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto p-4" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-start gap-4 mb-4">
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div className="bg-[#161616] border border-white/[0.08] rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-5" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-start gap-4 mb-5">
           {product.imagenUrl && (
-            <img src={product.imagenUrl} alt="" className="w-16 h-16 rounded object-cover" />
+            <img src={product.imagenUrl} alt="" className="w-16 h-16 rounded-lg object-cover" />
           )}
           <div>
-            <h3 className="text-base font-bold text-gray-900 dark:text-white">{product.nombre}</h3>
-            <p className="text-[11px] text-gray-500">SKU: {product.tnProductId} | Stock: {product.stock}</p>
+            <h3 className="text-[15px] font-bold text-white">{product.nombre}</h3>
+            <p className="text-[11px] text-gray-600 mt-0.5">SKU: {product.tnProductId} | Stock: {product.stock}</p>
           </div>
         </div>
 
         {/* Cost breakdown */}
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <div>
-            <p className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Precio</p>
-            <p className="text-lg font-bold tabular-nums">{fmt(product.precio)}</p>
-          </div>
-          <div>
-            <p className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">COGS</p>
-            <p className="text-lg font-bold tabular-nums">{fmt(product.costoUnitario)}</p>
-          </div>
-          <div>
-            <p className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Margen Bruto</p>
-            <p className={`text-lg font-bold tabular-nums ${(product.margenBrutoPct || 0) > 30 ? 'text-green-600' : 'text-yellow-600'}`}>
-              {fmt(product.margenBruto)} ({(product.margenBrutoPct || 0).toFixed(1)}%)
-            </p>
-          </div>
-          <div>
-            <p className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Ventas 30d</p>
-            <p className="text-lg font-bold tabular-nums">{product.ventas30dias}</p>
-          </div>
+        <div className="grid grid-cols-2 gap-4 mb-5">
+          {[
+            { label: 'Precio', value: fmt(product.precio), color: '' },
+            { label: 'COGS', value: fmt(product.costoUnitario), color: '' },
+            { label: 'Margen Bruto', value: `${fmt(product.margenBruto)} (${(product.margenBrutoPct || 0).toFixed(1)}%)`, color: (product.margenBrutoPct || 0) > 30 ? 'text-emerald-400' : 'text-amber-400' },
+            { label: 'Ventas 30d', value: product.ventas30dias, color: '' },
+          ].map(({ label, value, color }) => (
+            <div key={label} className="bg-white/[0.03] rounded-lg p-3 border border-white/[0.05]">
+              <p className="kpi-label">{label}</p>
+              <p className={`text-[18px] font-bold mt-1 ${color || 'text-white'}`}>{value}</p>
+            </div>
+          ))}
         </div>
 
         {/* Simulator */}
-        <div className="border-t border-gray-200 dark:border-gray-700/60 pt-4 mb-4">
-          <p className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-3">Simulador</p>
+        <div className="border-t border-white/[0.06] pt-4 mb-5">
+          <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-3">Simulador</p>
           <div className="grid grid-cols-3 gap-3">
-            <div>
-              <label className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Precio</label>
-              <input type="number" value={simInputs.precio} onChange={(e) => setSimInputs({ ...simInputs, precio: +e.target.value })} className="w-full mt-1 px-2.5 py-1.5 text-[12px] border border-gray-200 dark:border-gray-700/60 rounded bg-white dark:bg-gray-800 dark:text-gray-100" />
-            </div>
-            <div>
-              <label className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">COGS</label>
-              <input type="number" value={simInputs.costoUnitario} onChange={(e) => setSimInputs({ ...simInputs, costoUnitario: +e.target.value })} className="w-full mt-1 px-2.5 py-1.5 text-[12px] border border-gray-200 dark:border-gray-700/60 rounded bg-white dark:bg-gray-800 dark:text-gray-100" />
-            </div>
-            <div>
-              <label className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Empaque</label>
-              <input type="number" value={simInputs.costoEmpaque} onChange={(e) => setSimInputs({ ...simInputs, costoEmpaque: +e.target.value })} className="w-full mt-1 px-2.5 py-1.5 text-[12px] border border-gray-200 dark:border-gray-700/60 rounded bg-white dark:bg-gray-800 dark:text-gray-100" />
-            </div>
+            {[
+              { label: 'Precio', key: 'precio' },
+              { label: 'COGS', key: 'costoUnitario' },
+              { label: 'Empaque', key: 'costoEmpaque' },
+            ].map(({ label, key }) => (
+              <div key={key}>
+                <label className="kpi-label">{label}</label>
+                <input
+                  type="number"
+                  value={simInputs[key]}
+                  onChange={(e) => setSimInputs({ ...simInputs, [key]: +e.target.value })}
+                  className="input-dark mt-1 w-full"
+                />
+              </div>
+            ))}
           </div>
-          <button onClick={handleSimulate} className="mt-2 px-3 py-1 bg-primary-600 text-white text-[11px] font-semibold rounded hover:bg-primary-700">Simular</button>
+          <button onClick={handleSimulate} className="btn-primary mt-3">Simular</button>
           {sim && (
-            <div className="mt-2 text-[11px]">
-              Margen: <span className={`font-bold tabular-nums ${sim.margenBrutoPct > 30 ? 'text-green-600' : 'text-yellow-600'}`}>{fmt(sim.margenBruto)} ({sim.margenBrutoPct.toFixed(1)}%)</span>
-            </div>
+            <p className="mt-2 text-[12px] text-gray-400">
+              Margen: <span className={`font-bold ${sim.margenBrutoPct > 30 ? 'text-emerald-400' : 'text-amber-400'}`}>{fmt(sim.margenBruto)} ({sim.margenBrutoPct.toFixed(1)}%)</span>
+            </p>
           )}
         </div>
 
         {/* Recent orders */}
         {profile?.recentOrders?.length > 0 && (
-          <div className="border-t border-gray-200 dark:border-gray-700/60 pt-4">
-            <p className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-2">Últimas ventas</p>
-            <table className="w-full">
+          <div className="border-t border-white/[0.06] pt-4">
+            <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-3">Últimas ventas</p>
+            <table className="w-full table-dark">
               <thead>
                 <tr>
-                  <th className="text-left py-1.5 text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700/60">Orden</th>
-                  <th className="text-left py-1.5 text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700/60">Cliente</th>
-                  <th className="text-right py-1.5 text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700/60">Cant.</th>
-                  <th className="text-right py-1.5 text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700/60">Subtotal</th>
+                  <th className="text-left">Orden</th>
+                  <th className="text-left">Cliente</th>
+                  <th className="text-right">Cant.</th>
+                  <th className="text-right">Subtotal</th>
                 </tr>
               </thead>
               <tbody>
                 {profile.recentOrders.map((o, i) => (
-                  <tr key={i} className="border-b border-gray-100 dark:border-gray-700/40 hover:bg-gray-50 dark:hover:bg-white/[0.02]">
-                    <td className="py-1.5 text-[11px]">{o.tnOrderNumber}</td>
-                    <td className="py-1.5 text-[11px]">{o.customerName}</td>
-                    <td className="py-1.5 text-[11px] text-right">{o.cantidad}</td>
-                    <td className="py-1.5 text-[11px] text-right tabular-nums">{fmt(o.subtotal)}</td>
+                  <tr key={i}>
+                    <td>{o.tnOrderNumber}</td>
+                    <td>{o.customerName}</td>
+                    <td className="text-right">{o.cantidad}</td>
+                    <td className="text-right tabular-nums">{fmt(o.subtotal)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -115,7 +111,7 @@ function ProductProfileModal({ storeId, product, onClose }) {
           </div>
         )}
 
-        <button onClick={onClose} className="mt-4 w-full py-2 text-[11px] text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+        <button onClick={onClose} className="mt-5 w-full py-2 text-[12px] text-gray-600 hover:text-gray-400 transition">
           Cerrar
         </button>
       </div>
@@ -124,15 +120,12 @@ function ProductProfileModal({ storeId, product, onClose }) {
 }
 
 function StockBadge({ stock, ventas30dias, ultimaVenta }) {
-  if (stock === 0) return <span className="px-1.5 py-0.5 text-[9px] font-bold rounded bg-red-100 text-red-700">Sin stock</span>;
-  if (stock <= 5) return <span className="px-1.5 py-0.5 text-[9px] font-bold rounded bg-yellow-100 text-yellow-700">Stock bajo</span>;
-
-  // Dead stock check
+  if (stock === 0) return <span className="badge-red ml-1.5">Sin stock</span>;
+  if (stock <= 5) return <span className="badge-amber ml-1.5">Stock bajo</span>;
   if (ventas30dias === 0 && stock > 0) {
     const noSale = !ultimaVenta || (new Date() - new Date(ultimaVenta)) > 90 * 24 * 60 * 60 * 1000;
-    if (noSale) return <span className="px-1.5 py-0.5 text-[9px] font-bold rounded bg-gray-200 text-gray-600">Dead stock</span>;
+    if (noSale) return <span className="badge-gray ml-1.5">Dead stock</span>;
   }
-
   return null;
 }
 
@@ -158,54 +151,53 @@ export default function Productos() {
     setLoading(false);
   }, [storeId, from, to, page]);
 
-  useEffect(() => {
-    fetchProducts();
-  }, [fetchProducts]);
+  useEffect(() => { fetchProducts(); }, [fetchProducts]);
 
   if (loading) {
-    return <div className="text-center py-12 text-xs text-gray-500 dark:text-gray-500">Cargando productos...</div>;
+    return <div className="text-center py-12 text-[13px] text-gray-600">Cargando productos...</div>;
   }
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <p className="section-label">Productos ({data.total})</p>
+      <div>
+        <h1 className="page-title">Productos</h1>
+        <p className="page-subtitle">Performance, márgenes y stock de tus {data.total} productos.</p>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60 overflow-x-auto">
-        <table className="w-full">
+      <div className="card overflow-x-auto">
+        <table className="w-full table-dark">
           <thead>
-            <tr className="bg-gray-50 dark:bg-gray-750">
+            <tr>
               {['Producto', 'Precio', 'COGS', 'Margen %', 'Stock', 'Ventas período', 'Revenue período', 'Velocity', 'Días stock', ''].map((h) => (
-                <th key={h} className="px-3 py-2 text-left text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider whitespace-nowrap border-b border-gray-200 dark:border-gray-700/60">{h}</th>
+                <th key={h} className="text-left whitespace-nowrap">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {data.products.map((p) => (
-              <tr key={p._id} className="border-b border-gray-100 dark:border-gray-700/40 hover:bg-gray-50 dark:hover:bg-white/[0.02] cursor-pointer" onClick={() => setSelected(p)}>
-                <td className="px-3 py-2">
+              <tr key={p._id} className="cursor-pointer" onClick={() => setSelected(p)}>
+                <td>
                   <div className="flex items-center gap-2">
-                    {p.imagenUrl && <img src={p.imagenUrl} alt="" className="w-8 h-8 rounded object-cover" />}
-                    <span className="text-[11px] font-medium text-gray-900 dark:text-white truncate max-w-[200px]">{p.nombre}</span>
+                    {p.imagenUrl && <img src={p.imagenUrl} alt="" className="w-8 h-8 rounded-lg object-cover" />}
+                    <span className="font-medium text-white truncate max-w-[200px]">{p.nombre}</span>
                   </div>
                 </td>
-                <td className="px-3 py-2 text-[11px] text-gray-700 dark:text-gray-300 tabular-nums">{fmt(p.precio)}</td>
-                <td className="px-3 py-2 text-[11px] text-gray-700 dark:text-gray-300 tabular-nums">{fmt(p.costoUnitario)}</td>
-                <td className="px-3 py-2">
-                  <span className={`text-[11px] font-medium tabular-nums ${(p.margenBrutoPct || 0) > 30 ? 'text-green-600' : (p.margenBrutoPct || 0) > 15 ? 'text-yellow-600' : 'text-red-600'}`}>
+                <td className="tabular-nums">{fmt(p.precio)}</td>
+                <td className="tabular-nums">{fmt(p.costoUnitario)}</td>
+                <td>
+                  <span className={`text-[12px] font-semibold tabular-nums ${(p.margenBrutoPct || 0) > 30 ? 'text-emerald-400' : (p.margenBrutoPct || 0) > 15 ? 'text-amber-400' : 'text-red-400'}`}>
                     {p.margenBrutoPct ? `${p.margenBrutoPct.toFixed(1)}%` : '—'}
                   </span>
                 </td>
-                <td className="px-3 py-2">
-                  <span className="text-[11px] text-gray-700 dark:text-gray-300">{p.stock}</span>
+                <td>
+                  <span className="text-gray-300">{p.stock}</span>
                   <StockBadge stock={p.stock} ventas30dias={p.ventas30dias} ultimaVenta={p.ultimaVenta} />
                 </td>
-                <td className="px-3 py-2 text-[11px] text-gray-700 dark:text-gray-300 tabular-nums">{p.periodSales || 0}</td>
-                <td className="px-3 py-2 text-[11px] text-gray-700 dark:text-gray-300 tabular-nums">{fmt(p.periodRevenue)}</td>
-                <td className="px-3 py-2 text-[11px] text-gray-700 dark:text-gray-300 tabular-nums">{p.velocity?.toFixed(1) || '—'}</td>
-                <td className="px-3 py-2 text-[11px] text-gray-700 dark:text-gray-300 tabular-nums">{p.diasDeStock || '—'}</td>
-                <td className="px-3 py-2 text-[11px] text-gray-400">→</td>
+                <td className="tabular-nums">{p.periodSales || 0}</td>
+                <td className="tabular-nums">{fmt(p.periodRevenue)}</td>
+                <td className="tabular-nums">{p.velocity?.toFixed(1) || '—'}</td>
+                <td className="tabular-nums">{p.diasDeStock || '—'}</td>
+                <td className="text-gray-700">→</td>
               </tr>
             ))}
           </tbody>
@@ -214,10 +206,10 @@ export default function Productos() {
 
       {/* Pagination */}
       {data.total > 50 && (
-        <div className="flex justify-center gap-2">
-          <button disabled={page <= 1} onClick={() => setPage(page - 1)} className="px-3 py-1 text-[11px] font-semibold rounded border disabled:opacity-50">Anterior</button>
-          <span className="px-3 py-1 text-[11px] text-gray-400 dark:text-gray-500">Pág. {page} de {Math.ceil(data.total / 50)}</span>
-          <button disabled={page >= Math.ceil(data.total / 50)} onClick={() => setPage(page + 1)} className="px-3 py-1 text-[11px] font-semibold rounded border disabled:opacity-50">Siguiente</button>
+        <div className="flex justify-center items-center gap-2">
+          <button disabled={page <= 1} onClick={() => setPage(page - 1)} className="btn-ghost text-[12px] py-1.5 px-3 disabled:opacity-40">Anterior</button>
+          <span className="text-[12px] text-gray-500">Pág. {page} de {Math.ceil(data.total / 50)}</span>
+          <button disabled={page >= Math.ceil(data.total / 50)} onClick={() => setPage(page + 1)} className="btn-ghost text-[12px] py-1.5 px-3 disabled:opacity-40">Siguiente</button>
         </div>
       )}
 

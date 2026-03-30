@@ -45,21 +45,19 @@ export default function LatestSalesTable({ storeId, from, to, onOrderClick }) {
   }, [storeId, from, to]);
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60 overflow-hidden">
-      <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700/60">
-        <h3 className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
-          Últimas Ventas
-        </h3>
+    <div className="card overflow-hidden">
+      <div className="px-4 py-3 border-b border-white/[0.06]">
+        <h3 className="kpi-label">Últimas Ventas</h3>
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full text-[11px]">
+        <table className="w-full table-dark">
           <thead>
-            <tr className="bg-gray-50/50 dark:bg-white/[0.02]">
+            <tr>
               {COLUMNS.map((col) => (
                 <th
                   key={col.key}
-                  className={`px-3 py-2.5 ${col.format === 'text' || col.format === 'date' || col.format === 'ncrc' ? 'text-left' : 'text-right'} text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider whitespace-nowrap border-b border-gray-200 dark:border-gray-700/60`}
+                  className={col.format === 'text' || col.format === 'date' || col.format === 'ncrc' ? 'text-left' : 'text-right'}
                 >
                   {col.label}
                 </th>
@@ -69,13 +67,13 @@ export default function LatestSalesTable({ storeId, from, to, onOrderClick }) {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={COLUMNS.length} className="px-3 py-8 text-center text-xs text-gray-500 dark:text-gray-500">
+                <td colSpan={COLUMNS.length} className="px-3 py-8 text-center text-[12px] text-gray-600">
                   Cargando...
                 </td>
               </tr>
             ) : orders.length === 0 ? (
               <tr>
-                <td colSpan={COLUMNS.length} className="px-3 py-8 text-center text-xs text-gray-500 dark:text-gray-500">
+                <td colSpan={COLUMNS.length} className="px-3 py-8 text-center text-[12px] text-gray-600">
                   Sin órdenes en este período
                 </td>
               </tr>
@@ -84,28 +82,26 @@ export default function LatestSalesTable({ storeId, from, to, onOrderClick }) {
                 <tr
                   key={order._id}
                   onClick={() => onOrderClick?.(order)}
-                  className="border-b border-gray-100 dark:border-gray-700/40 hover:bg-gray-50 dark:hover:bg-white/[0.02] cursor-pointer transition"
+                  className="cursor-pointer"
                 >
                   {COLUMNS.map((col) => (
                     <td
                       key={col.key}
-                      className={`px-3 py-2 whitespace-nowrap tabular-nums ${
+                      className={`whitespace-nowrap tabular-nums ${
                         col.format === 'text' || col.format === 'date' || col.format === 'ncrc' ? 'text-left' : 'text-right'
                       } ${
                         col.key === 'totalNeto'
-                          ? 'font-semibold text-green-600 dark:text-green-400'
-                          : col.key === 'esClienteNuevo'
-                            ? ''
-                            : 'text-gray-600 dark:text-gray-300'
+                          ? 'font-semibold text-emerald-400'
+                          : ''
                       }`}
                     >
                       {col.key === 'esClienteNuevo' ? (
                         <span className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-bold ${
                           order[col.key] === true
-                            ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
+                            ? 'bg-blue-500/10 text-blue-400'
                             : order[col.key] === false
-                              ? 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
-                              : 'text-gray-400'
+                              ? 'bg-white/[0.05] text-gray-500'
+                              : 'text-gray-600'
                         }`}>
                           {formatCell(order[col.key], col.format)}
                         </span>

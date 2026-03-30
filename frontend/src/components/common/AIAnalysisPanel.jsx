@@ -13,11 +13,7 @@ export default function AIAnalysisPanel({ storeId, section, from, to }) {
     setError(null);
     setSaveSuccess(false);
     try {
-      const { data } = await api.post(`/api/stores/${storeId}/ai/analyze`, {
-        section,
-        from,
-        to,
-      });
+      const { data } = await api.post(`/api/stores/${storeId}/ai/analyze`, { section, from, to });
       setAnalysis(data);
     } catch (err) {
       setError(err.response?.data?.error || 'Error al generar análisis');
@@ -50,24 +46,18 @@ export default function AIAnalysisPanel({ storeId, section, from, to }) {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60 p-4">
+    <div className="card p-4">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
-          Análisis AI
-        </h3>
-        <button
-          onClick={handleAnalyze}
-          disabled={loading}
-          className="px-3 py-1.5 bg-primary-600 text-white text-[11px] font-semibold rounded hover:bg-primary-700 disabled:opacity-50 transition"
-        >
+        <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Análisis AI</p>
+        <button onClick={handleAnalyze} disabled={loading} className="btn-primary text-[11px] disabled:opacity-50">
           {loading ? 'Analizando...' : 'Generar análisis'}
         </button>
       </div>
 
-      {error && <p className="text-[11px] text-red-500 dark:text-red-400 mb-2">{error}</p>}
+      {error && <p className="text-[12px] text-red-400 mb-2">{error}</p>}
 
       {analysis && (
-        <div className="prose prose-sm dark:prose-invert max-w-none text-[11px] leading-relaxed text-gray-600 dark:text-gray-300">
+        <div className="text-[12px] leading-relaxed text-gray-400 space-y-1">
           <div
             dangerouslySetInnerHTML={{
               __html: analysis.analysis
@@ -79,28 +69,20 @@ export default function AIAnalysisPanel({ storeId, section, from, to }) {
                 .replace(/^- (.*)/gm, '<li>$1</li>'),
             }}
           />
-          <div className="flex items-center gap-3 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700/60">
+          <div className="flex items-center gap-3 mt-3 pt-3 border-t border-white/[0.06]">
             {analysis.tokensUsed && (
-              <p className="text-[10px] text-gray-400 dark:text-gray-500">
-                {analysis.tokensUsed} tokens · {analysis.model}
-              </p>
+              <p className="text-[10px] text-gray-600">{analysis.tokensUsed} tokens · {analysis.model}</p>
             )}
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="px-2.5 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-[10px] font-semibold rounded hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 transition"
-            >
+            <button onClick={handleSave} disabled={saving} className="btn-ghost text-[11px] disabled:opacity-50">
               {saving ? 'Guardando...' : 'Guardar análisis'}
             </button>
-            {saveSuccess && (
-              <span className="text-[10px] text-green-500 dark:text-green-400">Guardado</span>
-            )}
+            {saveSuccess && <span className="text-[11px] text-emerald-400">Guardado</span>}
           </div>
         </div>
       )}
 
       {!analysis && !loading && !error && (
-        <p className="text-[11px] text-gray-400 dark:text-gray-500">
+        <p className="text-[12px] text-gray-600">
           Hacé click en "Generar análisis" para obtener insights de AI sobre esta sección.
         </p>
       )}

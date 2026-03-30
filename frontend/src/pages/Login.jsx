@@ -20,32 +20,32 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
-      <div className="w-full max-w-md">
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950 px-4">
+      <div className="w-full max-w-sm">
+        <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700/60 shadow-2xl shadow-black/10 dark:shadow-black/40 p-8">
           {/* Logo / Title */}
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-primary-600 dark:text-primary-400">
-              ecom-analytics
+            <h1 className="text-[15px] font-extrabold tracking-[2px] text-primary-500 uppercase">
+              ECOM ANALYTICS
             </h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-2 text-sm">
+            <p className="text-gray-400 dark:text-gray-500 mt-2 text-[11px]">
               Plataforma de analytics para tu agencia
             </p>
           </div>
 
           {/* Error */}
           {error && (
-            <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-300 text-sm">
+            <div className="mb-4 p-2.5 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/40 rounded text-red-600 dark:text-red-400 text-[11px]">
               {error}
             </div>
           )}
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label
                 htmlFor="email"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                className="block text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5"
               >
                 Email
               </label>
@@ -55,7 +55,7 @@ export default function Login() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition"
+                className="w-full px-3 py-2 rounded border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800 text-[12px] text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-primary-500 focus:border-primary-500 outline-none transition"
                 placeholder="tu@email.com"
               />
             </div>
@@ -63,7 +63,7 @@ export default function Login() {
             <div>
               <label
                 htmlFor="password"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                className="block text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5"
               >
                 Contraseña
               </label>
@@ -73,7 +73,7 @@ export default function Login() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition"
+                className="w-full px-3 py-2 rounded border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800 text-[12px] text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-primary-500 focus:border-primary-500 outline-none transition"
                 placeholder="••••••••"
               />
             </div>
@@ -81,7 +81,7 @@ export default function Login() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-2.5 px-4 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium rounded-lg transition"
+              className="w-full py-2 px-4 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-[12px] font-semibold rounded transition"
             >
               {loading ? 'Ingresando...' : 'Ingresar'}
             </button>

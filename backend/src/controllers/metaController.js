@@ -4,6 +4,7 @@ const MetaDailyInsight = require('../models/MetaDailyInsight');
 const metaAPI = require('../services/metaAPI');
 const { syncMetaStructure, syncMetaInsights } = require('../services/syncMeta');
 const { importMetaCSV, validateHeaders, getImportHistory } = require('../services/csvImportMeta');
+const { classifyCampaign, getThresholds } = require('../services/verdictEngine');
 const { meta: metaConfig } = require('../config/environment');
 const logger = require('../utils/logger');
 
@@ -120,6 +121,7 @@ exports.getCampaigns = async (req, res, next) => {
             clicks: i.clicks || 0,
             purchases: i.purchases || 0,
             revenue: i.purchaseValue || 0,
+            purchaseValue: i.purchaseValue || 0,
             roas: i.spend > 0 ? (i.purchaseValue || 0) / i.spend : 0,
             cpa: i.purchases > 0 ? (i.spend || 0) / i.purchases : 0,
             cpc: i.clicks > 0 ? (i.spend || 0) / i.clicks : 0,
@@ -128,6 +130,17 @@ exports.getCampaigns = async (req, res, next) => {
         };
       })
     );
+
+    // Add verdict to each campaign
+    try {
+      const thresholds = await getThresholds(storeId);
+      const store = await Store.findById(storeId).select('objetivos').lean();
+      for (const camp of result) {
+        camp.metrics.verdict = classifyCampaign(camp.metrics, thresholds, store?.objetivos);
+      }
+    } catch (err) {
+      logger.warn('Verdict classification skipped:', err.message);
+    }
 
     res.json(result);
   } catch (error) {

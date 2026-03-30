@@ -18,14 +18,14 @@ function PnLSection({ pnl }) {
   if (!pnl) return null;
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-5">
+    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60 p-5">
       <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4 uppercase">
         P&L del período
       </h3>
 
       <div className="space-y-1">
         {/* Revenue */}
-        <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+        <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700/60">
           <span className="font-medium text-gray-900 dark:text-gray-100">Revenue</span>
           <span className="font-bold text-gray-900 dark:text-gray-100">{fmt(pnl.revenue)}</span>
         </div>
@@ -69,7 +69,7 @@ function BreakevenSection({ be }) {
   ];
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-5">
+    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60 p-5">
       <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4 uppercase">
         Breakeven
       </h3>
@@ -118,7 +118,7 @@ function CSVUploadSection({ storeId, onUploaded }) {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-5">
+    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60 p-5">
       <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase">
         Importar costos de productos (CSV)
       </h3>
@@ -137,7 +137,7 @@ function CSVUploadSection({ storeId, onUploaded }) {
 
       <div className="flex items-center gap-3">
         <input ref={fileRef} type="file" accept=".csv" className="text-sm text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100" />
-        <button onClick={handleUpload} disabled={uploading} className="px-4 py-1.5 bg-indigo-600 text-white text-sm rounded hover:bg-indigo-700 disabled:opacity-50">
+        <button onClick={handleUpload} disabled={uploading} className="px-4 py-1.5 bg-primary-600 text-white text-sm rounded hover:bg-primary-700 disabled:opacity-50">
           {uploading ? 'Subiendo...' : 'Subir'}
         </button>
       </div>
@@ -189,8 +189,8 @@ export default function Costos() {
   }
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Costos & P&L</h2>
+    <div className="space-y-5">
+      <p className="section-label">Costos & P&L</p>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <PnLSection pnl={pnl} />

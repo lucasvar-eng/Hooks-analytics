@@ -4,14 +4,14 @@ import api from '../services/api';
 
 function AIConfigSection() {
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60 p-4">
       <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase">AI</h3>
       <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
         La configuración de proveedor AI, API key y modelos se gestiona desde tu perfil de usuario.
       </p>
       <Link
         to="/profile"
-        className="inline-block px-3 py-1.5 bg-violet-600 text-white text-xs rounded hover:bg-violet-700 transition font-medium"
+        className="inline-block px-3 py-1.5 bg-primary-600 text-white text-xs rounded hover:bg-primary-700 transition font-medium"
       >
         Ir a mi perfil
       </Link>
@@ -83,7 +83,7 @@ function StoreAIContextSection({ storeId }) {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60 p-4">
       <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 uppercase">Contexto AI de la tienda</h3>
       <p className="text-xs text-gray-400 mb-3">
         Instrucciones específicas para esta tienda. Se suman a tus instrucciones globales de perfil.
@@ -108,7 +108,7 @@ function StoreAIContextSection({ storeId }) {
           <button
             onClick={saveInstructions}
             disabled={saving}
-            className="px-3 py-1.5 bg-indigo-600 text-white text-xs rounded hover:bg-indigo-700 disabled:opacity-50 transition font-medium"
+            className="px-3 py-1.5 bg-primary-600 text-white text-xs rounded hover:bg-primary-700 disabled:opacity-50 transition font-medium"
           >
             {saving ? 'Guardando...' : 'Guardar instrucciones'}
           </button>
@@ -138,6 +138,307 @@ function StoreAIContextSection({ storeId }) {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+const FASES = [
+  { value: 'lanzamiento', label: 'Lanzamiento' },
+  { value: 'crecimiento', label: 'Crecimiento' },
+  { value: 'escalamiento', label: 'Escalamiento' },
+  { value: 'optimizacion', label: 'Optimización' },
+  { value: 'mantenimiento', label: 'Mantenimiento' },
+];
+
+function ObjetivosPanel({ storeId }) {
+  const [obj, setObj] = useState({ fase: 'crecimiento', kpis: {}, breakeven: {}, alertThresholds: { warningPct: 10, criticalPct: 25 } });
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState(null);
+
+  useEffect(() => {
+    api.get(`/api/stores/${storeId}`).then(({ data }) => {
+      if (data.objetivos) setObj({ ...obj, ...data.objetivos });
+    }).catch(() => {});
+  }, [storeId]);
+
+  const updateKpi = (key, val) => setObj({ ...obj, kpis: { ...obj.kpis, [key]: val === '' ? undefined : Number(val) } });
+  const updateBe = (key, val) => setObj({ ...obj, breakeven: { ...obj.breakeven, [key]: val === '' ? undefined : Number(val) } });
+  const updateAt = (key, val) => setObj({ ...obj, alertThresholds: { ...obj.alertThresholds, [key]: Number(val) } });
+
+  const save = async () => {
+    setSaving(true); setMsg(null);
+    try {
+      await api.put(`/api/stores/${storeId}`, { objetivos: obj });
+      setMsg({ ok: true, text: 'Objetivos guardados' });
+    } catch (err) {
+      setMsg({ ok: false, text: err.response?.data?.error || 'Error' });
+    }
+    setSaving(false);
+  };
+
+  const kpiFields = [
+    { key: 'roasTarget', label: 'ROAS Target', suffix: 'x', step: 0.1 },
+    { key: 'trueRoasTarget', label: 'True ROAS Target', suffix: 'x', step: 0.1 },
+    { key: 'cpaMaximo', label: 'CPA Máximo', prefix: '$', step: 100 },
+    { key: 'trueCpaMaximo', label: 'True CPA Máximo', prefix: '$', step: 100 },
+    { key: 'profitMarginMin', label: 'Margen Profit Mín.', suffix: '%', step: 1 },
+    { key: 'aovTarget', label: 'AOV Target', prefix: '$', step: 100 },
+    { key: 'ncPctTarget', label: 'NC % Target', suffix: '%', step: 1 },
+    { key: 'conversionRateTarget', label: 'Tasa Conversión Target', suffix: '%', step: 0.1 },
+    { key: 'tasaDevolucionMax', label: 'Tasa Devolución Máx.', suffix: '%', step: 1 },
+  ];
+
+  const beFields = [
+    { key: 'roasBreakeven', label: 'ROAS Breakeven', suffix: 'x', step: 0.1 },
+    { key: 'cpaBreakeven', label: 'CPA Breakeven', prefix: '$', step: 100 },
+    { key: 'aovMinimo', label: 'AOV Mínimo', prefix: '$', step: 100 },
+  ];
+
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60 p-4">
+      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase">Objetivos y KPIs</h3>
+
+      <div className="mb-4">
+        <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">Fase de la tienda</label>
+        <select value={obj.fase} onChange={(e) => setObj({ ...obj, fase: e.target.value })} className="w-full px-3 py-2 text-sm border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100">
+          {FASES.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
+        </select>
+      </div>
+
+      <p className="text-xs text-gray-400 mb-2">KPIs Target</p>
+      <div className="grid grid-cols-3 gap-3 mb-4">
+        {kpiFields.map((f) => (
+          <div key={f.key}>
+            <label className="text-xs text-gray-500 dark:text-gray-400">{f.label}</label>
+            <div className="flex items-center gap-1 mt-1">
+              {f.prefix && <span className="text-xs text-gray-400">{f.prefix}</span>}
+              <input type="number" step={f.step} value={obj.kpis[f.key] ?? ''} onChange={(e) => updateKpi(f.key, e.target.value)} className="w-full px-2 py-1.5 text-sm border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100" placeholder="—" />
+              {f.suffix && <span className="text-xs text-gray-400">{f.suffix}</span>}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <p className="text-xs text-gray-400 mb-2">Breakeven</p>
+      <div className="grid grid-cols-3 gap-3 mb-4">
+        {beFields.map((f) => (
+          <div key={f.key}>
+            <label className="text-xs text-gray-500 dark:text-gray-400">{f.label}</label>
+            <div className="flex items-center gap-1 mt-1">
+              {f.prefix && <span className="text-xs text-gray-400">{f.prefix}</span>}
+              <input type="number" step={f.step} value={obj.breakeven[f.key] ?? ''} onChange={(e) => updateBe(f.key, e.target.value)} className="w-full px-2 py-1.5 text-sm border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100" placeholder="—" />
+              {f.suffix && <span className="text-xs text-gray-400">{f.suffix}</span>}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <p className="text-xs text-gray-400 mb-2">Umbrales de alerta (% desviación del target)</p>
+      <div className="grid grid-cols-2 gap-3 mb-4">
+        <div>
+          <label className="text-xs text-gray-500">Warning (%)</label>
+          <input type="number" step="1" value={obj.alertThresholds?.warningPct ?? 10} onChange={(e) => updateAt('warningPct', e.target.value)} className="w-full mt-1 px-2 py-1.5 text-sm border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100" />
+        </div>
+        <div>
+          <label className="text-xs text-gray-500">Critical (%)</label>
+          <input type="number" step="1" value={obj.alertThresholds?.criticalPct ?? 25} onChange={(e) => updateAt('criticalPct', e.target.value)} className="w-full mt-1 px-2 py-1.5 text-sm border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100" />
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3">
+        <button onClick={save} disabled={saving} className="px-3 py-1.5 bg-primary-600 text-white text-xs rounded hover:bg-primary-700 disabled:opacity-50 transition font-medium">
+          {saving ? 'Guardando...' : 'Guardar objetivos'}
+        </button>
+        {msg && <span className={`text-xs font-medium ${msg.ok ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>{msg.text}</span>}
+      </div>
+    </div>
+  );
+}
+
+function CotizacionDolarPanel({ storeId }) {
+  const [cotizacion, setCotizacion] = useState(0);
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState(null);
+
+  useEffect(() => {
+    api.get(`/api/stores/${storeId}`).then(({ data }) => {
+      setCotizacion(data.cotizacionDolar || 0);
+    }).catch(() => {});
+  }, [storeId]);
+
+  const save = async () => {
+    setSaving(true); setMsg(null);
+    try {
+      await api.put(`/api/stores/${storeId}`, { cotizacionDolar: cotizacion });
+      setMsg({ ok: true, text: 'Cotización guardada' });
+    } catch (err) {
+      setMsg({ ok: false, text: err.response?.data?.error || 'Error' });
+    }
+    setSaving(false);
+  };
+
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60 p-4">
+      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase">Cotización USD</h3>
+      <p className="text-xs text-gray-400 mb-3">Tipo de cambio para convertir Ad Spend (USD) a ARS. Se usa en cálculos de ROAS real, CPA y márgenes.</p>
+      <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1">
+          <span className="text-sm text-gray-500">1 USD =</span>
+          <input type="number" step="1" value={cotizacion} onChange={(e) => setCotizacion(+e.target.value)} className="w-28 px-3 py-2 text-sm border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100" />
+          <span className="text-sm text-gray-500">ARS</span>
+        </div>
+        <button onClick={save} disabled={saving} className="px-3 py-1.5 bg-primary-600 text-white text-xs rounded hover:bg-primary-700 disabled:opacity-50 transition font-medium">
+          {saving ? '...' : 'Guardar'}
+        </button>
+        {msg && <span className={`text-xs font-medium ${msg.ok ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>{msg.text}</span>}
+      </div>
+    </div>
+  );
+}
+
+function AdVerdictThresholdsPanel({ storeId }) {
+  const [thresholds, setThresholds] = useState({
+    escalar: { roasMin: '', minSpend: '', minPurchases: '' },
+    mantener: { roasMin: '', minSpend: '' },
+    revisar: { roasMin: '', cpaMaxPct: '' },
+    pausar: { roasMax: '', minSpend: '', minDays: '' },
+    testear: { maxSpend: '', maxPurchases: '' },
+  });
+  const [saving, setSaving] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const [msg, setMsg] = useState(null);
+
+  useEffect(() => {
+    api.get(`/api/stores/${storeId}`).then(({ data }) => {
+      if (data.adVerdictThresholds) {
+        setThresholds((prev) => {
+          const merged = { ...prev };
+          for (const cat of Object.keys(prev)) {
+            if (data.adVerdictThresholds[cat]) {
+              merged[cat] = { ...prev[cat] };
+              for (const key of Object.keys(prev[cat])) {
+                merged[cat][key] = data.adVerdictThresholds[cat][key] ?? '';
+              }
+            }
+          }
+          return merged;
+        });
+      }
+    }).catch(() => {});
+  }, [storeId]);
+
+  const update = (cat, key, val) => {
+    setThresholds((prev) => ({
+      ...prev,
+      [cat]: { ...prev[cat], [key]: val === '' ? '' : Number(val) },
+    }));
+  };
+
+  const save = async () => {
+    setSaving(true); setMsg(null);
+    try {
+      // Clean empty strings to undefined
+      const clean = {};
+      for (const cat of Object.keys(thresholds)) {
+        clean[cat] = {};
+        for (const [k, v] of Object.entries(thresholds[cat])) {
+          if (v !== '' && v != null) clean[cat][k] = Number(v);
+        }
+      }
+      await api.put(`/api/stores/${storeId}`, { adVerdictThresholds: clean });
+      setMsg({ ok: true, text: 'Umbrales guardados' });
+    } catch (err) {
+      setMsg({ ok: false, text: err.response?.data?.error || 'Error' });
+    }
+    setSaving(false);
+  };
+
+  const generateWithAI = async () => {
+    setGenerating(true); setMsg(null);
+    try {
+      const { data } = await api.post(`/api/stores/${storeId}/generate-verdict-thresholds`);
+      if (data.thresholds) {
+        setThresholds((prev) => {
+          const merged = { ...prev };
+          for (const cat of Object.keys(prev)) {
+            if (data.thresholds[cat]) {
+              merged[cat] = { ...prev[cat] };
+              for (const key of Object.keys(prev[cat])) {
+                merged[cat][key] = data.thresholds[cat][key] ?? prev[cat][key];
+              }
+            }
+          }
+          return merged;
+        });
+      }
+      setMsg({ ok: true, text: 'Umbrales generados por AI. Revisalos y guardá.' });
+    } catch (err) {
+      setMsg({ ok: false, text: err.response?.data?.error || 'Error al generar' });
+    }
+    setGenerating(false);
+  };
+
+  const categories = [
+    { cat: 'escalar', label: 'ESCALAR', color: 'text-green-600 dark:text-green-400', fields: [
+      { key: 'roasMin', label: 'ROAS mín.', suffix: 'x', step: 0.1 },
+      { key: 'minSpend', label: 'Gasto mín.', prefix: '$', step: 1000 },
+      { key: 'minPurchases', label: 'Compras mín.', step: 1 },
+    ]},
+    { cat: 'mantener', label: 'MANTENER', color: 'text-gray-600 dark:text-gray-400', fields: [
+      { key: 'roasMin', label: 'ROAS mín.', suffix: 'x', step: 0.1 },
+      { key: 'minSpend', label: 'Gasto mín.', prefix: '$', step: 1000 },
+    ]},
+    { cat: 'revisar', label: 'REVISAR', color: 'text-orange-600 dark:text-orange-400', fields: [
+      { key: 'roasMin', label: 'ROAS mín.', suffix: 'x', step: 0.1 },
+      { key: 'cpaMaxPct', label: 'CPA máx. vs target', suffix: '%', step: 10 },
+    ]},
+    { cat: 'pausar', label: 'PAUSAR', color: 'text-red-600 dark:text-red-400', fields: [
+      { key: 'roasMax', label: 'ROAS máx.', suffix: 'x', step: 0.1 },
+      { key: 'minSpend', label: 'Gasto mín. para pausar', prefix: '$', step: 1000 },
+      { key: 'minDays', label: 'Días mín. activo', step: 1 },
+    ]},
+    { cat: 'testear', label: 'TESTEAR', color: 'text-blue-600 dark:text-blue-400', fields: [
+      { key: 'maxSpend', label: 'Gasto máx. (poco data)', prefix: '$', step: 1000 },
+      { key: 'maxPurchases', label: 'Compras máx. (poco data)', step: 1 },
+    ]},
+  ];
+
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60 p-4">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase">Umbrales de veredicto de Ads</h3>
+        <button onClick={generateWithAI} disabled={generating} className="text-xs px-2 py-1 bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400 rounded hover:bg-violet-200 dark:hover:bg-violet-800/40 disabled:opacity-50 font-medium">
+          {generating ? 'Generando...' : 'Generar con AI'}
+        </button>
+      </div>
+      <p className="text-xs text-gray-400 mb-4">Definí cuándo un anuncio se clasifica como ESCALAR, PAUSAR, etc. Si dejás vacío se usan valores por defecto. Podés generar con AI basado en tu data histórica.</p>
+
+      <div className="space-y-4">
+        {categories.map((c) => (
+          <div key={c.cat} className="p-3 rounded-lg bg-gray-50 dark:bg-gray-750 border border-gray-100 dark:border-gray-700/60">
+            <p className={`text-xs font-bold mb-2 ${c.color}`}>{c.label}</p>
+            <div className="grid grid-cols-3 gap-2">
+              {c.fields.map((f) => (
+                <div key={f.key}>
+                  <label className="text-xs text-gray-500">{f.label}</label>
+                  <div className="flex items-center gap-1 mt-0.5">
+                    {f.prefix && <span className="text-xs text-gray-400">{f.prefix}</span>}
+                    <input type="number" step={f.step} value={thresholds[c.cat][f.key]} onChange={(e) => update(c.cat, f.key, e.target.value)} className="w-full px-2 py-1 text-sm border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100" placeholder="auto" />
+                    {f.suffix && <span className="text-xs text-gray-400">{f.suffix}</span>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="flex items-center gap-3 mt-4">
+        <button onClick={save} disabled={saving} className="px-3 py-1.5 bg-primary-600 text-white text-xs rounded hover:bg-primary-700 disabled:opacity-50 transition font-medium">
+          {saving ? 'Guardando...' : 'Guardar umbrales'}
+        </button>
+        {msg && <span className={`text-xs font-medium ${msg.ok ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>{msg.text}</span>}
+      </div>
     </div>
   );
 }
@@ -200,7 +501,7 @@ function MetricSelectorSection({ storeId }) {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60 p-4">
       <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase">Métricas de Home</h3>
       <p className="text-xs text-gray-400 dark:text-gray-500 mb-3">
         Elegí hasta 5 métricas para mostrar en la tarjeta de Home de esta tienda.
@@ -228,7 +529,7 @@ function MetricSelectorSection({ storeId }) {
         <button
           onClick={save}
           disabled={saving || selected.length === 0}
-          className="px-3 py-1.5 bg-indigo-600 text-white text-xs rounded hover:bg-indigo-700 disabled:opacity-50 transition font-medium"
+          className="px-3 py-1.5 bg-primary-600 text-white text-xs rounded hover:bg-primary-700 disabled:opacity-50 transition font-medium"
         >
           {saving ? 'Guardando...' : 'Guardar métricas'}
         </button>
@@ -303,11 +604,11 @@ export default function Settings() {
   if (loading) return <div className="text-center py-12 text-gray-500">Cargando settings...</div>;
 
   return (
-    <div className="space-y-6 max-w-3xl">
-      <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Settings — {store?.nombre}</h2>
+    <div className="space-y-5 max-w-3xl">
+      <p className="section-label">Settings — {store?.nombre}</p>
 
       {/* Integrations status */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60 p-4">
         <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase">Integraciones</h3>
         <div className="space-y-4">
           {/* TiendaNube */}
@@ -411,11 +712,20 @@ export default function Settings() {
       {/* Store AI Context */}
       <StoreAIContextSection storeId={storeId} />
 
+      {/* Objetivos y KPIs */}
+      <ObjetivosPanel storeId={storeId} />
+
+      {/* Cotización USD */}
+      <CotizacionDolarPanel storeId={storeId} />
+
+      {/* Ad Verdict Thresholds */}
+      <AdVerdictThresholdsPanel storeId={storeId} />
+
       {/* Home metric selector */}
       <MetricSelectorSection storeId={storeId} />
 
       {/* Financial config */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60 p-4">
         <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase">Configuración financiera</h3>
         <div className="grid grid-cols-2 gap-4 mb-4">
           <div>
@@ -430,7 +740,7 @@ export default function Settings() {
       </div>
 
       {/* Comisiones de pago */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60 p-4">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase">Comisiones de pago</h3>
           <button onClick={addComision} className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-400">
@@ -453,7 +763,7 @@ export default function Settings() {
             </thead>
             <tbody>
               {comisiones.map((c, i) => (
-                <tr key={i} className="border-t border-gray-100 dark:border-gray-700">
+                <tr key={i} className="border-t border-gray-100 dark:border-gray-700/60">
                   <td className="py-1">
                     <select value={c.medioPago} onChange={(e) => updateComision(i, 'medioPago', e.target.value)} className="px-2 py-1 text-sm border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100">
                       <option value="">Seleccionar</option>
@@ -475,7 +785,7 @@ export default function Settings() {
 
       {/* Save */}
       <div className="flex items-center gap-3">
-        <button onClick={handleSave} disabled={saving} className="px-4 py-2 bg-indigo-600 text-white text-sm rounded hover:bg-indigo-700 disabled:opacity-50">
+        <button onClick={handleSave} disabled={saving} className="px-4 py-2 bg-primary-600 text-white text-sm rounded hover:bg-primary-700 disabled:opacity-50">
           {saving ? 'Guardando...' : 'Guardar y recalcular'}
         </button>
         {message && <span className="text-sm text-gray-600 dark:text-gray-400">{message}</span>}

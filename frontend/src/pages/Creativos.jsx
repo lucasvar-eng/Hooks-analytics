@@ -18,7 +18,7 @@ const TIER_COLORS = {
 
 function AdCard({ ad }) {
   return (
-    <div className={`rounded-lg border p-3 bg-white dark:bg-gray-800 ${ad.tier ? 'border-l-4' : ''} ${TIER_COLORS[ad.tier]?.split(' ')[2] || 'border-gray-200 dark:border-gray-700'}`}>
+    <div className={`rounded-lg border p-3 bg-white dark:bg-gray-800 ${ad.tier ? 'border-l-4' : ''} ${TIER_COLORS[ad.tier]?.split(' ')[2] || 'border-gray-200 dark:border-gray-700/60'}`}>
       <div className="flex items-start gap-3">
         {ad.thumbnailUrl && (
           <img src={ad.thumbnailUrl} alt="" className="w-16 h-16 rounded object-cover shrink-0" />
@@ -167,15 +167,15 @@ export default function Creativos() {
   }
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Creativos</h2>
+    <div className="space-y-5">
+      <p className="section-label">Creativos</p>
 
       {/* Tabs */}
       <div className="flex gap-2">
-        <button onClick={() => setTab('ads')} className={`px-4 py-2 text-sm rounded-lg transition ${tab === 'ads' ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}>
+        <button onClick={() => setTab('ads')} className={`px-4 py-2 text-sm rounded-lg transition ${tab === 'ads' ? 'bg-primary-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}>
           Clasificación ABCDE ({ads.length})
         </button>
-        <button onClick={() => setTab('campaigns')} className={`px-4 py-2 text-sm rounded-lg transition ${tab === 'campaigns' ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}>
+        <button onClick={() => setTab('campaigns')} className={`px-4 py-2 text-sm rounded-lg transition ${tab === 'campaigns' ? 'bg-primary-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}>
           Resultados por campaña
         </button>
       </div>
@@ -205,7 +205,7 @@ export default function Creativos() {
           )}
         </>
       ) : (
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-x-auto">
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60 overflow-x-auto">
           <CampaignResultsTable campaigns={campaigns} />
         </div>
       )}

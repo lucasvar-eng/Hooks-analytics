@@ -1,9 +1,47 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   body {
-    @apply antialiased;
+    @apply antialiased font-sans;
+  }
+
+  /* Custom scrollbar for dark mode */
+  .dark ::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+  .dark ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .dark ::-webkit-scrollbar-thumb {
+    background: #2a2a2a;
+    border-radius: 3px;
+  }
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: #3a3a3a;
+  }
+
+  /* Dark mode body background */
+  .dark body {
+    background: #080808;
+  }
+}
+
+@layer components {
+  /* Card base style matching v4 prototype */
+  .card {
+    @apply bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60;
+  }
+  .card:hover {
+    @apply dark:border-gray-700;
+  }
+
+  /* Section label like prototype */
+  .section-label {
+    @apply text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2;
   }
 }

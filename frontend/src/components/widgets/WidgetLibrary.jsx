@@ -1,152 +1,325 @@
 import { useState } from 'react';
 
-const METRIC_OPTIONS = [
-  { key: 'ordenesPositivas', label: 'Órdenes', prefix: '', suffix: '', decimals: 0 },
-  { key: 'revenue', label: 'Revenue', prefix: '$', suffix: '', decimals: 0 },
-  { key: 'netRevenue', label: 'Net Revenue', prefix: '$', suffix: '', decimals: 0 },
-  { key: 'profit', label: 'Profit', prefix: '$', suffix: '', decimals: 0 },
-  { key: 'profitMargin', label: 'Margen %', prefix: '', suffix: '%', decimals: 1 },
-  { key: 'adSpend', label: 'Ad Spend', prefix: '$', suffix: '', decimals: 0 },
-  { key: 'roas', label: 'ROAS', prefix: '', suffix: 'x', decimals: 2 },
-  { key: 'trueRoas', label: 'True ROAS', prefix: '', suffix: 'x', decimals: 2 },
-  { key: 'cpa', label: 'CPA', prefix: '$', suffix: '', decimals: 0 },
-  { key: 'ncPct', label: 'NC %', prefix: '', suffix: '%', decimals: 1 },
-  { key: 'aov', label: 'AOV', prefix: '$', suffix: '', decimals: 0 },
-  { key: 'ctr', label: 'CTR', prefix: '', suffix: '%', decimals: 2 },
+// ─── Available metrics ───────────────────────────────────────────────────────
+
+const METRIC_CATALOG = [
+  { section: 'Ventas', items: [
+    { key: 'ordenesPositivas', label: 'Órdenes', prefix: '', suffix: '', decimals: 0 },
+    { key: 'revenue', label: 'Revenue', prefix: '$', suffix: '', decimals: 0, compact: true },
+    { key: 'netRevenue', label: 'Net Revenue', prefix: '$', suffix: '', decimals: 0, compact: true },
+    { key: 'aov', label: 'AOV', prefix: '$', suffix: '', decimals: 0 },
+    { key: 'aovNeto', label: 'AOV Neto', prefix: '$', suffix: '', decimals: 0 },
+    { key: 'devoluciones', label: 'Devoluciones', prefix: '', suffix: '', decimals: 0 },
+  ]},
+  { section: 'Rentabilidad', items: [
+    { key: 'profit', label: 'Profit', prefix: '$', suffix: '', decimals: 0, compact: true },
+    { key: 'profitMargin', label: 'Margen %', prefix: '', suffix: '%', decimals: 1 },
+  ]},
+  { section: 'Marketing', items: [
+    { key: 'adSpend', label: 'Ad Spend', prefix: '$', suffix: '', decimals: 0, compact: true },
+    { key: 'roas', label: 'ROAS', prefix: '', suffix: 'x', decimals: 2 },
+    { key: 'trueRoas', label: 'True ROAS', prefix: '', suffix: 'x', decimals: 2 },
+    { key: 'cpa', label: 'CPA', prefix: '$', suffix: '', decimals: 0 },
+    { key: 'trueCpa', label: 'True CPA', prefix: '$', suffix: '', decimals: 0 },
+    { key: 'ctr', label: 'CTR', prefix: '', suffix: '%', decimals: 2 },
+    { key: 'cpm', label: 'CPM', prefix: '$', suffix: '', decimals: 0 },
+    { key: 'conversionRate', label: 'CVR', prefix: '', suffix: '%', decimals: 2 },
+  ]},
+  { section: 'Clientes', items: [
+    { key: 'ncPct', label: 'NC %', prefix: '', suffix: '%', decimals: 1 },
+    { key: 'ncOrdenes', label: 'NC Órdenes', prefix: '', suffix: '', decimals: 0 },
+    { key: 'ncRevenue', label: 'NC Revenue', prefix: '$', suffix: '', decimals: 0, compact: true },
+    { key: 'ncCpa', label: 'NC CPA', prefix: '$', suffix: '', decimals: 0 },
+    { key: 'ncRoas', label: 'NC ROAS', prefix: '', suffix: 'x', decimals: 2 },
+    { key: 'rcOrdenes', label: 'RC Órdenes', prefix: '', suffix: '', decimals: 0 },
+    { key: 'rcRevenue', label: 'RC Revenue', prefix: '$', suffix: '', decimals: 0, compact: true },
+  ]},
+  { section: 'Costos', items: [
+    { key: 'totalCostoProductos', label: 'COGS', prefix: '$', suffix: '', decimals: 0 },
+    { key: 'totalCostoEnvio', label: 'Costo Envío', prefix: '$', suffix: '', decimals: 0 },
+    { key: 'totalComisionPago', label: 'Comisión Pago', prefix: '$', suffix: '', decimals: 0 },
+    { key: 'totalComisionCuotas', label: 'Comisión Cuotas', prefix: '$', suffix: '', decimals: 0 },
+    { key: 'totalImpuestosIBB', label: 'IBB', prefix: '$', suffix: '', decimals: 0 },
+    { key: 'totalFeePlataforma', label: 'Fee Plataforma', prefix: '$', suffix: '', decimals: 0 },
+  ]},
 ];
+
+const ALL_METRICS = METRIC_CATALOG.flatMap((g) => g.items);
 
 const WIDGET_TYPES = [
-  {
-    type: 'metric-card',
-    label: 'KPI Card',
-    description: 'Muestra una métrica con su valor actual',
-    needsMetric: true,
-  },
-  {
-    type: 'mini-analysis',
-    label: 'Nota / Análisis',
-    description: 'Texto libre o análisis guardado',
-    needsText: true,
-  },
+  { type: 'kpi', label: 'KPI Card', description: 'Una métrica individual con valor, delta y target', icon: '📊' },
+  { type: 'kpi-group', label: 'Grupo de KPIs', description: 'Varias métricas agrupadas en una tarjeta', icon: '📋' },
+  { type: 'table', label: 'Tabla', description: 'Tabla de datos (ventas, campañas, etc.)', icon: '📑' },
+  { type: 'note', label: 'Nota', description: 'Texto libre, observaciones o análisis', icon: '📝' },
+  { type: 'separator', label: 'Separador', description: 'Título de sección para organizar', icon: '➖' },
 ];
 
+const SIZE_OPTIONS = [
+  { value: 'sm', label: '1 col', description: 'Pequeño' },
+  { value: 'md', label: '2 col', description: 'Mediano' },
+  { value: 'lg', label: '3 col', description: 'Grande' },
+  { value: 'full', label: 'Ancho completo', description: 'Full' },
+];
+
+const TABLE_SOURCES = [
+  { value: 'latest-sales', label: 'Últimas Ventas' },
+];
+
+// ─── Component ───────────────────────────────────────────────────────────────
+
 export default function WidgetLibrary({ onAdd, onClose }) {
+  const [step, setStep] = useState(1); // 1=type, 2=config
   const [selectedType, setSelectedType] = useState(null);
-  const [selectedMetric, setSelectedMetric] = useState(null);
-  const [customTitle, setCustomTitle] = useState('');
-  const [customText, setCustomText] = useState('');
+  const [title, setTitle] = useState('');
+  const [size, setSize] = useState('sm');
+
+  // KPI config
+  const [selectedMetric, setSelectedMetric] = useState('');
+
+  // KPI-group config
+  const [groupMetrics, setGroupMetrics] = useState([]);
+
+  // Table config
+  const [dataSource, setDataSource] = useState('latest-sales');
+
+  // Note config
+  const [noteText, setNoteText] = useState('');
+
+  const handleSelectType = (type) => {
+    setSelectedType(type);
+    // Auto-set appropriate defaults
+    if (type === 'kpi') setSize('sm');
+    else if (type === 'kpi-group') setSize('md');
+    else if (type === 'table' || type === 'separator') setSize('full');
+    else if (type === 'note') setSize('md');
+    setStep(2);
+  };
+
+  const toggleGroupMetric = (metric) => {
+    setGroupMetrics((prev) => {
+      const exists = prev.find((m) => m.key === metric.key);
+      if (exists) return prev.filter((m) => m.key !== metric.key);
+      return [...prev, metric];
+    });
+  };
 
   const handleAdd = () => {
     if (!selectedType) return;
 
-    const wt = WIDGET_TYPES.find((t) => t.type === selectedType);
     const config = {};
-    let title = customTitle;
+    let finalTitle = title;
 
-    if (wt.needsMetric && selectedMetric) {
-      const m = METRIC_OPTIONS.find((o) => o.key === selectedMetric);
-      config.metricKey = selectedMetric;
-      config.prefix = m?.prefix;
-      config.suffix = m?.suffix;
-      config.decimals = m?.decimals;
-      if (!title) title = m?.label || selectedMetric;
+    if (selectedType === 'kpi') {
+      const m = ALL_METRICS.find((o) => o.key === selectedMetric);
+      if (!m) return;
+      Object.assign(config, { metricKey: m.key, prefix: m.prefix, suffix: m.suffix, decimals: m.decimals, compact: m.compact });
+      if (!finalTitle) finalTitle = m.label;
     }
 
-    if (wt.needsText) {
-      config.text = customText;
-      if (!title) title = 'Nota';
+    if (selectedType === 'kpi-group') {
+      if (groupMetrics.length === 0) return;
+      config.metrics = groupMetrics;
+      if (!finalTitle) finalTitle = 'Grupo de métricas';
     }
 
-    if (!title) title = wt.label;
+    if (selectedType === 'table') {
+      config.dataSource = dataSource;
+      if (!finalTitle) finalTitle = TABLE_SOURCES.find((s) => s.value === dataSource)?.label || 'Tabla';
+    }
 
-    onAdd({ type: selectedType, title, config });
+    if (selectedType === 'note') {
+      config.text = noteText;
+      if (!finalTitle) finalTitle = 'Nota';
+    }
+
+    if (selectedType === 'separator') {
+      if (!finalTitle) finalTitle = 'Sección';
+    }
+
+    onAdd({ type: selectedType, title: finalTitle, size, config });
     onClose();
   };
 
+  const canAdd = () => {
+    if (!selectedType) return false;
+    if (selectedType === 'kpi' && !selectedMetric) return false;
+    if (selectedType === 'kpi-group' && groupMetrics.length === 0) return false;
+    return true;
+  };
+
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase">Agregar Widget</h3>
-        <button onClick={onClose} className="text-xs text-gray-400 hover:text-gray-600">Cancelar</button>
+    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60 p-4">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
+          {step === 1 ? 'Agregar Widget' : `Configurar ${WIDGET_TYPES.find((t) => t.type === selectedType)?.label}`}
+        </h3>
+        <div className="flex gap-2">
+          {step === 2 && (
+            <button onClick={() => setStep(1)} className="text-[10px] text-gray-400 hover:text-primary-500 transition">
+              ← Volver
+            </button>
+          )}
+          <button onClick={onClose} className="text-[10px] text-gray-400 hover:text-gray-600 transition">Cancelar</button>
+        </div>
       </div>
 
-      {/* Type selection */}
-      <div className="space-y-2 mb-4">
-        {WIDGET_TYPES.map((wt) => (
-          <label
-            key={wt.type}
-            className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition ${
-              selectedType === wt.type
-                ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
-                : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
-            }`}
-          >
+      {/* Step 1: Choose type */}
+      {step === 1 && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+          {WIDGET_TYPES.map((wt) => (
+            <button
+              key={wt.type}
+              onClick={() => handleSelectType(wt.type)}
+              className="p-3 rounded-lg border border-gray-200 dark:border-gray-700/60 hover:border-primary-500/40 dark:hover:border-primary-500/30 text-left transition group"
+            >
+              <span className="text-lg">{wt.icon}</span>
+              <p className="text-[11px] font-semibold text-gray-900 dark:text-white mt-1">{wt.label}</p>
+              <p className="text-[9px] text-gray-400 dark:text-gray-500 mt-0.5">{wt.description}</p>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Step 2: Configure */}
+      {step === 2 && (
+        <div className="space-y-4">
+          {/* Title */}
+          <div>
+            <label className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Título</label>
             <input
-              type="radio"
-              name="widgetType"
-              value={wt.type}
-              checked={selectedType === wt.type}
-              onChange={() => setSelectedType(wt.type)}
-              className="mt-0.5 accent-indigo-600"
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="w-full mt-1 px-2.5 py-1.5 text-[12px] border border-gray-200 dark:border-gray-700/60 rounded bg-white dark:bg-gray-900 dark:text-gray-100"
+              placeholder="Se auto-genera si lo dejás vacío"
             />
+          </div>
+
+          {/* Size */}
+          {selectedType !== 'separator' && (
             <div>
-              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{wt.label}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">{wt.description}</p>
+              <label className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Tamaño</label>
+              <div className="flex gap-1 mt-1">
+                {SIZE_OPTIONS.map((s) => (
+                  <button
+                    key={s.value}
+                    onClick={() => setSize(s.value)}
+                    className={`px-2.5 py-1 text-[10px] font-semibold rounded transition ${
+                      size === s.value
+                        ? 'bg-primary-600 text-white'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
             </div>
-          </label>
-        ))}
-      </div>
+          )}
 
-      {/* Metric selector for metric-card */}
-      {selectedType === 'metric-card' && (
-        <div className="mb-4">
-          <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">Métrica</label>
-          <select
-            value={selectedMetric || ''}
-            onChange={(e) => setSelectedMetric(e.target.value)}
-            className="w-full px-3 py-2 text-sm border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+          {/* KPI: metric selector */}
+          {selectedType === 'kpi' && (
+            <div>
+              <label className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Métrica</label>
+              <div className="mt-1 max-h-48 overflow-y-auto space-y-2">
+                {METRIC_CATALOG.map((group) => (
+                  <div key={group.section}>
+                    <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-1">{group.section}</p>
+                    <div className="flex flex-wrap gap-1">
+                      {group.items.map((m) => (
+                        <button
+                          key={m.key}
+                          onClick={() => setSelectedMetric(m.key)}
+                          className={`px-2 py-1 text-[10px] font-medium rounded transition ${
+                            selectedMetric === m.key
+                              ? 'bg-primary-600 text-white'
+                              : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                          }`}
+                        >
+                          {m.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* KPI-group: multi metric selector */}
+          {selectedType === 'kpi-group' && (
+            <div>
+              <label className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+                Métricas ({groupMetrics.length} seleccionadas)
+              </label>
+              <div className="mt-1 max-h-48 overflow-y-auto space-y-2">
+                {METRIC_CATALOG.map((group) => (
+                  <div key={group.section}>
+                    <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-1">{group.section}</p>
+                    <div className="flex flex-wrap gap-1">
+                      {group.items.map((m) => {
+                        const selected = groupMetrics.some((gm) => gm.key === m.key);
+                        return (
+                          <button
+                            key={m.key}
+                            onClick={() => toggleGroupMetric(m)}
+                            className={`px-2 py-1 text-[10px] font-medium rounded transition ${
+                              selected
+                                ? 'bg-primary-600 text-white'
+                                : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                            }`}
+                          >
+                            {m.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Table: data source */}
+          {selectedType === 'table' && (
+            <div>
+              <label className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Fuente de datos</label>
+              <select
+                value={dataSource}
+                onChange={(e) => setDataSource(e.target.value)}
+                className="w-full mt-1 px-2.5 py-1.5 text-[12px] border border-gray-200 dark:border-gray-700/60 rounded bg-white dark:bg-gray-900 dark:text-gray-100"
+              >
+                {TABLE_SOURCES.map((s) => (
+                  <option key={s.value} value={s.value}>{s.label}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Note: text */}
+          {selectedType === 'note' && (
+            <div>
+              <label className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Contenido</label>
+              <textarea
+                value={noteText}
+                onChange={(e) => setNoteText(e.target.value)}
+                rows={3}
+                className="w-full mt-1 px-2.5 py-1.5 text-[12px] border border-gray-200 dark:border-gray-700/60 rounded bg-white dark:bg-gray-900 dark:text-gray-100"
+                placeholder="Escribí notas, observaciones, análisis..."
+              />
+            </div>
+          )}
+
+          {/* Add button */}
+          <button
+            onClick={handleAdd}
+            disabled={!canAdd()}
+            className="w-full py-2 bg-primary-600 text-white text-[11px] font-semibold rounded hover:bg-primary-700 disabled:opacity-40 transition"
           >
-            <option value="">Seleccionar...</option>
-            {METRIC_OPTIONS.map((m) => (
-              <option key={m.key} value={m.key}>{m.label}</option>
-            ))}
-          </select>
+            Agregar widget
+          </button>
         </div>
       )}
-
-      {/* Text for mini-analysis */}
-      {selectedType === 'mini-analysis' && (
-        <div className="mb-4">
-          <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">Contenido</label>
-          <textarea
-            value={customText}
-            onChange={(e) => setCustomText(e.target.value)}
-            rows={3}
-            className="w-full px-3 py-2 text-sm border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
-            placeholder="Texto o insights..."
-          />
-        </div>
-      )}
-
-      {/* Custom title */}
-      <div className="mb-4">
-        <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">Título (opcional)</label>
-        <input
-          type="text"
-          value={customTitle}
-          onChange={(e) => setCustomTitle(e.target.value)}
-          className="w-full px-3 py-2 text-sm border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
-          placeholder="Se auto-genera si lo dejás vacío"
-        />
-      </div>
-
-      <button
-        onClick={handleAdd}
-        disabled={!selectedType || (selectedType === 'metric-card' && !selectedMetric)}
-        className="w-full px-4 py-2 bg-indigo-600 text-white text-sm rounded hover:bg-indigo-700 disabled:opacity-50 transition font-medium"
-      >
-        Agregar
-      </button>
     </div>
   );
 }

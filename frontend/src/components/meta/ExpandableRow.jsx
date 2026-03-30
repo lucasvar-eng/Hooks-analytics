@@ -1,6 +1,14 @@
 import { useState } from 'react';
 import api from '../../services/api';
 
+const VERDICT_COLORS = {
+  ESCALAR: 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400',
+  PAUSAR: 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400',
+  TESTEAR: 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400',
+  REVISAR: 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400',
+  MANTENER: 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400',
+};
+
 export default function ExpandableRow({
   item,
   columns,
@@ -96,7 +104,13 @@ export default function ExpandableRow({
                   className="w-6 h-6 rounded inline-block mr-2 align-middle"
                 />
               )}
-              {formatValue(value, col.format, col.suffix)}
+              {col.format === 'verdict' && value && VERDICT_COLORS[value] ? (
+                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide ${VERDICT_COLORS[value]}`}>
+                  {value}
+                </span>
+              ) : (
+                formatValue(value, col.format, col.suffix)
+              )}
             </td>
           );
         })}

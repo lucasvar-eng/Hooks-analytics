@@ -23,6 +23,9 @@ router.post('/:id/connect-tn-manual', requireRole('admin'), settingsController.c
 router.get('/:id/orders/:orderId', storeController.getOrderDetail);
 router.get('/:id/daily-metrics', storeController.getDailyMetrics);
 
+// Verdict thresholds AI generation
+router.post('/:id/generate-verdict-thresholds', requireRole('admin', 'analyst'), storeController.generateVerdictThresholds);
+
 // AI context per store
 router.get('/:id/ai-context', storeAIContext.getAIContext);
 router.put('/:id/ai-context', requireRole('admin', 'analyst'), storeAIContext.updateAIContext);

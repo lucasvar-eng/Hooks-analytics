@@ -24,6 +24,8 @@ const tiendaRoutes = require('./routes/tiendaRoutes');
 const userSettingsRoutes = require('./routes/userSettingsRoutes');
 const userManagementRoutes = require('./routes/userManagementRoutes');
 const widgetRoutes = require('./routes/widgetRoutes');
+const insightRoutes = require('./routes/insightRoutes');
+const teamNoteRoutes = require('./routes/teamNoteRoutes');
 const { startCronJobs } = require('./services/cronJobs');
 const logger = require('./utils/logger');
 
@@ -67,6 +69,8 @@ app.use('/api', languageBankRoutes);
 app.use('/api', reportRoutes);
 app.use('/api', alertRoutes);
 app.use('/api', widgetRoutes);
+app.use('/api', insightRoutes);
+app.use('/api', teamNoteRoutes);
 app.use('/api', tiendaRoutes);
 app.use('/api/user', userSettingsRoutes);
 app.use('/api/admin/users', userManagementRoutes);

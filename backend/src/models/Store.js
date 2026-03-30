@@ -81,6 +81,32 @@ const storeSchema = new mongoose.Schema(
       },
     },
 
+    // Ad verdict thresholds (per-store customizable)
+    adVerdictThresholds: {
+      escalar: {
+        roasMin: { type: Number },
+        minSpend: { type: Number },
+        minPurchases: { type: Number },
+      },
+      mantener: {
+        roasMin: { type: Number },
+        minSpend: { type: Number },
+      },
+      revisar: {
+        roasMin: { type: Number },
+        cpaMaxPct: { type: Number },
+      },
+      pausar: {
+        roasMax: { type: Number },
+        minSpend: { type: Number },
+        minDays: { type: Number },
+      },
+      testear: {
+        maxSpend: { type: Number },
+        maxPurchases: { type: Number },
+      },
+    },
+
     // Alert config
     alertConfig: {
       enabledTypes: [String],

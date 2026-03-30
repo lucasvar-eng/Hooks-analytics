@@ -23,14 +23,13 @@ const METRICS_MAP = {
 const DEFAULT_METRICS = ['ordenesPositivas', 'revenue', 'trueRoas', 'profit', 'ncPct'];
 
 function getHealthBadge(current, objetivos) {
-  if (!objetivos?.kpis) return { color: 'bg-gray-300 dark:bg-gray-600', label: 'Sin objetivos' };
+  if (!objetivos?.kpis) return { color: 'bg-gray-400 dark:bg-gray-600', label: 'Sin objetivos' };
 
   const kpis = objetivos.kpis;
   const warn = objetivos.alertThresholds?.warningPct || 10;
   let issues = 0;
   let criticals = 0;
 
-  // Check key KPIs against targets
   if (kpis.roasTarget && current.roas) {
     const pct = ((kpis.roasTarget - current.roas) / kpis.roasTarget) * 100;
     if (pct > warn * 2) criticals++;
@@ -62,28 +61,25 @@ export default function StoreCard({ store, metrics, notes, alertCount = 0 }) {
   return (
     <div
       onClick={() => navigate(`/store/${store._id}/dashboard`)}
-      className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5 cursor-pointer hover:shadow-md hover:border-primary-300 dark:hover:border-primary-600 transition group flex flex-col"
+      className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60 p-4 cursor-pointer hover:border-primary-500/40 dark:hover:border-primary-500/30 transition group flex flex-col"
     >
-      {/* Header: name + health badge */}
-      <div className="flex items-center justify-between mb-4">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2 min-w-0">
-          <h3 className="font-semibold text-gray-900 dark:text-gray-100 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition truncate">
+          <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${badge.color}`} title={badge.label} />
+          <h3 className="font-bold text-[13px] text-gray-900 dark:text-white group-hover:text-primary-500 transition truncate">
             {store.nombre}
           </h3>
           {alertCount > 0 && (
-            <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold text-white bg-red-500 rounded-full shrink-0">
+            <span className="inline-flex items-center justify-center min-w-[16px] h-[16px] px-1 text-[9px] font-bold text-white bg-red-500 rounded-full shrink-0">
               {alertCount}
             </span>
           )}
         </div>
-        <span
-          className={`w-3 h-3 rounded-full shrink-0 ${badge.color}`}
-          title={badge.label}
-        />
       </div>
 
       {/* Metrics grid */}
-      <div className="grid grid-cols-2 gap-3 mb-4">
+      <div className="grid grid-cols-2 gap-3 mb-3">
         {cardMetrics.map((m) => (
           <MetricValue
             key={m.key}
@@ -98,14 +94,11 @@ export default function StoreCard({ store, metrics, notes, alertCount = 0 }) {
         ))}
       </div>
 
-      {/* Notes — not tied to calendar, shows latest/pending info */}
+      {/* Notes */}
       {notes && notes.length > 0 && (
-        <div className="mt-auto pt-3 border-t border-gray-100 dark:border-gray-700">
+        <div className="mt-auto pt-2.5 border-t border-gray-100 dark:border-gray-700/60">
           {notes.slice(0, 2).map((note, i) => (
-            <p
-              key={i}
-              className="text-xs text-gray-500 dark:text-gray-400 truncate"
-            >
+            <p key={i} className="text-[10px] text-gray-400 truncate">
               {note.icon && <span className="mr-1">{note.icon}</span>}
               {note.text}
             </p>

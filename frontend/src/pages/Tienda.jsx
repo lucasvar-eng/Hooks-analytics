@@ -31,7 +31,7 @@ function SummaryCards({ summary }) {
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
       {cards.map((c) => (
-        <div key={c.label} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3">
+        <div key={c.label} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60 p-3">
           <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">{c.label}</p>
           <p className={`text-lg font-bold mt-1 ${c.color || 'text-gray-900 dark:text-gray-100'}`}>
             {c.format === 'currency' ? fmt(c.value) : c.format === 'number' ? (c.value || 0).toLocaleString('es-AR') : c.value || '—'}
@@ -87,19 +87,19 @@ function NCRCCards({ ncrc }) {
 
   return (
     <div className="grid grid-cols-3 gap-4">
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60 p-4">
         <h4 className="text-xs text-gray-500 uppercase mb-2">Nuevos Clientes (NC)</h4>
         <p className="text-2xl font-bold text-blue-600">{ncrc.nc.ordenes}</p>
         <p className="text-sm text-gray-500 mt-1">Revenue: {fmt(ncrc.nc.revenue)}</p>
         <p className="text-sm text-gray-500">AOV: {fmt(ncrc.nc.aov)}</p>
       </div>
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60 p-4">
         <h4 className="text-xs text-gray-500 uppercase mb-2">Clientes Recurrentes (RC)</h4>
         <p className="text-2xl font-bold text-green-600">{ncrc.rc.ordenes}</p>
         <p className="text-sm text-gray-500 mt-1">Revenue: {fmt(ncrc.rc.revenue)}</p>
         <p className="text-sm text-gray-500">AOV: {fmt(ncrc.rc.aov)}</p>
       </div>
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60 p-4">
         <h4 className="text-xs text-gray-500 uppercase mb-2">Ratio NC</h4>
         <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{pct(ncrc.ncPct)}</p>
         <p className="text-sm text-gray-500 mt-1">del total de órdenes</p>
@@ -169,7 +169,7 @@ function TopCustomersTable({ data }) {
 
 function DevolucionesCard({ data }) {
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60 p-4">
       <h3 className="text-xs text-gray-500 uppercase mb-1">Devoluciones / Cancelaciones</h3>
       <p className="text-xl font-bold text-red-500">{data?.count || 0}</p>
       <p className="text-sm text-gray-500">Total: {fmt(data?.total)}</p>
@@ -211,8 +211,8 @@ export default function Tienda() {
   if (loading) return <div className="text-center py-12 text-gray-500">Cargando datos de tienda...</div>;
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Tienda</h2>
+    <div className="space-y-5">
+      <p className="section-label">Tienda</p>
 
       {/* Summary cards always visible */}
       <SummaryCards summary={data?.summary} />
@@ -239,7 +239,7 @@ export default function Tienda() {
       </div>
 
       {/* Tab content */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60">
         {tab === 'resumen' && (
           <div className="p-4 space-y-4">
             <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase">Desglose de costos</h3>

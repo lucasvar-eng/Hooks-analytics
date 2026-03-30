@@ -2,8 +2,11 @@ const Store = require('../models/Store');
 const User = require('../models/User');
 const Order = require('../models/Order');
 const DailyMetric = require('../models/DailyMetric');
+const MetaDailyInsight = require('../models/MetaDailyInsight');
 const { aggregateRange } = require('../services/metricCalculator');
 const { syncOrders, syncProducts } = require('../services/syncTiendanube');
+const { analyze } = require('../services/aiService');
+const { DEFAULT_THRESHOLDS } = require('../services/verdictEngine');
 
 exports.list = async (req, res, next) => {
   try {
@@ -189,6 +192,83 @@ exports.getOrderDetail = async (req, res, next) => {
     });
     if (!order) return res.status(404).json({ error: 'Order not found' });
     res.json(order);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Generate ad verdict thresholds using AI based on store's historical data.
+ */
+exports.generateVerdictThresholds = async (req, res, next) => {
+  try {
+    const storeId = req.params.id;
+    const store = await Store.findById(storeId).select('nombre objetivos');
+    if (!store) return res.status(404).json({ error: 'Store not found' });
+
+    // Get last 30 days of ad data
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const adData = await MetaDailyInsight.aggregate([
+      { $match: { storeId: store._id, date: { $gte: thirtyDaysAgo } } },
+      {
+        $group: {
+          _id: null,
+          totalSpend: { $sum: '$spend' },
+          totalPurchases: { $sum: '$purchases' },
+          totalRevenue: { $sum: '$purchaseValue' },
+          totalImpressions: { $sum: '$impressions' },
+          totalClicks: { $sum: '$clicks' },
+          days: { $addToSet: { $dateToString: { format: '%Y-%m-%d', date: '$date' } } },
+        },
+      },
+    ]);
+
+    const summary = adData[0] || {};
+    const avgRoas = summary.totalSpend > 0 ? summary.totalRevenue / summary.totalSpend : 0;
+    const avgCpa = summary.totalPurchases > 0 ? summary.totalSpend / summary.totalPurchases : 0;
+    const daysActive = summary.days?.length || 0;
+
+    // Try AI generation
+    try {
+      const prompt = `Basándote en estos datos de los últimos 30 días de la tienda "${store.nombre}":
+- ROAS promedio: ${avgRoas.toFixed(2)}x
+- CPA promedio: $${Math.round(avgCpa)}
+- Gasto total: $${Math.round(summary.totalSpend || 0)}
+- Compras totales: ${summary.totalPurchases || 0}
+- Días activos: ${daysActive}
+- Objetivos configurados: ${JSON.stringify(store.objetivos?.kpis || {})}
+
+Generá umbrales personalizados para clasificar campañas. Respondé SOLO con un JSON válido (sin markdown, sin texto extra) con esta estructura exacta:
+{"escalar":{"roasMin":number,"minSpend":number,"minPurchases":number},"mantener":{"roasMin":number,"minSpend":number},"revisar":{"roasMin":number,"cpaMaxPct":number},"pausar":{"roasMax":number,"minSpend":number,"minDays":number},"testear":{"maxSpend":number,"maxPurchases":number}}`;
+
+      const result = await analyze('dashboard', storeId, null, null, req.user._id);
+      // Try to parse JSON from the response
+      const jsonMatch = result.analysis.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const thresholds = JSON.parse(jsonMatch[0]);
+        return res.json({ thresholds, source: 'ai' });
+      }
+    } catch {
+      // AI not available, generate rule-based defaults
+    }
+
+    // Fallback: generate sensible defaults based on data
+    const thresholds = { ...DEFAULT_THRESHOLDS };
+    if (avgRoas > 0) {
+      thresholds.escalar.roasMin = Math.round(avgRoas * 1.5 * 10) / 10;
+      thresholds.mantener.roasMin = Math.round(avgRoas * 0.8 * 10) / 10;
+      thresholds.revisar.roasMin = Math.round(avgRoas * 0.5 * 10) / 10;
+      thresholds.pausar.roasMax = Math.round(avgRoas * 0.3 * 10) / 10;
+    }
+    if (avgCpa > 0) {
+      thresholds.escalar.minSpend = Math.round(avgCpa * 3);
+      thresholds.pausar.minSpend = Math.round(avgCpa * 5);
+      thresholds.testear.maxSpend = Math.round(avgCpa * 3);
+    }
+
+    res.json({ thresholds, source: 'rule_based' });
   } catch (error) {
     next(error);
   }

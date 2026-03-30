@@ -6,6 +6,7 @@ export default function MetricValue({
   suffix = '',
   decimals = 0,
   compact = false,
+  large = false,
 }) {
   const formatted = formatNumber(value, decimals, compact);
   const deltaColor =
@@ -13,21 +14,21 @@ export default function MetricValue({
       ? 'text-green-500'
       : delta < 0
         ? 'text-red-500'
-        : 'text-gray-400 dark:text-gray-500';
+        : 'text-gray-500 dark:text-gray-600';
   const deltaArrow = delta > 0 ? '↑' : delta < 0 ? '↓' : '';
 
   return (
     <div className="flex flex-col">
-      <span className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+      <span className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide leading-none mb-1.5">
         {label}
       </span>
-      <span className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+      <span className={`${large ? 'text-[22px]' : 'text-base'} font-bold text-gray-900 dark:text-white leading-none tracking-tight`}>
         {prefix}
         {formatted}
         {suffix}
       </span>
       {delta !== undefined && delta !== null && (
-        <span className={`text-xs font-medium ${deltaColor}`}>
+        <span className={`text-[11px] font-semibold mt-1 ${deltaColor}`}>
           {deltaArrow} {Math.abs(delta).toFixed(1)}%
         </span>
       )}

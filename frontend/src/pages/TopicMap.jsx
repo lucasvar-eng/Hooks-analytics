@@ -72,38 +72,38 @@ export default function TopicMap() {
     setForm(EMPTY_FORM);
   };
 
-  if (loading) return <div className="text-center py-12 text-gray-500 dark:text-gray-400">Cargando mapa de tópicos...</div>;
+  if (loading) return <div className="text-center py-12 text-xs text-gray-500 dark:text-gray-500">Cargando mapa de tópicos...</div>;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Mapa de Tópicos</h2>
+        <p className="section-label">Mapa de Tópicos</p>
         <button
           onClick={handleToggleForm}
-          className="px-3 py-1.5 bg-indigo-600 text-white text-sm rounded hover:bg-indigo-700"
+          className="px-3 py-1.5 bg-primary-600 text-white text-[11px] font-semibold rounded hover:bg-primary-700 transition"
         >
           {showForm ? 'Cancelar' : '+ Agregar tópico'}
         </button>
       </div>
 
       {showForm && (
-        <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 space-y-3">
+        <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60 p-4 space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-medium text-gray-600 dark:text-gray-400">Nombre</label>
+              <label className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Nombre</label>
               <input
                 value={form.nombre}
                 onChange={(e) => setForm({ ...form, nombre: e.target.value })}
                 required
-                className="w-full mt-1 px-3 py-2 text-sm border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                className="w-full mt-1 px-2.5 py-1.5 text-[12px] border border-gray-200 dark:border-gray-700/60 rounded bg-white dark:bg-gray-800 dark:text-gray-100"
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-600 dark:text-gray-400">Estado</label>
+              <label className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Estado</label>
               <select
                 value={form.status}
                 onChange={(e) => setForm({ ...form, status: e.target.value })}
-                className="w-full mt-1 px-3 py-2 text-sm border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                className="w-full mt-1 px-2.5 py-1.5 text-[12px] border border-gray-200 dark:border-gray-700/60 rounded bg-white dark:bg-gray-800 dark:text-gray-100"
               >
                 <option value="draft">Borrador</option>
                 <option value="active">Activo</option>
@@ -112,56 +112,56 @@ export default function TopicMap() {
             </div>
           </div>
           <div>
-            <label className="text-xs font-medium text-gray-600 dark:text-gray-400">Descripción</label>
+            <label className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Descripción</label>
             <textarea
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
               rows={2}
-              className="w-full mt-1 px-3 py-2 text-sm border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+              className="w-full mt-1 px-2.5 py-1.5 text-[12px] border border-gray-200 dark:border-gray-700/60 rounded bg-white dark:bg-gray-800 dark:text-gray-100"
             />
           </div>
           <div>
-            <label className="text-xs font-medium text-gray-600 dark:text-gray-400">Notas de performance</label>
+            <label className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Notas de performance</label>
             <textarea
               value={form.performanceNotes}
               onChange={(e) => setForm({ ...form, performanceNotes: e.target.value })}
               rows={2}
-              className="w-full mt-1 px-3 py-2 text-sm border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+              className="w-full mt-1 px-2.5 py-1.5 text-[12px] border border-gray-200 dark:border-gray-700/60 rounded bg-white dark:bg-gray-800 dark:text-gray-100"
             />
           </div>
-          <button type="submit" className="px-3 py-1.5 bg-indigo-600 text-white text-sm rounded hover:bg-indigo-700">
+          <button type="submit" className="px-3 py-1.5 bg-primary-600 text-white text-[11px] font-semibold rounded hover:bg-primary-700 transition">
             {editId ? 'Actualizar' : 'Agregar'}
           </button>
         </form>
       )}
 
       {items.length === 0 ? (
-        <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+        <div className="text-center py-12 text-[11px] text-gray-400 dark:text-gray-500">
           No hay tópicos agregados aún. Hacé click en "+ Agregar tópico" para empezar.
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {items.map((item) => (
-            <div key={item._id} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+            <div key={item._id} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60 p-3">
               <div className="flex items-start justify-between">
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">{item.nombre}</h3>
-                  <span className={`mt-1 inline-block px-2 py-0.5 text-xs font-medium rounded-full ${STATUS_BADGE[item.status] || STATUS_BADGE.draft}`}>
+                  <h3 className="text-[13px] font-bold text-gray-900 dark:text-white truncate">{item.nombre}</h3>
+                  <span className={`mt-1 inline-block px-1.5 py-0.5 text-[9px] font-bold rounded ${STATUS_BADGE[item.status] || STATUS_BADGE.draft}`}>
                     {STATUS_LABELS[item.status] || item.status}
                   </span>
                 </div>
                 <div className="flex gap-2 ml-2 shrink-0">
-                  <button onClick={() => handleEdit(item)} className="text-xs text-gray-500 hover:text-indigo-500">Editar</button>
-                  <button onClick={() => handleDelete(item._id)} className="text-xs text-gray-500 hover:text-red-500">Eliminar</button>
+                  <button onClick={() => handleEdit(item)} className="text-[10px] text-gray-400 hover:text-primary-500 transition">Editar</button>
+                  <button onClick={() => handleDelete(item._id)} className="text-[10px] text-gray-400 hover:text-red-500 transition">Eliminar</button>
                 </div>
               </div>
               {item.description && (
-                <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">{item.description}</p>
+                <p className="mt-2 text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">{item.description}</p>
               )}
               {item.performanceNotes && (
-                <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
-                  <p className="text-xs text-gray-500 dark:text-gray-500 font-medium mb-0.5">Notas de performance</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">{item.performanceNotes}</p>
+                <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700/60">
+                  <p className="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-0.5">Notas de performance</p>
+                  <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">{item.performanceNotes}</p>
                 </div>
               )}
             </div>

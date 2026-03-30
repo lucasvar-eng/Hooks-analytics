@@ -51,9 +51,9 @@ export default function DailyTracker() {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Daily Tracker</h2>
+      <p className="section-label">Daily Tracker</p>
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-x-auto">
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60 overflow-x-auto">
         {days.length === 0 ? (
           <p className="text-gray-500 text-sm text-center py-8">
             Sin datos diarios para el período seleccionado. El tracker se llena automáticamente con cada sync.

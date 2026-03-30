@@ -33,9 +33,9 @@ export default function MetaPixel() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+        <p className="section-label">
           Meta Ads — Campañas
-        </h2>
+        </p>
         <button
           onClick={() => setShowImport(!showImport)}
           className="text-sm px-3 py-1.5 rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-750 transition"
@@ -48,7 +48,7 @@ export default function MetaPixel() {
         <CSVImportMeta storeId={storeId} onImported={fetchCampaigns} />
       )}
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60">
         {loading ? (
           <div className="text-center py-12 text-gray-500">Cargando campañas...</div>
         ) : (

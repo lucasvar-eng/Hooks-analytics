@@ -136,7 +136,7 @@ export default function UserManagement() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3">
+      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700/60 px-4 py-3">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <button
             onClick={() => navigate('/')}
@@ -144,14 +144,14 @@ export default function UserManagement() {
           >
             &larr; Volver
           </button>
-          <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+          <p className="section-label">
             Gestión de Usuarios
-          </h1>
+          </p>
           <div className="w-16" />
         </div>
       </header>
 
-      <div className="max-w-4xl mx-auto p-6 space-y-6">
+      <div className="max-w-4xl mx-auto p-6 space-y-5">
         {/* Top bar */}
         <div className="flex items-center justify-between">
           <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -159,7 +159,7 @@ export default function UserManagement() {
           </p>
           <button
             onClick={openCreate}
-            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded transition"
+            className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded transition"
           >
             + Nuevo usuario
           </button>
@@ -167,7 +167,7 @@ export default function UserManagement() {
 
         {/* Form */}
         {showForm && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-5 space-y-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60 p-5 space-y-4">
             <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase">
               {editingId ? 'Editar usuario' : 'Crear usuario'}
             </h2>
@@ -277,7 +277,7 @@ export default function UserManagement() {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-medium rounded transition"
+                  className="px-4 py-2 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white text-sm font-medium rounded transition"
                 >
                   {saving ? 'Guardando...' : editingId ? 'Guardar cambios' : 'Crear usuario'}
                 </button>
@@ -294,7 +294,7 @@ export default function UserManagement() {
         )}
 
         {/* Users table */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60 overflow-hidden">
           {loading ? (
             <div className="p-8 text-center text-sm text-gray-400 dark:text-gray-500">
               Cargando usuarios...
@@ -308,7 +308,7 @@ export default function UserManagement() {
           ) : (
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-750">
+                <tr className="border-b border-gray-200 dark:border-gray-700/60 bg-gray-50 dark:bg-gray-750">
                   <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Nombre
                   </th>

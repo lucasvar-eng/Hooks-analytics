@@ -77,28 +77,25 @@ function MetricCard({ label, actual, simulated, formatter, higherIsBetter = true
   const arrow = delta === 0 ? '→' : delta > 0 ? '↑' : '↓';
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 space-y-3">
-      <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">{label}</p>
+    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60 p-3 space-y-2">
+      <p className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">{label}</p>
 
       <div className="grid grid-cols-2 gap-3">
-        {/* Actual */}
         <div>
-          <p className="text-[10px] text-gray-400 dark:text-gray-500 mb-1">Actual</p>
-          <p className="text-lg font-bold text-gray-700 dark:text-gray-300 tabular-nums leading-tight">
+          <p className="text-[9px] text-gray-400 dark:text-gray-500 mb-0.5">Actual</p>
+          <p className="text-base font-bold text-gray-600 dark:text-gray-300 tabular-nums leading-tight">
             {formatter(actualVal)}
           </p>
         </div>
-        {/* Simulado */}
         <div>
-          <p className="text-[10px] text-gray-400 dark:text-gray-500 mb-1">Simulado</p>
-          <p className="text-lg font-bold text-gray-900 dark:text-gray-100 tabular-nums leading-tight">
+          <p className="text-[9px] text-gray-400 dark:text-gray-500 mb-0.5">Simulado</p>
+          <p className="text-base font-bold text-gray-900 dark:text-white tabular-nums leading-tight">
             {formatter(simVal)}
           </p>
         </div>
       </div>
 
-      {/* Delta */}
-      <div className={`flex items-center gap-1 text-xs font-semibold ${deltaColor}`}>
+      <div className={`flex items-center gap-1 text-[10px] font-semibold ${deltaColor}`}>
         <span>{arrow}</span>
         <span>
           {delta === 0
@@ -287,21 +284,19 @@ export default function Simulador() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
 
       {/* ── Header ──────────────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-            Simulador What-If
-          </h2>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+          <p className="section-label">Simulador What-If</p>
+          <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">
             Ajustá los parámetros y mirá el impacto proyectado en tiempo real
           </p>
         </div>
         <button
           onClick={handleReset}
-          className="px-4 py-2 bg-indigo-600 text-white text-sm rounded hover:bg-indigo-700 transition flex items-center gap-1.5"
+          className="px-3 py-1.5 bg-primary-600 text-white text-[11px] font-semibold rounded hover:bg-primary-700 transition flex items-center gap-1.5"
         >
           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -323,16 +318,16 @@ export default function Simulador() {
 
         {/* ─── LEFT: Sliders ─────────────────────────────────────────────── */}
         <div className="xl:col-span-2">
-          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-5 space-y-6 sticky top-4">
-            <div className="flex items-center gap-2 pb-2 border-b border-gray-100 dark:border-gray-700">
-              <div className="w-1.5 h-5 rounded bg-indigo-500" />
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60 p-4 space-y-5 sticky top-4">
+            <div className="flex items-center gap-2 pb-2 border-b border-gray-100 dark:border-gray-700/60">
+              <div className="w-1 h-4 rounded bg-primary-500" />
+              <h3 className="text-[11px] font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
                 Parámetros de entrada
               </h3>
             </div>
 
             {/* Baseline info pill */}
-            <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-md px-3 py-2 text-xs text-indigo-700 dark:text-indigo-400 flex items-center gap-1.5">
+            <div className="bg-primary-50 dark:bg-primary-900/10 rounded px-2.5 py-1.5 text-[10px] text-primary-600 dark:text-primary-400 flex items-center gap-1.5 border border-primary-200 dark:border-primary-800/40">
               <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                   d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -387,7 +382,7 @@ export default function Simulador() {
             />
 
             {/* Margin note */}
-            <div className="pt-2 border-t border-gray-100 dark:border-gray-700">
+            <div className="pt-2 border-t border-gray-100 dark:border-gray-700/60">
               <p className="text-xs text-gray-500 dark:text-gray-400">
                 Margen de ganancia fijo:
                 <span className="ml-1 font-semibold text-gray-700 dark:text-gray-300">
@@ -425,8 +420,8 @@ export default function Simulador() {
 
           {/* Detail cards heading */}
           <div className="flex items-center gap-2">
-            <div className="w-1.5 h-5 rounded bg-gray-300 dark:bg-gray-600" />
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+            <div className="w-1 h-4 rounded bg-gray-300 dark:bg-gray-600" />
+            <h3 className="text-[11px] font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
               Comparación detallada
             </h3>
           </div>
@@ -446,7 +441,7 @@ export default function Simulador() {
           </div>
 
           {/* Formula reference */}
-          <details className="bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-500 dark:text-gray-400 cursor-pointer">
+          <details className="bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700/60 rounded-lg text-xs text-gray-500 dark:text-gray-400 cursor-pointer">
             <summary className="px-4 py-2.5 font-medium select-none">
               Ver fórmulas utilizadas
             </summary>
@@ -469,18 +464,18 @@ export default function Simulador() {
 // ─── Summary highlight card ────────────────────────────────────────────────
 function SummaryHighlight({ label, value, sub, positive }) {
   return (
-    <div className={`rounded-lg border p-4 ${
+    <div className={`rounded-lg border p-3 ${
       positive
-        ? 'bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-800'
-        : 'bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-800'
+        ? 'bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-800/40'
+        : 'bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-800/40'
     }`}>
-      <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{label}</p>
-      <p className={`text-xl font-bold tabular-nums ${
+      <p className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">{label}</p>
+      <p className={`text-lg font-bold tabular-nums ${
         positive ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'
       }`}>
         {value}
       </p>
-      <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">{sub}</p>
+      <p className="text-[9px] text-gray-400 dark:text-gray-500 mt-0.5">{sub}</p>
     </div>
   );
 }

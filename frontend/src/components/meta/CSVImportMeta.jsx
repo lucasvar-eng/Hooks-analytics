@@ -242,7 +242,7 @@ export default function CSVImportMeta({ storeId, onImported }) {
         <button
           onClick={handleUpload}
           disabled={uploading || validating || (validation && !validation.isValid)}
-          className="px-4 py-1.5 bg-indigo-600 text-white text-sm rounded hover:bg-indigo-700 disabled:opacity-50 transition"
+          className="px-4 py-1.5 bg-primary-600 text-white text-sm rounded hover:bg-primary-700 disabled:opacity-50 transition"
         >
           {uploading ? 'Importando...' : validating ? 'Validando...' : 'Importar'}
         </button>

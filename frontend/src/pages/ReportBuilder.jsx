@@ -93,7 +93,7 @@ export default function ReportBuilder() {
   const noneSelected = selectedSections.length === 0;
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
+    <div className="space-y-5 max-w-4xl mx-auto">
       {/* Title */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
@@ -105,7 +105,7 @@ export default function ReportBuilder() {
       </div>
 
       {/* Section selector + date */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60 p-4">
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-semibold text-sm text-gray-800 dark:text-gray-200">
             Secciones a incluir
@@ -149,7 +149,7 @@ export default function ReportBuilder() {
       </div>
 
       {/* Date range (read-only) */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60 p-4">
         <h2 className="font-semibold text-sm text-gray-800 dark:text-gray-200 mb-2">
           Período analizado
         </h2>
@@ -173,7 +173,7 @@ export default function ReportBuilder() {
         <button
           onClick={handleGenerate}
           disabled={generating || noneSelected}
-          className="px-4 py-2 bg-indigo-600 text-white text-sm rounded hover:bg-indigo-700 disabled:opacity-50 transition"
+          className="px-4 py-2 bg-primary-600 text-white text-sm rounded hover:bg-primary-700 disabled:opacity-50 transition"
         >
           {generating ? 'Generando...' : 'Generar reporte'}
         </button>
@@ -214,7 +214,7 @@ export default function ReportBuilder() {
 
       {/* Report preview */}
       {report && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60 p-4">
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-semibold text-sm text-gray-800 dark:text-gray-200">
               Vista previa del reporte
@@ -234,7 +234,7 @@ export default function ReportBuilder() {
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="px-4 py-2 bg-indigo-600 text-white text-sm rounded hover:bg-indigo-700 disabled:opacity-50 transition"
+                className="px-4 py-2 bg-primary-600 text-white text-sm rounded hover:bg-primary-700 disabled:opacity-50 transition"
               >
                 {saving ? 'Guardando...' : 'Guardar'}
               </button>

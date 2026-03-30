@@ -127,19 +127,19 @@ export default function UserProfile() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3">
+      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700/60 px-4 py-3">
         <div className="max-w-3xl mx-auto flex items-center justify-between">
           <button onClick={() => navigate('/')} className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1">
             &larr; Volver
           </button>
-          <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Mi perfil</h1>
+          <p className="section-label">Mi perfil</p>
           <div className="w-16" />
         </div>
       </header>
 
-      <div className="max-w-3xl mx-auto p-6 space-y-6">
+      <div className="max-w-3xl mx-auto p-6 space-y-5">
         {/* User info */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-5">
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60 p-5">
           <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase mb-3">Cuenta</h2>
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
@@ -158,7 +158,7 @@ export default function UserProfile() {
         </div>
 
         {/* AI Configuration */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-5">
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60 p-5">
           <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase mb-4">Configuración AI</h2>
 
           <div className="space-y-4">
@@ -227,14 +227,14 @@ export default function UserProfile() {
               <button
                 onClick={saveConfig}
                 disabled={savingConfig}
-                className="px-4 py-2 bg-indigo-600 text-white text-sm rounded hover:bg-indigo-700 disabled:opacity-50 transition font-medium"
+                className="px-4 py-2 bg-primary-600 text-white text-sm rounded hover:bg-primary-700 disabled:opacity-50 transition font-medium"
               >
                 {savingConfig ? 'Guardando...' : 'Guardar configuración'}
               </button>
               <button
                 onClick={testConnection}
                 disabled={testing}
-                className="px-4 py-2 bg-violet-600 text-white text-sm rounded hover:bg-violet-700 disabled:opacity-50 transition font-medium"
+                className="px-4 py-2 bg-primary-600 text-white text-sm rounded hover:bg-primary-700 disabled:opacity-50 transition font-medium"
               >
                 {testing ? 'Probando...' : 'Probar conexión'}
               </button>
@@ -254,7 +254,7 @@ export default function UserProfile() {
         </div>
 
         {/* Global Instructions */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-5">
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60 p-5">
           <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase mb-2">Instrucciones globales AI</h2>
           <p className="text-xs text-gray-400 mb-3">
             Estas instrucciones se aplican a todas las tiendas. Definí el tono, formato, enfoque o cualquier contexto que la AI deba tener en cuenta.
@@ -279,7 +279,7 @@ export default function UserProfile() {
               <button
                 onClick={saveInstructions}
                 disabled={savingInstructions}
-                className="px-4 py-2 bg-indigo-600 text-white text-sm rounded hover:bg-indigo-700 disabled:opacity-50 transition font-medium"
+                className="px-4 py-2 bg-primary-600 text-white text-sm rounded hover:bg-primary-700 disabled:opacity-50 transition font-medium"
               >
                 {savingInstructions ? 'Guardando...' : 'Guardar instrucciones'}
               </button>
@@ -288,7 +288,7 @@ export default function UserProfile() {
         </div>
 
         {/* Global Files */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-5">
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700/60 p-5">
           <div className="flex items-center justify-between mb-3">
             <div>
               <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase">Archivos de contexto global</h2>
@@ -308,7 +308,7 @@ export default function UserProfile() {
           ) : (
             <div className="space-y-2">
               {files.map((f) => (
-                <div key={f.filename} className="flex items-center justify-between py-2 px-3 bg-gray-50 dark:bg-gray-750 rounded border border-gray-100 dark:border-gray-700">
+                <div key={f.filename} className="flex items-center justify-between py-2 px-3 bg-gray-50 dark:bg-gray-750 rounded border border-gray-100 dark:border-gray-700/60">
                   <div className="flex items-center gap-2">
                     <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />

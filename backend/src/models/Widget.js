@@ -6,10 +6,11 @@ const widgetSchema = new mongoose.Schema(
     pageId: { type: String, required: true, default: 'dashboard' },
     type: {
       type: String,
-      enum: ['metric-card', 'chart', 'table', 'mini-analysis'],
+      enum: ['kpi', 'kpi-group', 'table', 'note', 'separator', 'metric-card', 'chart', 'mini-analysis'],
       required: true,
     },
     title: { type: String, required: true },
+    size: { type: String, enum: ['sm', 'md', 'lg', 'full'], default: 'sm' },
     config: { type: mongoose.Schema.Types.Mixed, default: {} },
     order: { type: Number, default: 0 },
   },

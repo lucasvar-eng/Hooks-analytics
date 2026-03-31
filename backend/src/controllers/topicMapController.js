@@ -6,16 +6,81 @@ exports.list = async (req, res) => {
 };
 
 exports.create = async (req, res) => {
-  const { nombre, status, description, performanceNotes } = req.body;
-  const topicMap = await TopicMap.create({ storeId: req.params.id, nombre, status, description, performanceNotes });
+  const {
+    nombre,
+    status,
+    priority,
+    avatar,
+    awarenessLevel,
+    angle,
+    territory,
+    symptom,
+    objection,
+    recommendedFormat,
+    stage,
+    hypothesis,
+    tags,
+    description,
+    performanceNotes,
+  } = req.body;
+  const topicMap = await TopicMap.create({
+    storeId: req.params.id,
+    nombre,
+    status,
+    priority,
+    avatar,
+    awarenessLevel,
+    angle,
+    territory,
+    symptom,
+    objection,
+    recommendedFormat,
+    stage,
+    hypothesis,
+    tags,
+    description,
+    performanceNotes,
+  });
   res.status(201).json(topicMap);
 };
 
 exports.update = async (req, res) => {
-  const { nombre, status, description, performanceNotes } = req.body;
+  const {
+    nombre,
+    status,
+    priority,
+    avatar,
+    awarenessLevel,
+    angle,
+    territory,
+    symptom,
+    objection,
+    recommendedFormat,
+    stage,
+    hypothesis,
+    tags,
+    description,
+    performanceNotes,
+  } = req.body;
   const topicMap = await TopicMap.findOneAndUpdate(
     { _id: req.params.topicMapId, storeId: req.params.id },
-    { nombre, status, description, performanceNotes },
+    {
+      nombre,
+      status,
+      priority,
+      avatar,
+      awarenessLevel,
+      angle,
+      territory,
+      symptom,
+      objection,
+      recommendedFormat,
+      stage,
+      hypothesis,
+      tags,
+      description,
+      performanceNotes,
+    },
     { new: true }
   );
   if (!topicMap) return res.status(404).json({ error: 'Not found' });

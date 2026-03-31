@@ -9,7 +9,13 @@ const Customer = require('../models/Customer');
 const MetaCampaign = require('../models/MetaCampaign');
 const MetaDailyInsight = require('../models/MetaDailyInsight');
 const CashflowEntry = require('../models/CashflowEntry');
+const TopicMap = require('../models/TopicMap');
+const LanguageBank = require('../models/LanguageBank');
+const Competitor = require('../models/Competitor');
 const mongoose = require('mongoose');
+const { getEffectiveTarget } = require('./targetService');
+const { getDataAudit } = require('./tiendaService');
+const { getFixedCostsForRange } = require('./fixedCostService');
 const logger = require('../utils/logger');
 
 const BASE_SYSTEM_PROMPT = `Sos un analista senior de ecommerce argentino. Tu cliente es una agencia que gestiona tiendas en TiendaNube con Meta Ads.
@@ -23,13 +29,56 @@ Reglas:
 - Máximo 400 palabras por análisis
 - Siempre cerrá con 2-3 acciones concretas priorizadas`;
 
+const SECTION_PLAYBOOKS = {
+  dashboard: {
+    objective: 'leer el negocio completo con foco en ventas, profit, marketing, clientes y riesgo operativo',
+    mustInclude: ['métrica principal del período', 'cuello de botella principal', 'lectura de NC vs RC', '3 acciones priorizadas'],
+  },
+  cashflow: {
+    objective: 'priorizar liquidez y timing de cobros sobre métricas cosméticas',
+    mustInclude: ['liquidable', 'pagos recibidos', 'pagos pendientes', 'riesgo de caja'],
+  },
+  meta: {
+    objective: 'detectar eficiencia publicitaria real, no solo volumen',
+    mustInclude: ['spend', 'compras', 'ROAS o true ROAS', 'riesgo de escalar sin base'],
+  },
+  costos: {
+    objective: 'separar costos variables, costos fijos y su impacto en profit real',
+    mustInclude: ['contribution profit', 'adjusted profit', 'costos fijos', 'breakeven'],
+  },
+  productos: {
+    objective: 'leer catálogo y surtido con foco comercial',
+    mustInclude: ['top sellers', 'riesgo comercial', 'faltantes de costo o stock', 'oportunidad puntual'],
+  },
+  clientes: {
+    objective: 'entender adquisición, recompra y calidad de base',
+    mustInclude: ['NC vs RC', 'retención', 'lag de recompra', 'calidad del dato de clientes'],
+  },
+  creativos: {
+    objective: 'bajar decisiones de creatividad y no solo opinar sobre anuncios',
+    mustInclude: ['qué escalar', 'qué pausar', 'qué testear', 'gaps del framework'],
+  },
+  diagnostics: {
+    objective: 'identificar anomalías y riesgos de integridad o negocio',
+    mustInclude: ['principal anomalía', 'impacto', 'dato faltante o inconsistente', 'acción correctiva'],
+  },
+  competencia: {
+    objective: 'comparar posicionamiento y oportunidades sin inventar certezas',
+    mustInclude: ['ventaja detectada', 'gap de mensaje', 'oportunidad concreta', 'nivel de confianza'],
+  },
+  report: {
+    objective: 'resumir ejecutivamente el período para decisión rápida',
+    mustInclude: ['1 lectura central', '2 o 3 acciones', 'nivel de confianza del dato'],
+  },
+};
+
 /**
  * Resolve AI credentials for a user (user key → env fallback).
  */
 async function resolveCredentials(userId) {
   if (userId) {
     const user = await User.findById(userId)
-      .select('+aiConfig.apiKeyEncrypted +aiConfig.apiKeyIV +aiConfig.apiKeyAuthTag aiConfig.provider aiConfig.modelAnalysis aiConfig.modelChat');
+      .select('+aiConfig.apiKeyEncrypted +aiConfig.apiKeyIV +aiConfig.apiKeyAuthTag aiConfig.provider aiConfig.modelAnalysis aiConfig.modelChat aiConfig.modelReports');
 
     if (user?.aiConfig?.apiKeyEncrypted) {
       const apiKey = decrypt(
@@ -42,20 +91,41 @@ async function resolveCredentials(userId) {
         apiKey,
         modelAnalysis: user.aiConfig.modelAnalysis || ai.modelAnalysis,
         modelChat: user.aiConfig.modelChat || ai.modelChat,
+        modelReports: user.aiConfig.modelReports || ai.modelReports,
+        source: 'user',
       };
     }
   }
 
-  // Fallback to .env
-  if (!ai.anthropicApiKey) {
-    throw new Error('No hay API key de AI configurada. Configurala en tu perfil o en .env');
+  if (ai.anthropicApiKey) {
+    return {
+      provider: 'anthropic',
+      apiKey: ai.anthropicApiKey,
+      modelAnalysis: ai.modelAnalysis,
+      modelChat: ai.modelChat,
+      modelReports: ai.modelReports,
+      source: 'env',
+    };
   }
-  return {
-    provider: 'anthropic',
-    apiKey: ai.anthropicApiKey,
-    modelAnalysis: ai.modelAnalysis,
-    modelChat: ai.modelChat,
-  };
+
+  if (ai.openaiApiKey) {
+    return {
+      provider: 'openai',
+      apiKey: ai.openaiApiKey,
+      modelAnalysis: ai.modelAnalysis,
+      modelChat: ai.modelChat,
+      modelReports: ai.modelReports,
+      source: 'env',
+    };
+  }
+
+  throw new Error('No hay API key de AI configurada. Configurala en tu perfil o en .env');
+}
+
+function pickModel(credentials, purpose = 'analysis') {
+  if (purpose === 'reports') return credentials.modelReports || credentials.modelAnalysis;
+  if (purpose === 'chat') return credentials.modelChat;
+  return credentials.modelAnalysis;
 }
 
 /**
@@ -133,8 +203,10 @@ async function buildContext(section, storeId, from, to) {
         ordenesPositivas: { $sum: '$ordenesPositivas' },
         revenue: { $sum: '$revenue' },
         netRevenue: { $sum: '$netRevenue' },
-        profit: { $sum: '$profit' },
+        profit: { $sum: '$netRevenue' },
         adSpend: { $sum: '$adSpend' },
+        adjustedProfit: { $sum: '$adjustedProfit' },
+        fixedCosts: { $sum: '$fixedCosts' },
         costoProductos: { $sum: '$costoProductos' },
         comisionPago: { $sum: '$comisionPago' },
         costoEnvio: { $sum: '$costoEnvio' },
@@ -144,6 +216,10 @@ async function buildContext(section, storeId, from, to) {
         rcOrdenes: { $sum: '$rcOrdenes' },
         impressions: { $sum: '$impressions' },
         clicks: { $sum: '$clicks' },
+        linkClicks: { $sum: '$linkClicks' },
+        landingPageViews: { $sum: '$landingPageViews' },
+        addToCart: { $sum: '$addToCart' },
+        initiatedCheckout: { $sum: '$initiatedCheckout' },
         metaPurchases: { $sum: '$metaPurchases' },
         devoluciones: { $sum: '$devoluciones' },
         liquidable: { $sum: '$liquidable' },
@@ -156,6 +232,21 @@ async function buildContext(section, storeId, from, to) {
   if (!baseAgg) return { sin_datos: true, periodo: `${from || 'inicio'} a ${to || 'hoy'}` };
 
   const b = baseAgg;
+  const [target, audit, fixedCosts] = await Promise.all([
+    getEffectiveTarget(storeId, { from, to }),
+    getDataAudit(storeId, from, to),
+    getFixedCostsForRange(storeId, from, to),
+  ]);
+
+  const trustScore = (() => {
+    let score = 1;
+    if (audit?.summary?.legacyOnlyDays) score -= Math.min(0.5, audit.summary.legacyOnlyDays * 0.08);
+    if (audit?.summary?.mismatchedDays) score -= Math.min(0.3, audit.summary.mismatchedDays * 0.05);
+    if (audit?.summary?.ordersMissingCustomer) score -= 0.1;
+    if (audit?.summary?.ordersMissingCosts) score -= 0.15;
+    return Math.max(0.1, Math.min(1, score));
+  })();
+
   const base = {
     periodo: `${from || 'inicio'} a ${to || 'hoy'}`,
     dias: b.days,
@@ -164,19 +255,45 @@ async function buildContext(section, storeId, from, to) {
     revenue: Math.round(b.revenue),
     netRevenue: Math.round(b.netRevenue),
     profit: Math.round(b.profit),
+    adjustedProfit: Math.round(b.adjustedProfit || (b.netRevenue - (b.adSpend || 0) - fixedCosts.total)),
     profitMargin: b.revenue > 0 ? ((b.profit / b.revenue) * 100).toFixed(1) + '%' : '0%',
+    adjustedProfitMargin: b.revenue > 0 ? ((((b.adjustedProfit || (b.netRevenue - (b.adSpend || 0) - fixedCosts.total))) / b.revenue) * 100).toFixed(1) + '%' : '0%',
     aov: b.ordenesPositivas > 0 ? Math.round(b.revenue / b.ordenesPositivas) : 0,
     adSpend: Math.round(b.adSpend),
     roas: b.adSpend > 0 ? (b.revenue / b.adSpend).toFixed(2) + 'x' : 'Sin datos',
     trueRoas: b.adSpend > 0 ? (b.netRevenue / b.adSpend).toFixed(2) + 'x' : 'Sin datos',
+    adjustedTrueRoas: b.adSpend > 0 ? ((b.adjustedProfit || (b.netRevenue - (b.adSpend || 0) - fixedCosts.total)) / b.adSpend).toFixed(2) + 'x' : 'Sin datos',
     cpa: b.metaPurchases > 0 ? Math.round(b.adSpend / b.metaPurchases) : 'Sin datos',
     ncOrdenes: b.ncOrdenes,
     rcOrdenes: b.rcOrdenes,
     ncPct: b.ordenes > 0 ? ((b.ncOrdenes / b.ordenes) * 100).toFixed(1) + '%' : '0%',
     devoluciones: b.devoluciones,
+    sourceCoverage: {
+      ads: b.adSpend > 0 ? 'available' : 'none',
+      orders: b.ordenes > 0 ? 'available' : 'legacy_or_missing',
+    },
+    dataQuality: {
+      confidence: Number(trustScore.toFixed(2)),
+      auditSummary: audit?.summary || {},
+      note:
+        trustScore >= 0.8
+          ? 'Alta confianza'
+          : trustScore >= 0.5
+            ? 'Confianza media: revisar integridad antes de decisiones sensibles'
+            : 'Baja confianza: hay dependencia fuerte de datos legacy o inconsistencias',
+    },
   };
 
   const extra = {};
+
+  if (target) {
+    extra.targets = {
+      phase: target.phase,
+      kpis: target.kpis || {},
+      breakeven: target.breakeven || {},
+      source: target.source || (target.isFallback ? 'fallback_store_objetivos' : 'manual'),
+    };
+  }
 
   if (section === 'costos' || section === 'dashboard') {
     extra.costos = {
@@ -185,7 +302,8 @@ async function buildContext(section, storeId, from, to) {
       costoEnvio: Math.round(b.costoEnvio),
       impuestosIBB: Math.round(b.impuestosIBB),
       feePlataforma: Math.round(b.feePlataforma),
-      totalCostos: Math.round(b.costoProductos + b.comisionPago + b.costoEnvio + b.impuestosIBB + b.feePlataforma),
+      fixedCosts: Math.round(fixedCosts.total),
+      totalCostos: Math.round(b.costoProductos + b.comisionPago + b.costoEnvio + b.impuestosIBB + b.feePlataforma + (b.adSpend || 0) + fixedCosts.total),
     };
   }
 
@@ -206,9 +324,9 @@ async function buildContext(section, storeId, from, to) {
 
   if (section === 'productos') {
     const topProducts = await Order.aggregate([
-      { $match: { storeId: sid, ...dateMatch, estado: { $ne: 'cancelled' } } },
-      { $unwind: '$items' },
-      { $group: { _id: '$items.nombre', vendidos: { $sum: '$items.cantidad' }, revenue: { $sum: { $multiply: ['$items.precioUnitario', '$items.cantidad'] } } } },
+      { $match: { storeId: sid, ...dateMatch, paymentStatus: 'paid' } },
+      { $unwind: '$lineItems' },
+      { $group: { _id: '$lineItems.nombre', vendidos: { $sum: '$lineItems.cantidad' }, revenue: { $sum: { $multiply: ['$lineItems.precioUnitario', '$lineItems.cantidad'] } } } },
       { $sort: { revenue: -1 } },
       { $limit: 10 },
     ]);
@@ -248,35 +366,209 @@ async function buildContext(section, storeId, from, to) {
     if (campaignMetrics.length) extra.campañas = campaignMetrics;
   }
 
+  if (section === 'creativos' || section === 'competencia' || section === 'report') {
+    const [topicMaps, hooks, objections, competitors] = await Promise.all([
+      TopicMap.find({ storeId: sid }).sort({ updatedAt: -1 }).limit(12).lean(),
+      LanguageBank.find({ storeId: sid, tipo: 'hook' }).sort({ updatedAt: -1 }).limit(12).lean(),
+      LanguageBank.find({ storeId: sid, tipo: 'objecion' }).sort({ updatedAt: -1 }).limit(12).lean(),
+      Competitor.find({ storeId: sid }).sort({ updatedAt: -1 }).limit(8).lean(),
+    ]);
+
+    extra.creativeFramework = {
+      topics: topicMaps.map((item) => ({
+        nombre: item.nombre,
+        status: item.status,
+        priority: item.priority,
+        avatar: item.avatar,
+        awarenessLevel: item.awarenessLevel,
+        angle: item.angle,
+        territory: item.territory,
+        symptom: item.symptom,
+        objection: item.objection,
+        recommendedFormat: item.recommendedFormat,
+        stage: item.stage,
+        hypothesis: item.hypothesis,
+        tags: item.tags || [],
+        description: item.description,
+        performanceNotes: item.performanceNotes,
+      })),
+      hooks: hooks.map((item) => ({
+        texto: item.texto,
+        avatar: item.avatar,
+        awarenessLevel: item.awarenessLevel,
+        angle: item.angle,
+        territory: item.territory,
+        tags: item.tags || [],
+        sentiment: item.sentiment,
+      })),
+      objections: objections.map((item) => ({
+        texto: item.texto,
+        response: item.response,
+        avatar: item.avatar,
+        awarenessLevel: item.awarenessLevel,
+        angle: item.angle,
+        territory: item.territory,
+        objectionStage: item.objectionStage,
+        tags: item.tags || [],
+      })),
+      competitors: competitors.map((item) => ({
+        nombre: item.nombre,
+        url: item.url,
+        positioning: item.positioning,
+        avatar: item.avatar,
+        awarenessLevel: item.awarenessLevel,
+        mainOffer: item.mainOffer,
+        angles: item.angles || [],
+        territories: item.territories || [],
+        objectionsDetected: item.objectionsDetected || [],
+        notas: item.notas,
+        analysisResult: item.analysisResult,
+      })),
+    };
+  }
+
   return { ...base, ...extra };
 }
 
-/**
- * Generate AI analysis for a section.
- */
-async function analyze(section, storeId, from, to, userId) {
+function getSectionInstructions(section) {
+  const playbook = SECTION_PLAYBOOKS[section] || SECTION_PLAYBOOKS.dashboard;
+  return `Objetivo: ${playbook.objective}.
+Incluí sí o sí: ${playbook.mustInclude.join(', ')}.
+Si la confianza del dato no es alta, decilo explícitamente y evitá recomendar escalar fuerte o tomar decisiones irreversibles.`;
+}
+
+function buildAnalysisPrompt(section, context) {
+  return `${getSectionInstructions(section)}
+
+Respondé en markdown y usá esta estructura:
+## Diagnóstico
+## Qué está funcionando
+## Riesgos o límites del dato
+## Acciones prioritarias
+
+Reglas:
+- no inventes números
+- no repitas todo el contexto
+- si falta data clave, tratala como limitación operativa
+- si la confianza es baja, decí qué NO harías todavía
+
+Datos:
+${JSON.stringify(context, null, 2)}`;
+}
+
+async function structuredInsights(section, storeId, from, to, userId) {
   const credentials = await resolveCredentials(userId);
   const provider = getProvider(credentials.provider, credentials.apiKey);
   const systemPrompt = await buildSystemPrompt(userId, storeId);
   const context = await buildContext(section, storeId, from, to);
 
-  const sectionInstructions = {
-    dashboard: 'Analiza el rendimiento general: ventas, profit, ROAS vs True ROAS, NC vs RC, tendencias. Identificá lo más urgente.',
-    cashflow: 'Analiza el cashflow: liquidez, timing de cobros, comisiones, pagos pendientes. Recomendá cómo mejorar el flujo.',
-    meta: 'Analiza el rendimiento de Meta Ads por campaña: ROAS, CPA, CTR. Identificá qué escalar y qué pausar.',
-    costos: 'Analiza la estructura de costos: márgenes, líneas más pesadas, oportunidades de optimización.',
-    productos: 'Analiza el rendimiento de productos: top sellers, márgenes, oportunidades de bundling o cross-sell.',
-    clientes: 'Analiza la base de clientes: segmentos RFM, retención, LTV. Sugerí estrategias por segmento.',
-    creativos: 'Analiza el rendimiento de creativos/campañas: clasificación ABCDE, qué escalar, qué matar.',
-    diagnostics: 'Analizá anomalías de los últimos 7 días comparando con el período anterior. Identificá caídas abruptas, tendencias negativas y oportunidades. Respondé con bullets concretos de máximo 1 línea cada uno.',
-    competencia: 'Compará el rendimiento de la tienda con los datos del competidor proporcionado. Identificá ventajas competitivas, brechas de precio y oportunidades.',
-    report: 'Generá un resumen ejecutivo de máximo 200 palabras integrando todos los datos proporcionados. Cerrá con 3 acciones prioritarias.',
-  };
+  const prompt = `Generá un JSON válido con esta forma exacta:
+{"summary":"string","confidence":0.0,"insights":[{"titulo":"string","descripcion":"string","tipo":"alert|win|diagnostic|action_item|verdict|note","severidad":"critical|warning|positive|neutral|diagnostic|verdict","verdict":"ESCALAR|PAUSAR|TESTEAR|REVISAR|IMPLEMENTAR|MANTENER|null","metricKey":"string|null","impacto":"string|null"}]}
 
-  const prompt = `${sectionInstructions[section] || sectionInstructions.dashboard}\n\nDatos:\n${JSON.stringify(context, null, 2)}`;
+Reglas:
+- confidence debe reflejar la calidad del dato y estar entre 0 y 1
+- máximo 8 insights
+- no inventes números
+- si la confianza es baja, reflejalo en summary y en los insights
+
+Instrucciones sección:
+${getSectionInstructions(section)}
+
+Datos:
+${JSON.stringify(context, null, 2)}`;
 
   const result = await provider.createMessage({
-    model: credentials.modelAnalysis,
+    model: pickModel(credentials, 'analysis'),
+    maxTokens: 1800,
+    system: systemPrompt,
+    messages: [{ role: 'user', content: prompt }],
+  });
+
+  const jsonMatch = result.text.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) {
+    throw new Error('La AI no devolvió un JSON interpretable');
+  }
+
+  const parsed = JSON.parse(jsonMatch[0]);
+  return {
+    summary: parsed.summary || '',
+    confidence: Math.max(0, Math.min(1, Number(parsed.confidence ?? context.dataQuality?.confidence ?? 0.5))),
+    insights: Array.isArray(parsed.insights) ? parsed.insights.slice(0, 8) : [],
+    tokensUsed: result.usage.inputTokens + result.usage.outputTokens,
+    model: pickModel(credentials, 'analysis'),
+    provider: credentials.provider,
+    context,
+  };
+}
+
+async function generateWorkflow(type, storeId, from, to, userId, extra = {}) {
+  const credentials = await resolveCredentials(userId);
+  const provider = getProvider(credentials.provider, credentials.apiKey);
+  const systemPrompt = await buildSystemPrompt(userId, storeId);
+  const section = type === 'competitor_opportunities' ? 'competencia' : 'creativos';
+  const context = await buildContext(section, storeId, from, to);
+
+  const workflowPrompts = {
+    creative_brief: `Respondé SOLO JSON válido con esta forma:
+{"title":"string","confidence":0.0,"ideas":[{"hook":"string","angle":"string","format":"string","why":"string","priority":"high|medium|low"}]}
+
+Objetivo:
+- Proponer entre 4 y 8 ideas creativas accionables
+- Usar hooks, objeciones, topics y señales de performance
+- No inventar métricas
+- Priorizar ideas que cubran objeciones desatendidas y territorios subexplotados`,
+    competitor_opportunities: `Respondé SOLO JSON válido con esta forma:
+{"title":"string","confidence":0.0,"opportunities":[{"title":"string","gap":"string","action":"string","priority":"high|medium|low"}]}
+
+Objetivo:
+- Detectar entre 4 y 8 oportunidades concretas frente al competidor
+- Usar solo el contexto provisto
+- Si el contexto del competidor es limitado, decirlo y bajar la confianza`,
+  };
+
+  const prompt = `${workflowPrompts[type]}
+
+Extra:
+${JSON.stringify(extra, null, 2)}
+
+Datos:
+${JSON.stringify(context, null, 2)}`;
+
+  const result = await provider.createMessage({
+    model: pickModel(credentials, 'reports'),
+    maxTokens: 1800,
+    system: systemPrompt,
+    messages: [{ role: 'user', content: prompt }],
+  });
+
+  const jsonMatch = result.text.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) throw new Error('La AI no devolvió un JSON interpretable');
+
+  const parsed = JSON.parse(jsonMatch[0]);
+  return {
+    ...parsed,
+    confidence: Math.max(0, Math.min(1, Number(parsed.confidence ?? context.dataQuality?.confidence ?? 0.5))),
+    tokensUsed: result.usage.inputTokens + result.usage.outputTokens,
+    model: pickModel(credentials, 'reports'),
+    provider: credentials.provider,
+  };
+}
+
+/**
+ * Generate AI analysis for a section.
+ */
+async function analyze(section, storeId, from, to, userId, options = {}) {
+  const credentials = await resolveCredentials(userId);
+  const provider = getProvider(credentials.provider, credentials.apiKey);
+  const systemPrompt = await buildSystemPrompt(userId, storeId);
+  const context = await buildContext(section, storeId, from, to);
+  const purpose = options.purpose || (section === 'report' ? 'reports' : 'analysis');
+  const model = pickModel(credentials, purpose);
+
+  const prompt = buildAnalysisPrompt(section, context);
+
+  const result = await provider.createMessage({
+    model,
     maxTokens: 1500,
     system: systemPrompt,
     messages: [{ role: 'user', content: prompt }],
@@ -284,25 +576,42 @@ async function analyze(section, storeId, from, to, userId) {
 
   return {
     analysis: result.text,
+    confidence: context.dataQuality?.confidence ?? 0.5,
+    qualityNote: context.dataQuality?.note,
+    contextMeta: {
+      sourceCoverage: context.sourceCoverage,
+      targets: context.targets ? true : false,
+      credentialSource: credentials.source,
+    },
     tokensUsed: result.usage.inputTokens + result.usage.outputTokens,
-    model: credentials.modelAnalysis,
+    model,
     provider: credentials.provider,
+    generationMode: 'ai',
   };
 }
 
 /**
  * Chat with AI about store data.
  */
-async function chat(messages, storeId, from, to, userId) {
+async function chat(messages, storeId, from, to, userId, section = 'dashboard') {
   const credentials = await resolveCredentials(userId);
   const provider = getProvider(credentials.provider, credentials.apiKey);
   const systemPrompt = await buildSystemPrompt(userId, storeId);
-  const context = await buildContext('dashboard', storeId, from, to);
+  const context = await buildContext(section, storeId, from, to);
 
-  const fullSystem = `${systemPrompt}\n\nDatos de la tienda en el período seleccionado:\n${JSON.stringify(context, null, 2)}\n\nSi te preguntan algo que no podés determinar con estos datos, decilo claramente.`;
+  const fullSystem = `${systemPrompt}
+
+Sección activa: ${section}
+Contexto de la tienda en el período seleccionado:
+${JSON.stringify(context, null, 2)}
+
+Reglas extra:
+- Si el usuario pide ideas creativas, usá topic maps, hooks, objeciones y competencia si están disponibles.
+- Si la calidad del dato no es alta, decilo antes de sacar conclusiones fuertes.
+- Si te preguntan algo que no podés determinar con estos datos, decilo claramente.`;
 
   const result = await provider.createMessage({
-    model: credentials.modelChat,
+    model: pickModel(credentials, 'chat'),
     maxTokens: 1000,
     system: fullSystem,
     messages: messages.map((m) => ({ role: m.role, content: m.content })),
@@ -311,6 +620,14 @@ async function chat(messages, storeId, from, to, userId) {
   return {
     response: result.text,
     tokensUsed: result.usage.inputTokens + result.usage.outputTokens,
+    provider: credentials.provider,
+    model: pickModel(credentials, 'chat'),
+    confidence: context.dataQuality?.confidence ?? 0.5,
+    qualityNote: context.dataQuality?.note || '',
+    contextMeta: {
+      sourceCoverage: context.sourceCoverage,
+      credentialSource: credentials.source,
+    },
   };
 }
 
@@ -329,7 +646,7 @@ async function testConnection(userId) {
     messages: [{ role: 'user', content: 'test' }],
   });
 
-  return { status: 'ok', provider: credentials.provider };
+  return { status: 'ok', provider: credentials.provider, source: credentials.source };
 }
 
-module.exports = { analyze, chat, testConnection };
+module.exports = { analyze, chat, testConnection, structuredInsights, buildContext, generateWorkflow };

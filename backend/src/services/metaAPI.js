@@ -1,9 +1,42 @@
 const axios = require('axios');
 const logger = require('../utils/logger');
 
-const GRAPH_API = 'https://graph.facebook.com/v19.0';
+const GRAPH_API = 'https://graph.facebook.com/v23.0';
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+function normalizeAdAccountId(adAccountId) {
+  if (!adAccountId) return '';
+  const raw = String(adAccountId).trim();
+  return raw.startsWith('act_') ? raw : `act_${raw}`;
+}
+
+function isRetryableMetaError(error) {
+  const status = error.response?.status;
+  const code = error.response?.data?.error?.code;
+  return status === 429 || code === 17;
+}
+
+async function getWithRetry(url, params, contextLabel) {
+  let retries = 0;
+  const maxRetries = 5;
+
+  while (retries <= maxRetries) {
+    try {
+      const res = await axios.get(url, { params });
+      return res.data.data || res.data;
+    } catch (error) {
+      if (!isRetryableMetaError(error) || retries >= maxRetries) {
+        throw error;
+      }
+
+      const waitTime = Math.pow(2, retries + 1) * 1500;
+      logger.warn(`Meta rate limit on ${contextLabel}, waiting ${waitTime}ms (retry ${retries + 1}/${maxRetries})`);
+      await sleep(waitTime);
+      retries++;
+    }
+  }
+}
 
 /**
  * Exchange short-lived code for long-lived token (60 days).
@@ -64,56 +97,84 @@ async function refreshLongLivedToken(token) {
  * Get ad accounts for a user.
  */
 async function getAdAccounts(token) {
-  const res = await axios.get(`${GRAPH_API}/me/adaccounts`, {
-    params: {
+  return getWithRetry(
+    `${GRAPH_API}/me/adaccounts`,
+    {
       access_token: token,
       fields: 'id,name,account_id,account_status,currency',
       limit: 50,
     },
-  });
-  return res.data.data;
+    'me/adaccounts'
+  );
 }
 
 /**
  * Get campaigns for an ad account.
  */
 async function getCampaigns(adAccountId, token) {
-  const res = await axios.get(`${GRAPH_API}/act_${adAccountId}/campaigns`, {
-    params: {
+  return getWithRetry(
+    `${GRAPH_API}/${normalizeAdAccountId(adAccountId)}/campaigns`,
+    {
       access_token: token,
       fields: 'id,name,status,objective,daily_budget,lifetime_budget,created_time,updated_time',
       limit: 500,
     },
-  });
-  return res.data.data;
+    `campaigns:${normalizeAdAccountId(adAccountId)}`
+  );
 }
 
 /**
  * Get ad sets for a campaign.
  */
 async function getAdSets(campaignId, token) {
-  const res = await axios.get(`${GRAPH_API}/${campaignId}/adsets`, {
-    params: {
+  return getWithRetry(
+    `${GRAPH_API}/${campaignId}/adsets`,
+    {
       access_token: token,
       fields: 'id,name,status,daily_budget,lifetime_budget,targeting,optimization_goal',
       limit: 500,
     },
-  });
-  return res.data.data;
+    `adsets:${campaignId}`
+  );
+}
+
+async function getAccountAdSets(adAccountId, token) {
+  return getWithRetry(
+    `${GRAPH_API}/${normalizeAdAccountId(adAccountId)}/adsets`,
+    {
+      access_token: token,
+      fields: 'id,name,status,campaign_id,daily_budget,lifetime_budget,targeting,optimization_goal',
+      limit: 500,
+    },
+    `account-adsets:${normalizeAdAccountId(adAccountId)}`
+  );
 }
 
 /**
  * Get ads for an ad set.
  */
 async function getAds(adSetId, token) {
-  const res = await axios.get(`${GRAPH_API}/${adSetId}/ads`, {
-    params: {
+  return getWithRetry(
+    `${GRAPH_API}/${adSetId}/ads`,
+    {
       access_token: token,
       fields: 'id,name,status,creative{id,name,body,title,thumbnail_url}',
       limit: 500,
     },
-  });
-  return res.data.data;
+    `ads:${adSetId}`
+  );
+}
+
+async function getAccountAds(adAccountId, token) {
+  return getWithRetry(
+    `${GRAPH_API}/${normalizeAdAccountId(adAccountId)}/ads`,
+    {
+      access_token: token,
+      fields: 'id,name,status,adset_id,campaign_id,creative{id,name,body,title,thumbnail_url}',
+      limit: 500,
+    },
+    `account-ads:${normalizeAdAccountId(adAccountId)}`
+  );
 }
 
 /**
@@ -152,7 +213,7 @@ async function getInsights(objectId, dateFrom, dateTo, token, breakdowns = []) {
       const res = await axios.get(`${GRAPH_API}/${objectId}/insights`, { params });
       return res.data.data || [];
     } catch (error) {
-      if (error.response?.status === 429 && retries < maxRetries) {
+      if (isRetryableMetaError(error) && retries < maxRetries) {
         const waitTime = Math.pow(2, retries + 1) * 1000;
         logger.warn(`Meta rate limit, waiting ${waitTime}ms (retry ${retries + 1}/${maxRetries})`);
         await sleep(waitTime);
@@ -162,6 +223,57 @@ async function getInsights(objectId, dateFrom, dateTo, token, breakdowns = []) {
       }
     }
   }
+}
+
+async function getInsightsForAdAccount(adAccountId, token, options = {}) {
+  const {
+    level = 'ad',
+    timeIncrement = 1,
+    datePreset,
+    dateFrom,
+    dateTo,
+    fields = [
+      'campaign_id',
+      'campaign_name',
+      'adset_id',
+      'adset_name',
+      'ad_id',
+      'ad_name',
+      'spend',
+      'reach',
+      'impressions',
+      'frequency',
+      'clicks',
+      'unique_clicks',
+      'inline_link_clicks',
+      'cpm',
+      'cpc',
+      'ctr',
+      'actions',
+      'action_values',
+      'cost_per_action_type',
+    ],
+  } = options;
+
+  const params = {
+    access_token: token,
+    level,
+    time_increment: timeIncrement,
+    fields: fields.join(','),
+    limit: 500,
+  };
+
+  if (datePreset) {
+    params.date_preset = datePreset;
+  } else if (dateFrom && dateTo) {
+    params.time_range = JSON.stringify({ since: dateFrom, until: dateTo });
+  }
+
+  return getWithRetry(
+    `${GRAPH_API}/${normalizeAdAccountId(adAccountId)}/insights`,
+    params,
+    `insights:${normalizeAdAccountId(adAccountId)}`
+  );
 }
 
 /**
@@ -183,10 +295,14 @@ module.exports = {
   exchangeToken,
   refreshLongLivedToken,
   getAdAccounts,
+  normalizeAdAccountId,
   getCampaigns,
   getAdSets,
+  getAccountAdSets,
   getAds,
+  getAccountAds,
   getInsights,
+  getInsightsForAdAccount,
   parseActions,
   parseActionValues,
 };

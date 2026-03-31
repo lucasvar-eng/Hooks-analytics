@@ -27,11 +27,24 @@ export const fetchStoreMetrics = createAsyncThunk(
   }
 );
 
+export const fetchExecutiveOverview = createAsyncThunk(
+  'stores/fetchExecutiveOverview',
+  async ({ from, to }, { rejectWithValue }) => {
+    try {
+      const { data } = await api.get(`/api/stores/overview/executive?from=${from}&to=${to}`);
+      return data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.error || 'Failed to fetch executive overview');
+    }
+  }
+);
+
 const storeSlice = createSlice({
   name: 'stores',
   initialState: {
     stores: [],
     metrics: {}, // { [storeId]: { current, previous, deltas } }
+    executiveOverview: null,
     selectedStoreId: null,
     loading: false,
     error: null,
@@ -58,6 +71,9 @@ const storeSlice = createSlice({
       .addCase(fetchStoreMetrics.fulfilled, (state, action) => {
         const { storeId, metrics } = action.payload;
         state.metrics[storeId] = metrics;
+      })
+      .addCase(fetchExecutiveOverview.fulfilled, (state, action) => {
+        state.executiveOverview = action.payload;
       });
   },
 });

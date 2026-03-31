@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, NavLink, Outlet, Link, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import { selectStore } from '../store/storeSlice';
+import { fetchStores, selectStore } from '../store/storeSlice';
 import Header from '../components/common/Header';
-import AIChatPanel from '../components/common/AIChatPanel';
 import InsightPanel from '../components/insights/InsightPanel';
 
 const ICONS = {
@@ -83,6 +82,11 @@ const ICONS = {
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
     </svg>
   ),
+  automatizaciones: (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M13 3l4 4-4 4M7 21l-4-4 4-4M3 17h10a4 4 0 004-4V7" />
+    </svg>
+  ),
   settings: (
     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065zM15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -106,6 +110,7 @@ const NAV_ITEMS = [
   { path: 'reportes', label: 'Reportes', group: 'IA' },
   { path: 'report-builder', label: 'Reporte AI', group: 'IA' },
   { path: 'alertas', label: 'Alertas', group: 'IA' },
+  { path: 'automatizaciones', label: 'Automatizaciones', group: 'IA' },
   { path: 'settings', label: 'Settings', group: 'Config' },
 ];
 
@@ -124,17 +129,36 @@ export default function StoreLayout() {
   const { storeId } = useParams();
   const dispatch = useDispatch();
   const location = useLocation();
-  const { from, to } = useSelector((state) => state.date);
   const store = useSelector((state) =>
     state.stores.stores.find((s) => s._id === storeId)
   );
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [panelOpen, setPanelOpen] = useState(true);
+  const [panelOpen, setPanelOpen] = useState(false);
+
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem('hooks-insight-panel-open');
+      if (saved != null) {
+        setPanelOpen(saved === '1');
+      }
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem('hooks-insight-panel-open', panelOpen ? '1' : '0');
+    } catch {}
+  }, [panelOpen]);
 
   useEffect(() => {
     dispatch(selectStore(storeId));
   }, [dispatch, storeId]);
+
+  useEffect(() => {
+    if (!storeId || store) return;
+    dispatch(fetchStores());
+  }, [dispatch, storeId, store]);
 
   const pathSegment = location.pathname.split('/').pop();
   const insightSection = SECTION_MAP[pathSegment] || 'dashboard';
@@ -151,11 +175,11 @@ export default function StoreLayout() {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-[#0a0a0a] overflow-hidden">
+    <div className="app-shell h-screen flex flex-col overflow-hidden">
       <Header />
 
       {/* Mobile hamburger bar */}
-      <div className="lg:hidden px-4 py-2 bg-[#111111] border-b border-white/[0.06] flex items-center justify-between">
+      <div className="app-surface lg:hidden px-4 py-2 border-b border-white/[0.06] flex items-center justify-between">
         <button
           onClick={() => setSidebarOpen(true)}
           className="p-2 text-gray-500 hover:text-gray-300 transition"
@@ -188,7 +212,7 @@ export default function StoreLayout() {
         <aside
           className={`
             fixed lg:static inset-y-0 left-0 z-40 w-[220px] shrink-0
-            bg-[#111111] border-r border-white/[0.06]
+            app-surface border-r border-white/[0.06]
             flex flex-col overflow-hidden
             transform transition-transform duration-200
             ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
@@ -211,7 +235,7 @@ export default function StoreLayout() {
               {store?.nombre || 'Tienda'}
             </h3>
             <p className="text-[10px] text-gray-600 uppercase tracking-wider mt-0.5">
-              Ecommerce Analytics
+              Hooks Analytics
             </p>
           </div>
 
@@ -247,13 +271,13 @@ export default function StoreLayout() {
         </aside>
 
         {/* CENTER CONTENT */}
-        <main className="flex-1 overflow-y-auto p-5 min-w-0 bg-[#0a0a0a]">
+        <main className="app-shell flex-1 overflow-y-auto p-5 min-w-0">
           <Outlet />
         </main>
 
         {/* RIGHT ANALYSIS PANEL */}
         {showPanel && panelOpen && (
-          <aside className="hidden lg:flex w-[320px] shrink-0 bg-[#111111] border-l border-white/[0.06] flex-col overflow-hidden">
+          <aside className="app-surface hidden lg:flex w-[320px] shrink-0 border-l border-white/[0.06] flex-col overflow-hidden">
             <InsightPanel
               storeId={storeId}
               section={insightSection}
@@ -280,13 +304,11 @@ export default function StoreLayout() {
       {showPanel && panelOpen && (
         <>
           <div className="lg:hidden fixed inset-0 bg-black/60 z-40" onClick={() => setPanelOpen(false)} />
-          <aside className="lg:hidden fixed inset-y-0 right-0 z-50 w-[320px] max-w-[90vw] bg-[#111111] border-l border-white/[0.06] flex flex-col">
+          <aside className="app-surface lg:hidden fixed inset-y-0 right-0 z-50 w-[320px] max-w-[90vw] border-l border-white/[0.06] flex flex-col">
             <InsightPanel storeId={storeId} section={insightSection} onClose={() => setPanelOpen(false)} />
           </aside>
         </>
       )}
-
-      <AIChatPanel storeId={storeId} from={from} to={to} />
     </div>
   );
 }

@@ -4,6 +4,11 @@ const productSchema = new mongoose.Schema(
   {
     storeId: { type: mongoose.Schema.Types.ObjectId, ref: 'Store', required: true },
     tnProductId: { type: String, required: true },
+    sku: { type: String },
+    handle: { type: String },
+    productUrl: { type: String },
+    activo: { type: Boolean, default: true },
+    estadoPublicacion: { type: String, default: 'activo' },
 
     nombre: { type: String },
     precio: { type: Number, default: 0 },
@@ -18,6 +23,7 @@ const productSchema = new mongoose.Schema(
       {
         tnVariantId: String,
         nombre: String,
+        sku: String,
         precio: Number,
         stock: Number,
       },
@@ -40,6 +46,7 @@ const productSchema = new mongoose.Schema(
 
     // Categoría
     categoria: { type: String },
+    subcategoria: { type: String },
 
     // Imagen
     imagenUrl: { type: String },

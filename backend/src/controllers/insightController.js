@@ -1,5 +1,5 @@
 const Insight = require('../models/Insight');
-const { analyze } = require('../services/aiService');
+const { analyze, structuredInsights } = require('../services/aiService');
 const logger = require('../utils/logger');
 
 // GET /stores/:id/insights?section=&tipo=&estado=
@@ -137,50 +137,53 @@ exports.generate = async (req, res, next) => {
     fromDate.setDate(fromDate.getDate() - 30);
     const from = fromDate.toISOString().slice(0, 10);
 
-    const result = await analyze(section, storeId, from, to, req.user._id);
-
-    // Parse the AI response into structured insights
-    const lines = result.analysis.split('\n').filter((l) => l.trim());
-    const insights = [];
-
-    for (const line of lines) {
-      const trimmed = line.replace(/^[-*#\s]+/, '').trim();
-      if (!trimmed || trimmed.length < 10) continue;
-
-      // Detect severity from keywords
-      let severidad = 'neutral';
-      let tipo = 'diagnostic';
-      let verdict = null;
-
-      const lower = trimmed.toLowerCase();
-      if (lower.includes('caída') || lower.includes('cayó') || lower.includes('problema') || lower.includes('alerta') || lower.includes('crítico')) {
-        severidad = 'warning'; tipo = 'alert';
-      } else if (lower.includes('escalar') || lower.includes('oportunidad') || lower.includes('excelente') || lower.includes('fuerte')) {
-        severidad = 'positive'; tipo = 'win';
-        if (lower.includes('escalar')) verdict = 'ESCALAR';
-      } else if (lower.includes('pausar') || lower.includes('detener') || lower.includes('eliminar')) {
-        severidad = 'critical'; tipo = 'action_item'; verdict = 'PAUSAR';
-      } else if (lower.includes('testear') || lower.includes('probar')) {
-        severidad = 'neutral'; tipo = 'action_item'; verdict = 'TESTEAR';
-      } else if (lower.includes('revisar') || lower.includes('investigar')) {
-        severidad = 'warning'; tipo = 'action_item'; verdict = 'REVISAR';
-      } else if (lower.includes('implementar') || lower.includes('acción')) {
-        severidad = 'positive'; tipo = 'action_item'; verdict = 'IMPLEMENTAR';
-      }
-
-      insights.push({
-        storeId,
-        section,
-        tipo,
-        severidad,
-        titulo: trimmed.length > 80 ? trimmed.slice(0, 80) + '...' : trimmed,
-        descripcion: trimmed.length > 80 ? trimmed : undefined,
-        verdict,
-        layer: 'L2',
-        generatedBy: result.provider === 'openai' ? 'openai' : 'claude',
-        metadata: { model: result.model, tokensUsed: result.tokensUsed },
-      });
+    let result;
+    try {
+      result = await structuredInsights(section, storeId, from, to, req.user._id);
+    } catch (error) {
+      logger.warn(`Structured insights failed, falling back to text parse: ${error.message}`);
+      const fallback = await analyze(section, storeId, from, to, req.user._id);
+      const lines = fallback.analysis.split('\n').filter((l) => l.trim());
+      result = {
+        confidence: fallback.confidence ?? 0.5,
+        provider: fallback.provider,
+        model: fallback.model,
+        tokensUsed: fallback.tokensUsed,
+        insights: lines
+          .map((line) => line.replace(/^[-*#\s]+/, '').trim())
+          .filter((line) => line.length >= 10)
+          .slice(0, 8)
+          .map((line) => ({
+            titulo: line.length > 80 ? `${line.slice(0, 80)}...` : line,
+            descripcion: line,
+            tipo: 'diagnostic',
+            severidad: 'neutral',
+            verdict: null,
+            metricKey: null,
+            impacto: null,
+          })),
+      };
     }
+
+    const insights = result.insights.map((item) => ({
+      storeId,
+      section,
+      tipo: item.tipo || 'diagnostic',
+      severidad: item.severidad || 'neutral',
+      titulo: item.titulo,
+      descripcion: item.descripcion,
+      impacto: item.impacto || undefined,
+      verdict: item.verdict || null,
+      layer: 'L2',
+      generatedBy: result.provider === 'openai' ? 'openai' : 'claude',
+      metricKey: item.metricKey || undefined,
+      confidence: result.confidence ?? 0.5,
+      metadata: {
+        model: result.model,
+        tokensUsed: result.tokensUsed,
+        summary: result.summary,
+      },
+    }));
 
     // Clear old AI-generated insights for this section, then insert new
     if (insights.length > 0) {
@@ -188,7 +191,7 @@ exports.generate = async (req, res, next) => {
       await Insight.insertMany(insights.slice(0, 20)); // cap at 20
     }
 
-    res.json({ count: insights.length, tokensUsed: result.tokensUsed });
+    res.json({ count: insights.length, tokensUsed: result.tokensUsed, confidence: result.confidence ?? 0.5 });
   } catch (error) {
     logger.error('Insight generate error:', error.message);
     next(error);

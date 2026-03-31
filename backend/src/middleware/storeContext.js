@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const storeContext = (req, res, next) => {
-  const { storeId } = req.params;
+  const storeId = req.params.storeId || req.params.id;
 
   if (!storeId) {
     return res.status(400).json({ error: 'storeId is required' });

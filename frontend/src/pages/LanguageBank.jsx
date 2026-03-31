@@ -26,7 +26,27 @@ const SENTIMENT_BADGE = {
 const TIPO_LABELS = { frase: 'Frase', objecion: 'Objeción', vocabulario: 'Vocabulario', hook: 'Hook' };
 const SENTIMENT_LABELS = { positivo: 'Positivo', neutro: 'Neutro', negativo: 'Negativo' };
 
-const EMPTY_FORM = { tipo: 'frase', texto: '', response: '', tags: '', sentiment: 'neutro' };
+const AWARENESS_LABELS = {
+  unaware: 'No consciente',
+  'problem-aware': 'Problema',
+  'solution-aware': 'Solución',
+  'product-aware': 'Producto',
+  'most-aware': 'Muy consciente',
+  unknown: 'Sin definir',
+};
+
+const EMPTY_FORM = {
+  tipo: 'frase',
+  texto: '',
+  response: '',
+  tags: '',
+  sentiment: 'neutro',
+  avatar: '',
+  awarenessLevel: 'unknown',
+  angle: '',
+  territory: '',
+  objectionStage: '',
+};
 
 export default function LanguageBank() {
   const { storeId } = useParams();
@@ -66,7 +86,18 @@ export default function LanguageBank() {
   };
 
   const handleEdit = (entry) => {
-    setForm({ tipo: entry.tipo, texto: entry.texto, response: entry.response || '', tags: (entry.tags || []).join(', '), sentiment: entry.sentiment || 'neutro' });
+    setForm({
+      tipo: entry.tipo,
+      texto: entry.texto,
+      response: entry.response || '',
+      tags: (entry.tags || []).join(', '),
+      sentiment: entry.sentiment || 'neutro',
+      avatar: entry.avatar || '',
+      awarenessLevel: entry.awarenessLevel || 'unknown',
+      angle: entry.angle || '',
+      territory: entry.territory || '',
+      objectionStage: entry.objectionStage || '',
+    });
     setEditId(entry._id);
     setShowForm(true);
   };
@@ -96,7 +127,7 @@ export default function LanguageBank() {
 
       {showForm && (
         <form onSubmit={handleSubmit} className="card p-5 space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="kpi-label mb-1 block">Tipo</label>
               <select value={form.tipo} onChange={(e) => setForm({ ...form, tipo: e.target.value })} className="input-dark w-full">
@@ -115,14 +146,45 @@ export default function LanguageBank() {
               </select>
             </div>
           </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div>
+              <label className="kpi-label mb-1 block">Avatar</label>
+              <input value={form.avatar} onChange={(e) => setForm({ ...form, avatar: e.target.value })} className="input-dark w-full" />
+            </div>
+            <div>
+              <label className="kpi-label mb-1 block">Nivel de consciencia</label>
+              <select value={form.awarenessLevel} onChange={(e) => setForm({ ...form, awarenessLevel: e.target.value })} className="input-dark w-full">
+                <option value="unknown">Sin definir</option>
+                <option value="unaware">No consciente</option>
+                <option value="problem-aware">Problema</option>
+                <option value="solution-aware">Solución</option>
+                <option value="product-aware">Producto</option>
+                <option value="most-aware">Muy consciente</option>
+              </select>
+            </div>
+            <div>
+              <label className="kpi-label mb-1 block">Ángulo</label>
+              <input value={form.angle} onChange={(e) => setForm({ ...form, angle: e.target.value })} className="input-dark w-full" />
+            </div>
+            <div>
+              <label className="kpi-label mb-1 block">Territorio</label>
+              <input value={form.territory} onChange={(e) => setForm({ ...form, territory: e.target.value })} className="input-dark w-full" />
+            </div>
+          </div>
           <div>
             <label className="kpi-label mb-1 block">Texto</label>
             <textarea value={form.texto} onChange={(e) => setForm({ ...form, texto: e.target.value })} required rows={3} className="input-dark w-full" />
           </div>
           {form.tipo === 'objecion' && (
-            <div>
-              <label className="kpi-label mb-1 block">Respuesta sugerida</label>
-              <textarea value={form.response} onChange={(e) => setForm({ ...form, response: e.target.value })} rows={3} className="input-dark w-full" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="kpi-label mb-1 block">Respuesta sugerida</label>
+                <textarea value={form.response} onChange={(e) => setForm({ ...form, response: e.target.value })} rows={3} className="input-dark w-full" />
+              </div>
+              <div>
+                <label className="kpi-label mb-1 block">Etapa de objeción</label>
+                <input value={form.objectionStage} onChange={(e) => setForm({ ...form, objectionStage: e.target.value })} rows={3} className="input-dark w-full" />
+              </div>
             </div>
           )}
           <div>
@@ -164,6 +226,7 @@ export default function LanguageBank() {
                 <th className="text-left w-1/2">Texto</th>
                 <th className="text-left">Tipo</th>
                 <th className="text-left">Sentiment</th>
+                <th className="text-left">Framework</th>
                 <th className="text-left">Tags</th>
                 <th className="text-right">Acciones</th>
               </tr>
@@ -188,6 +251,12 @@ export default function LanguageBank() {
                     <span className={SENTIMENT_BADGE[entry.sentiment] || SENTIMENT_BADGE.neutro}>
                       {SENTIMENT_LABELS[entry.sentiment] || entry.sentiment}
                     </span>
+                  </td>
+                  <td className="text-app-secondary text-[11px]">
+                    <p>{entry.avatar || 'Sin avatar'}</p>
+                    <p>{AWARENESS_LABELS[entry.awarenessLevel] || 'Sin definir'}</p>
+                    {entry.angle && <p>{entry.angle}</p>}
+                    {entry.territory && <p>{entry.territory}</p>}
                   </td>
                   <td>
                     <div className="flex flex-wrap gap-1">

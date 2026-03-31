@@ -132,6 +132,7 @@ export default function Clientes() {
   const { storeId } = useParams();
   const [segments, setSegments] = useState([]);
   const [cohorts, setCohorts] = useState([]);
+  const [quality, setQuality] = useState(null);
   const [customerData, setCustomerData] = useState({ customers: [], total: 0 });
   const [loading, setLoading] = useState(true);
   const [selectedSegment, setSelectedSegment] = useState(null);
@@ -147,6 +148,7 @@ export default function Clientes() {
       ]);
       setSegments(segRes.data);
       setCohorts(cohortRes.data);
+      api.get(`/api/stores/${storeId}/customers/quality`).then(({ data }) => setQuality(data)).catch(() => {});
     } catch {}
     setLoading(false);
   }, [storeId]);
@@ -173,6 +175,23 @@ export default function Clientes() {
         <h1 className="page-title">Clientes</h1>
         <p className="page-subtitle">Segmentación RFM, cohorts de retención y lista de clientes ({customerData.total}).</p>
       </div>
+
+      {quality && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="card p-4">
+            <p className="text-app-muted text-[10px] uppercase tracking-[0.18em]">Sin email real</p>
+            <p className="text-white text-2xl font-semibold mt-2">{quality.customersWithoutRealEmail || 0}</p>
+          </div>
+          <div className="card p-4">
+            <p className="text-app-muted text-[10px] uppercase tracking-[0.18em]">Órdenes sin cliente</p>
+            <p className="text-white text-2xl font-semibold mt-2">{quality.ordersWithoutCustomer || 0}</p>
+          </div>
+          <div className="card p-4">
+            <p className="text-app-muted text-[10px] uppercase tracking-[0.18em]">Cohorts débiles</p>
+            <p className="text-white text-2xl font-semibold mt-2">{quality.sparseCohorts?.length || 0}</p>
+          </div>
+        </div>
+      )}
 
       <SegmentCards segments={segments} selected={selectedSegment} onSelect={(s) => { setSelectedSegment(s); setPage(1); }} />
 

@@ -3,6 +3,75 @@ const Customer = require('../models/Customer');
 const Order = require('../models/Order');
 const logger = require('../utils/logger');
 
+async function rebuildCustomersFromOrders(storeId) {
+  const storeObjectId = new mongoose.Types.ObjectId(storeId);
+
+  const grouped = await Order.aggregate([
+    {
+      $match: {
+        storeId: storeObjectId,
+        estado: { $nin: ['cancelled'] },
+        $or: [
+          { customerEmail: { $exists: true, $ne: null, $ne: '' } },
+          { externalCustomerId: { $exists: true, $ne: null, $ne: '' } },
+        ],
+      },
+    },
+    { $sort: { fechaCreacion: 1 } },
+    {
+      $group: {
+        _id: {
+          externalCustomerId: '$externalCustomerId',
+          email: '$customerEmail',
+        },
+        email: { $last: '$customerEmail' },
+        externalCustomerId: { $last: '$externalCustomerId' },
+        name: { $last: '$customerName' },
+        totalOrders: { $sum: 1 },
+        totalSpent: { $sum: '$totalOrden' },
+        firstPurchase: { $first: '$fechaCreacion' },
+        lastOrderDate: { $last: '$fechaCreacion' },
+        orderDates: { $push: '$fechaCreacion' },
+      },
+    },
+  ]);
+
+  await Customer.deleteMany({ storeId });
+
+  const docs = grouped
+    .filter((customer) => customer.email || customer.externalCustomerId)
+    .map((customer) => {
+      const firstPurchase = customer.firstPurchase || customer.lastOrderDate || new Date();
+      const cohortMonth = `${firstPurchase.getFullYear()}-${String(firstPurchase.getMonth() + 1).padStart(2, '0')}`;
+
+      const secondOrderDate = customer.orderDates?.[1] || null;
+      const firstToSecondOrderLag = secondOrderDate
+        ? Math.round((new Date(secondOrderDate) - new Date(firstPurchase)) / (1000 * 60 * 60 * 24))
+        : null;
+
+      return {
+        storeId,
+        email: customer.email || `${customer.externalCustomerId}@no-email.local`,
+        externalCustomerId: customer.externalCustomerId,
+        name: customer.name,
+        totalOrders: customer.totalOrders,
+        totalSpent: customer.totalSpent,
+        firstPurchase,
+        lastOrderDate: customer.lastOrderDate,
+        cohortMonth,
+        ltv: customer.totalSpent,
+        firstToSecondOrderLag,
+      };
+    });
+
+  if (docs.length > 0) {
+    await Customer.insertMany(docs, { ordered: false });
+  }
+
+  logger.info(`Customers rebuilt for store ${storeId}: ${docs.length} records`);
+  return docs.length;
+}
+
 /**
  * Calculate RFM scores for all customers of a store.
  * R = days since last purchase (lower = better → higher score)
@@ -45,6 +114,8 @@ async function calculateRFM(storeId) {
     c.rfmScore = `${rScore}-${fScore}-${mScore}`;
     c.rfmSegment = getSegment(rScore, fScore, mScore);
     c.ltv = c.totalSpent; // simple LTV = total spent
+    c.repurchaseRate = c.totalOrders > 1 ? ((c.totalOrders - 1) / c.totalOrders) * 100 : 0;
+    c.purchaseDensity = c.recency != null ? c.totalOrders / Math.max(c.recency, 1) : c.totalOrders;
 
     await c.save();
   }
@@ -189,9 +260,40 @@ async function getCustomers(storeId, page = 1, limit = 50, segment) {
   return { customers, total, page, limit };
 }
 
+async function getQualityChecks(storeId) {
+  const storeObjectId = new mongoose.Types.ObjectId(storeId);
+  const [customersWithoutRealEmail, ordersWithoutCustomer, sparseCohorts] = await Promise.all([
+    Customer.countDocuments({
+      storeId,
+      email: /@no-email\.local$/,
+    }),
+    Order.countDocuments({
+      storeId: storeObjectId,
+      estado: { $nin: ['cancelled'] },
+      $and: [
+        { $or: [{ customerEmail: { $exists: false } }, { customerEmail: null }, { customerEmail: '' }] },
+        { $or: [{ externalCustomerId: { $exists: false } }, { externalCustomerId: null }, { externalCustomerId: '' }] },
+      ],
+    }),
+    Customer.aggregate([
+      { $match: { storeId: storeObjectId, cohortMonth: { $exists: true, $ne: null } } },
+      { $group: { _id: '$cohortMonth', count: { $sum: 1 } } },
+      { $match: { count: { $lt: 3 } } },
+    ]),
+  ]);
+
+  return {
+    customersWithoutRealEmail,
+    ordersWithoutCustomer,
+    sparseCohorts: sparseCohorts.map((item) => item._id),
+  };
+}
+
 module.exports = {
+  rebuildCustomersFromOrders,
   calculateRFM,
   getCohortTable,
   getSegments,
   getCustomers,
+  getQualityChecks,
 };

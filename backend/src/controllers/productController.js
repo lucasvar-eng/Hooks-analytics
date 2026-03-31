@@ -1,5 +1,5 @@
 const Product = require('../models/Product');
-const { getProductsWithMetrics, getProductProfile, simulateProduct, getStockAlerts } = require('../services/productService');
+const { getProductsWithMetrics, getProductProfile, simulateProduct, getStockAlerts, getProductOverview, getCommercialOverview } = require('../services/productService');
 
 exports.list = async (req, res) => {
   const { from, to, page = 1, limit = 50 } = req.query;
@@ -23,4 +23,16 @@ exports.simulate = async (req, res) => {
 exports.alerts = async (req, res) => {
   const alerts = await getStockAlerts(req.params.id);
   res.json(alerts);
+};
+
+exports.overview = async (req, res) => {
+  const { from, to } = req.query;
+  const overview = await getProductOverview(req.params.id, from, to);
+  res.json(overview);
+};
+
+exports.commercial = async (req, res) => {
+  const { from, to } = req.query;
+  const overview = await getCommercialOverview(req.params.id, from, to);
+  res.json(overview);
 };

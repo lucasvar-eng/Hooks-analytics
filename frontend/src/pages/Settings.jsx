@@ -2,6 +2,11 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import api from '../services/api';
 
+const CRO_CENTRAL_TN_STORES = {
+  '6444342': 'MANGUZ',
+  '2638533': 'Limite Deportes',
+};
+
 function SectionCard({ title, children }) {
   return (
     <div className="card p-5">
@@ -127,6 +132,84 @@ function StoreAIContextSection({ storeId }) {
   );
 }
 
+function GoogleSheetsSection({ storeId }) {
+  const [spreadsheetId, setSpreadsheetId] = useState('');
+  const [enabled, setEnabled] = useState(false);
+  const [lastSync, setLastSync] = useState(null);
+  const [lastError, setLastError] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState(null);
+
+  useEffect(() => { loadConfig(); }, [storeId]);
+
+  const loadConfig = async () => {
+    try {
+      const { data } = await api.get(`/api/stores/${storeId}/settings`);
+      setSpreadsheetId(data.googleSheets?.spreadsheetId || '');
+      setEnabled(Boolean(data.googleSheets?.creativeMasterEnabled));
+      setLastSync(data.googleSheets?.lastSync || null);
+      setLastError(data.googleSheets?.lastError || '');
+    } catch {}
+  };
+
+  const save = async () => {
+    setSaving(true);
+    setMsg(null);
+    try {
+      await api.put(`/api/stores/${storeId}/settings`, {
+        googleSheets: {
+          spreadsheetId: spreadsheetId.trim(),
+          creativeMasterEnabled: enabled,
+        },
+      });
+      await loadConfig();
+      setMsg({ ok: true, text: 'Google Sheets guardado' });
+    } catch (err) {
+      setMsg({ ok: false, text: err.response?.data?.error || 'Error al guardar Google Sheets' });
+    }
+    setSaving(false);
+  };
+
+  return (
+    <SectionCard title="Google Sheets">
+      <p className="text-[12px] text-gray-600 mb-3">
+        Conectá un único spreadsheet para mantener el documento maestro del pipeline creativo siempre en el mismo lugar.
+      </p>
+      <div className="space-y-3">
+        <div>
+          <label className="kpi-label mb-1 block">Spreadsheet ID o URL</label>
+          <input
+            type="text"
+            value={spreadsheetId}
+            onChange={(e) => setSpreadsheetId(e.target.value)}
+            className="input-dark w-full"
+            placeholder="Pegá el spreadsheetId o la URL completa de Google Sheets"
+          />
+        </div>
+        <label className="flex items-center gap-2.5 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={enabled}
+            onChange={(e) => setEnabled(e.target.checked)}
+            className="w-4 h-4 accent-blue-500 rounded"
+          />
+          <span className="text-[13px] text-gray-300">Habilitar maestro creativo en Google Sheets</span>
+        </label>
+        <div className="text-[12px] text-gray-500 space-y-1">
+          <p>Último sync: {lastSync ? new Date(lastSync).toLocaleString('es-AR') : '—'}</p>
+          <p>Error reciente: {lastError || '—'}</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <button onClick={save} disabled={saving} className="btn-primary disabled:opacity-50">
+            {saving ? 'Guardando...' : 'Guardar Google Sheets'}
+          </button>
+          {msg && <span className={`text-[12px] font-medium ${msg.ok ? 'text-emerald-400' : 'text-red-400'}`}>{msg.text}</span>}
+        </div>
+      </div>
+    </SectionCard>
+  );
+}
+
 const FASES = [
   { value: 'lanzamiento', label: 'Lanzamiento' },
   { value: 'crecimiento', label: 'Crecimiento' },
@@ -137,14 +220,29 @@ const FASES = [
 
 function ObjetivosPanel({ storeId }) {
   const [obj, setObj] = useState({ fase: 'crecimiento', kpis: {}, breakeven: {}, alertThresholds: { warningPct: 10, criticalPct: 25 } });
+  const [targets, setTargets] = useState([]);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState(null);
 
   useEffect(() => {
-    api.get(`/api/stores/${storeId}`).then(({ data }) => {
-      if (data.objetivos) setObj((prev) => ({ ...prev, ...data.objetivos }));
-    }).catch(() => {});
+    loadTargets();
   }, [storeId]);
+
+  const loadTargets = async () => {
+    try {
+      const [{ data: store }, { data: targetList }] = await Promise.all([
+        api.get(`/api/stores/${storeId}`),
+        api.get(`/api/stores/${storeId}/targets`),
+      ]);
+
+      if (targetList?.length) {
+        setTargets(targetList);
+        setObj((prev) => ({ ...prev, ...targetList[0] }));
+      } else if (store.objetivos) {
+        setObj((prev) => ({ ...prev, ...store.objetivos }));
+      }
+    } catch {}
+  };
 
   const updateKpi = (key, val) => setObj({ ...obj, kpis: { ...obj.kpis, [key]: val === '' ? undefined : Number(val) } });
   const updateBe = (key, val) => setObj({ ...obj, breakeven: { ...obj.breakeven, [key]: val === '' ? undefined : Number(val) } });
@@ -153,8 +251,9 @@ function ObjetivosPanel({ storeId }) {
   const save = async () => {
     setSaving(true); setMsg(null);
     try {
-      await api.put(`/api/stores/${storeId}`, { objetivos: obj });
-      setMsg({ ok: true, text: 'Objetivos guardados' });
+      await api.post(`/api/stores/${storeId}/targets`, obj);
+      await loadTargets();
+      setMsg({ ok: true, text: 'Objetivos guardados y versionados' });
     } catch (err) {
       setMsg({ ok: false, text: err.response?.data?.error || 'Error' });
     }
@@ -234,6 +333,27 @@ function ObjetivosPanel({ storeId }) {
         <button onClick={save} disabled={saving} className="btn-primary disabled:opacity-50">{saving ? 'Guardando...' : 'Guardar objetivos'}</button>
         {msg && <span className={`text-[12px] font-medium ${msg.ok ? 'text-emerald-400' : 'text-red-400'}`}>{msg.text}</span>}
       </div>
+
+      {targets.length > 0 && (
+        <div className="mt-5 pt-4 border-t border-white/[0.06]">
+          <p className="text-app-muted text-[11px] uppercase tracking-[0.18em] mb-2">Versiones recientes</p>
+          <div className="space-y-2">
+            {targets.slice(0, 3).map((target) => (
+              <div key={target._id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2">
+                <div>
+                  <p className="text-white text-[12px] font-medium">{target.phase || 'crecimiento'}</p>
+                  <p className="text-app-secondary text-[11px]">
+                    {new Date(target.periodStart).toLocaleDateString('es-AR')} - {new Date(target.periodEnd).toLocaleDateString('es-AR')}
+                  </p>
+                </div>
+                <div className="text-app-secondary text-[11px]">
+                  ROAS {target.kpis?.roasTarget ?? '—'} · CPA {target.kpis?.cpaMaximo ?? '—'}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </SectionCard>
   );
 }
@@ -490,6 +610,13 @@ function MetricSelectorSection({ storeId }) {
 
 export default function Settings() {
   const { storeId } = useParams();
+  const extractMetaAccountIds = (storeData) => {
+    if (Array.isArray(storeData?.metaAdAccounts) && storeData.metaAdAccounts.length) {
+      return storeData.metaAdAccounts.map((item) => item.id).filter(Boolean);
+    }
+    return storeData?.metaAdAccountId ? [storeData.metaAdAccountId] : [];
+  };
+
   const [store, setStore] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -497,6 +624,17 @@ export default function Settings() {
   const [tnToken, setTnToken] = useState('');
   const [tnStoreIdInput, setTnStoreIdInput] = useState('');
   const [connectingTN, setConnectingTN] = useState(false);
+  const [shopifyToken, setShopifyToken] = useState('');
+  const [shopifyDomainInput, setShopifyDomainInput] = useState('');
+  const [connectingShopify, setConnectingShopify] = useState(false);
+  const [metaToken, setMetaToken] = useState('');
+  const [metaAccounts, setMetaAccounts] = useState([]);
+  const [metaAccountIdsInput, setMetaAccountIdsInput] = useState([]);
+  const [metaPrimaryAccountId, setMetaPrimaryAccountId] = useState('');
+  const [loadingMetaAccounts, setLoadingMetaAccounts] = useState(false);
+  const [connectingMeta, setConnectingMeta] = useState(false);
+  const [syncingMeta, setSyncingMeta] = useState(false);
+  const [editingMetaAccounts, setEditingMetaAccounts] = useState(false);
   const [tasaIBB, setTasaIBB] = useState(0);
   const [feePlataformaPct, setFeePlataformaPct] = useState(0);
   const [comisiones, setComisiones] = useState([]);
@@ -504,6 +642,9 @@ export default function Settings() {
   useEffect(() => {
     api.get(`/api/stores/${storeId}`).then(({ data }) => {
       setStore(data);
+      const connectedMetaIds = extractMetaAccountIds(data);
+      setMetaAccountIdsInput(connectedMetaIds);
+      setMetaPrimaryAccountId(data.metaAdAccountId || connectedMetaIds[0] || '');
       setTasaIBB(data.tasaIBB || 0);
       setFeePlataformaPct(data.feePlataformaPct || 0);
       setComisiones(data.comisionPagoConfig || []);
@@ -529,6 +670,36 @@ export default function Settings() {
     setComisiones(updated);
   };
   const removeComision = (idx) => setComisiones(comisiones.filter((_, i) => i !== idx));
+  const usesCentralTnToken = Boolean(CRO_CENTRAL_TN_STORES[tnStoreIdInput.trim()]);
+
+  const refreshStore = async () => {
+    const { data } = await api.get(`/api/stores/${storeId}`);
+    setStore(data);
+    const connectedMetaIds = extractMetaAccountIds(data);
+    setMetaAccountIdsInput(connectedMetaIds);
+    setMetaPrimaryAccountId(data.metaAdAccountId || connectedMetaIds[0] || '');
+  };
+
+  const toggleMetaAccount = (accountId) => {
+    setMetaAccountIdsInput((current) => {
+      const exists = current.includes(accountId);
+      const next = exists ? current.filter((item) => item !== accountId) : [...current, accountId];
+      setMetaPrimaryAccountId((currentPrimary) => {
+        if (!next.length) return '';
+        if (exists && currentPrimary === accountId) return next[0];
+        if (!currentPrimary || !next.includes(currentPrimary)) return next[0];
+        return currentPrimary;
+      });
+      return next;
+    });
+  };
+
+  const orderedMetaAccountIds = metaAccountIdsInput.length
+    ? [
+        metaPrimaryAccountId || metaAccountIdsInput[0],
+        ...metaAccountIdsInput.filter((id) => id !== (metaPrimaryAccountId || metaAccountIdsInput[0])),
+      ]
+    : [];
 
   if (loading) return <div className="text-center py-12 text-[13px] text-gray-600">Cargando settings...</div>;
 
@@ -567,11 +738,13 @@ export default function Settings() {
             {!store?.integrationStatus?.tiendanube?.connected && (
               <div className="mt-3 p-4 rounded-lg bg-white/[0.03] border border-white/[0.06] space-y-3">
                 <p className="text-[12px] text-gray-500">
-                  Pegá el Access Token y Store ID de TiendaNube.
+                  {usesCentralTnToken
+                    ? `Esta tienda usa token centralizado desde CRO (${CRO_CENTRAL_TN_STORES[tnStoreIdInput.trim()]}). Solo necesitás el Store ID.`
+                    : 'Pegá el Access Token y Store ID de TiendaNube.'}
                 </p>
                 <div>
                   <label className="kpi-label mb-1 block">Access Token</label>
-                  <input type="text" value={tnToken} onChange={(e) => setTnToken(e.target.value)} placeholder="ej: 1a2b3c4d..." className="input-dark w-full font-mono" />
+                  <input type="text" value={tnToken} onChange={(e) => setTnToken(e.target.value)} placeholder={usesCentralTnToken ? 'Opcional para esta tienda' : 'ej: 1a2b3c4d...'} className="input-dark w-full font-mono" />
                 </div>
                 <div>
                   <label className="kpi-label mb-1 block">Store ID (user_id)</label>
@@ -579,10 +752,12 @@ export default function Settings() {
                 </div>
                 <button
                   onClick={async () => {
-                    if (!tnToken.trim() || !tnStoreIdInput.trim()) return;
+                    if (!tnStoreIdInput.trim() || (!tnToken.trim() && !usesCentralTnToken)) return;
                     setConnectingTN(true); setMessage(null);
                     try {
-                      const { data } = await api.post(`/api/stores/${storeId}/connect-tn-manual`, { tnAccessToken: tnToken.trim(), tnStoreId: tnStoreIdInput.trim() });
+                      const payload = { tnStoreId: tnStoreIdInput.trim() };
+                      if (tnToken.trim()) payload.tnAccessToken = tnToken.trim();
+                      const { data } = await api.post(`/api/stores/${storeId}/connect-tn-manual`, payload);
                       setMessage(data.message);
                       const { data: updated } = await api.get(`/api/stores/${storeId}`);
                       setStore(updated);
@@ -591,7 +766,7 @@ export default function Settings() {
                     }
                     setConnectingTN(false);
                   }}
-                  disabled={connectingTN || !tnToken.trim() || !tnStoreIdInput.trim()}
+                  disabled={connectingTN || !tnStoreIdInput.trim() || (!tnToken.trim() && !usesCentralTnToken)}
                   className="btn-primary disabled:opacity-50"
                 >
                   {connectingTN ? 'Conectando...' : 'Conectar y sincronizar'}
@@ -600,23 +775,292 @@ export default function Settings() {
             )}
           </div>
 
-          {/* Meta Ads */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className={`w-2 h-2 rounded-full ${store?.integrationStatus?.metaAds?.connected ? 'bg-emerald-500' : 'bg-gray-600'}`} />
-              <span className="text-[13px] font-medium text-white">Meta Ads</span>
+          {/* Shopify */}
+          <div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className={`w-2 h-2 rounded-full ${store?.integrationStatus?.shopify?.connected ? 'bg-emerald-500' : 'bg-gray-600'}`} />
+                <span className="text-[13px] font-medium text-white">Shopify</span>
+                {store?.integrationStatus?.shopify?.connected && (
+                  <span className="text-[11px] text-gray-500">
+                    ({store?.shopifyShopDomain})
+                    {store?.integrationStatus?.shopify?.lastSync && (
+                      <> — Sync: {new Date(store.integrationStatus.shopify.lastSync).toLocaleString('es-AR')}</>
+                    )}
+                  </span>
+                )}
+              </div>
+              {store?.integrationStatus?.shopify?.connected ? (
+                <span className="badge-green">Conectada</span>
+              ) : (
+                <span className="text-[11px] text-gray-600">No conectada</span>
+              )}
             </div>
-            {store?.integrationStatus?.metaAds?.connected ? (
-              <span className="badge-green">Conectada</span>
-            ) : (
-              <span className="text-[11px] text-gray-600">Usá la importación CSV desde la pestaña Meta Ads</span>
+
+            {!store?.integrationStatus?.shopify?.connected && (
+              <div className="mt-3 p-4 rounded-lg bg-white/[0.03] border border-white/[0.06] space-y-3">
+                <p className="text-[12px] text-gray-500">
+                  Pegá el dominio de la tienda y el Admin API access token.
+                </p>
+                <div>
+                  <label className="kpi-label mb-1 block">Dominio</label>
+                  <input type="text" value={shopifyDomainInput} onChange={(e) => setShopifyDomainInput(e.target.value)} placeholder="ej: marca.myshopify.com" className="input-dark w-full font-mono" />
+                </div>
+                <div>
+                  <label className="kpi-label mb-1 block">Admin API access token</label>
+                  <input type="text" value={shopifyToken} onChange={(e) => setShopifyToken(e.target.value)} placeholder="shpat_..." className="input-dark w-full font-mono" />
+                </div>
+                <button
+                  onClick={async () => {
+                    if (!shopifyToken.trim() || !shopifyDomainInput.trim()) return;
+                    setConnectingShopify(true); setMessage(null);
+                    try {
+                      const { data } = await api.post(`/api/stores/${storeId}/connect-shopify-manual`, {
+                        shopifyAccessToken: shopifyToken.trim(),
+                        shopifyShopDomain: shopifyDomainInput.trim(),
+                      });
+                      setMessage(data.message);
+                      const { data: updated } = await api.get(`/api/stores/${storeId}`);
+                      setStore(updated);
+                    } catch (err) {
+                      setMessage(`Error: ${err.response?.data?.error || err.message}`);
+                    }
+                    setConnectingShopify(false);
+                  }}
+                  disabled={connectingShopify || !shopifyToken.trim() || !shopifyDomainInput.trim()}
+                  className="btn-primary disabled:opacity-50"
+                >
+                  {connectingShopify ? 'Conectando...' : 'Conectar y sincronizar'}
+                </button>
+              </div>
             )}
+          </div>
+
+          {/* Meta Ads */}
+          <div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className={`w-2 h-2 rounded-full ${store?.integrationStatus?.metaAds?.connected ? 'bg-emerald-500' : 'bg-gray-600'}`} />
+                <span className="text-[13px] font-medium text-white">Meta Ads</span>
+                {store?.integrationStatus?.metaAds?.connected && (
+                  <span className="text-[11px] text-gray-500">
+                    ({(store?.metaAdAccounts?.length || 0) > 1 ? `${store.metaAdAccounts.length} cuentas` : store?.metaAdAccountId || 'Sin cuenta'})
+                    {store?.integrationStatus?.metaAds?.lastSync && (
+                      <> — Sync: {new Date(store.integrationStatus.metaAds.lastSync).toLocaleString('es-AR')}</>
+                    )}
+                  </span>
+                )}
+              </div>
+              {store?.integrationStatus?.metaAds?.connected ? (
+                <span className="badge-green">Conectada</span>
+              ) : (
+                <span className="text-[11px] text-gray-600">No conectada</span>
+              )}
+            </div>
+
+            <div className="mt-3 p-4 rounded-lg bg-white/[0.03] border border-white/[0.06] space-y-3">
+              <p className="text-[12px] text-gray-500">
+                Pegá un long-lived access token de Meta, traé las cuentas publicitarias disponibles y elegí una o varias para sincronizar en esta tienda.
+              </p>
+
+              {(!store?.integrationStatus?.metaAds?.connected || editingMetaAccounts) && (
+                <>
+                  <div>
+                    <label className="kpi-label mb-1 block">Long-lived access token</label>
+                    <textarea
+                      value={metaToken}
+                      onChange={(e) => setMetaToken(e.target.value)}
+                      placeholder="EAA..."
+                      rows={3}
+                      className="input-dark w-full resize-y font-mono"
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={async () => {
+                        if (!metaToken.trim()) return;
+                        setLoadingMetaAccounts(true);
+                        setMessage(null);
+                        try {
+                          const { data } = await api.post(`/api/stores/${storeId}/meta/ad-accounts/preview`, {
+                            metaAccessToken: metaToken.trim(),
+                          });
+                          setMetaAccounts(data.accounts || []);
+                          if (data.accounts?.length) {
+                            setMetaAccountIdsInput((current) => (current.length ? current : [data.accounts[0].id]));
+                            setMetaPrimaryAccountId((current) => current || data.accounts[0].id);
+                          }
+                          setMessage(`Se encontraron ${data.accounts?.length || 0} cuentas publicitarias.`);
+                        } catch (err) {
+                          setMetaAccounts([]);
+                          setMessage(`Error: ${err.response?.data?.error || err.message}`);
+                        }
+                        setLoadingMetaAccounts(false);
+                      }}
+                      disabled={loadingMetaAccounts || !metaToken.trim()}
+                      className="btn-ghost disabled:opacity-50"
+                    >
+                      {loadingMetaAccounts ? 'Consultando...' : 'Traer cuentas'}
+                    </button>
+                    <span className="text-[11px] text-gray-600">Después elegís una cuenta y la conectás a esta tienda.</span>
+                  </div>
+
+                  {metaAccounts.length > 0 && (
+                    <div>
+                      <label className="kpi-label mb-2 block">Cuentas publicitarias</label>
+                      <div className="space-y-2">
+                        {metaAccounts.map((account) => {
+                          const checked = metaAccountIdsInput.includes(account.id);
+                          const isPrimary = metaPrimaryAccountId === account.id;
+
+                          return (
+                            <div key={account.id} className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-3">
+                              <div className="flex items-start justify-between gap-3">
+                                <label className="flex items-start gap-3 cursor-pointer min-w-0">
+                                  <input
+                                    type="checkbox"
+                                    checked={checked}
+                                    onChange={() => toggleMetaAccount(account.id)}
+                                    className="mt-0.5 w-4 h-4 accent-blue-500 rounded"
+                                  />
+                                  <div className="min-w-0">
+                                    <p className="text-white text-[13px] font-medium truncate">{account.name}</p>
+                                    <p className="text-[11px] text-gray-500 font-mono truncate">
+                                      {account.id} {account.isActive ? '' : '· inactiva'}
+                                    </p>
+                                  </div>
+                                </label>
+                                {checked && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setMetaPrimaryAccountId(account.id)}
+                                    className={isPrimary ? 'badge-green shrink-0' : 'btn-ghost text-[11px] shrink-0'}
+                                  >
+                                    {isPrimary ? 'Principal' : 'Hacer principal'}
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <p className="text-[11px] text-gray-600 mt-2">
+                        Podés conectar varias cuentas. La principal se usa como referencia visible y las demás también entran al sync de Meta.
+                      </p>
+                    </div>
+                  )}
+
+                  <button
+                    onClick={async () => {
+                      if (!metaToken.trim() || !orderedMetaAccountIds.length) return;
+                      setConnectingMeta(true);
+                      setMessage(null);
+                      try {
+                        const { data } = await api.post(`/api/stores/${storeId}/connect-meta-manual`, {
+                          metaAccessToken: metaToken.trim(),
+                          metaAdAccountId: orderedMetaAccountIds[0],
+                          metaAdAccountIds: orderedMetaAccountIds,
+                        });
+                        setMessage(data.message);
+                        setMetaToken('');
+                        setMetaAccounts([]);
+                        setEditingMetaAccounts(false);
+                        await refreshStore();
+                      } catch (err) {
+                        setMessage(`Error: ${err.response?.data?.error || err.message}`);
+                      }
+                      setConnectingMeta(false);
+                    }}
+                    disabled={connectingMeta || !metaToken.trim() || !orderedMetaAccountIds.length}
+                    className="btn-primary disabled:opacity-50"
+                  >
+                    {connectingMeta ? 'Conectando...' : store?.integrationStatus?.metaAds?.connected ? 'Actualizar cuentas y resincronizar' : 'Conectar y sincronizar'}
+                  </button>
+                </>
+              )}
+
+              {store?.integrationStatus?.metaAds?.connected && (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-[12px]">
+                    <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2">
+                      <p className="kpi-label mb-1">Cuenta principal</p>
+                      <p className="text-white font-mono">{store?.metaAdAccountId || '—'}</p>
+                    </div>
+                    <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2">
+                      <p className="kpi-label mb-1">Vencimiento estimado del token</p>
+                      <p className="text-white">
+                        {store?.metaTokenExpiresAt
+                          ? new Date(store.metaTokenExpiresAt).toLocaleString('es-AR')
+                          : 'Sin dato'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-3">
+                    <p className="kpi-label mb-2">Cuentas conectadas</p>
+                    <div className="space-y-2">
+                      {(store?.metaAdAccounts?.length
+                        ? store.metaAdAccounts
+                        : store?.metaAdAccountId
+                          ? [{ id: store.metaAdAccountId, name: 'Cuenta principal', isPrimary: true }]
+                          : []
+                      ).map((account) => (
+                        <div key={account.id} className="flex items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="text-white text-[12px] font-medium truncate">{account.name || account.id}</p>
+                            <p className="text-[11px] text-gray-500 font-mono truncate">{account.id}</p>
+                          </div>
+                          {account.isPrimary && <span className="badge-green shrink-0">Principal</span>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => {
+                        setEditingMetaAccounts((current) => !current);
+                        setMetaAccounts([]);
+                        setMetaToken('');
+                        setMessage(null);
+                      }}
+                      className="btn-ghost text-[12px]"
+                    >
+                      {editingMetaAccounts ? 'Cerrar edición de cuentas' : 'Cambiar cuentas conectadas'}
+                    </button>
+                    <button
+                      onClick={async () => {
+                        setSyncingMeta(true);
+                        setMessage(null);
+                        try {
+                          const { data } = await api.post(`/api/stores/${storeId}/meta/sync-now`, { daysBack: 30 });
+                          setMessage(data.message);
+                          await refreshStore();
+                        } catch (err) {
+                          setMessage(`Error: ${err.response?.data?.error || err.message}`);
+                        }
+                        setSyncingMeta(false);
+                      }}
+                      disabled={syncingMeta}
+                      className="btn-primary disabled:opacity-50"
+                    >
+                      {syncingMeta ? 'Sincronizando...' : 'Sincronizar Meta ahora'}
+                    </button>
+                    <Link to={`/store/${storeId}/meta-ads`} className="btn-ghost text-[12px]">
+                      Abrir pestaña Meta Ads
+                    </Link>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </SectionCard>
 
       <AIConfigSection />
       <StoreAIContextSection storeId={storeId} />
+      <GoogleSheetsSection storeId={storeId} />
       <ObjetivosPanel storeId={storeId} />
       <CotizacionDolarPanel storeId={storeId} />
       <AdVerdictThresholdsPanel storeId={storeId} />

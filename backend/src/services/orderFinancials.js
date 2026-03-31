@@ -1,6 +1,7 @@
 const Product = require('../models/Product');
 const Order = require('../models/Order');
-const Customer = require('../models/Customer');
+const ProductCost = require('../models/ProductCost');
+const { rebuildCustomersFromOrders, calculateRFM } = require('./customerService');
 const logger = require('../utils/logger');
 
 /**
@@ -56,13 +57,28 @@ async function calculateOrderFinancials(order, store) {
   order.costoProductos = 0;
   for (const item of order.lineItems) {
     if (!item.tnProductId) continue;
+    const effectiveDate = order.fechaCreacion || order.createdAt || new Date();
+    const versionedCost = await ProductCost.findOne({
+      storeId: store._id,
+      tnProductId: item.tnProductId,
+      effectiveFrom: { $lte: effectiveDate },
+      $or: [
+        { effectiveTo: { $exists: false } },
+        { effectiveTo: null },
+        { effectiveTo: { $gte: effectiveDate } },
+      ],
+      isActive: true,
+    })
+      .sort({ effectiveFrom: -1 })
+      .lean();
     const product = await Product.findOne({
       storeId: store._id,
       tnProductId: item.tnProductId,
     }).lean();
-    if (product && product.costoUnitario > 0) {
-      const costo = product.costoUnitario * (item.cantidad || 1);
-      item.costoUnitario = product.costoUnitario;
+    const unitCost = versionedCost?.costoUnitario ?? product?.costoUnitario ?? 0;
+    if (unitCost > 0) {
+      const costo = unitCost * (item.cantidad || 1);
+      item.costoUnitario = unitCost;
       order.costoProductos += costo;
     }
   }
@@ -110,27 +126,6 @@ async function classifyCustomer(order, store) {
 
   order.esClienteNuevo = previousOrders === 0;
   await order.save();
-
-  // Upsert Customer doc
-  const cohortMonth = order.fechaCreacion
-    ? `${order.fechaCreacion.getFullYear()}-${String(order.fechaCreacion.getMonth() + 1).padStart(2, '0')}`
-    : null;
-
-  await Customer.findOneAndUpdate(
-    { storeId: store._id, email: order.customerEmail },
-    {
-      $set: {
-        name: order.customerName,
-        lastOrderDate: order.fechaCreacion,
-      },
-      $inc: { totalOrders: 1, totalSpent: order.totalOrden },
-      $setOnInsert: {
-        firstPurchase: order.fechaCreacion,
-        cohortMonth,
-      },
-    },
-    { upsert: true }
-  );
 }
 
 /**
@@ -149,6 +144,9 @@ async function recalculateAllOrders(store) {
     await classifyCustomer(order, store);
     processed++;
   }
+
+  await rebuildCustomersFromOrders(store._id);
+  await calculateRFM(store._id);
 
   logger.info(`Recalculated financials for ${processed} orders in ${store.nombre}`);
   return processed;

@@ -1,6 +1,6 @@
 const User = require('../models/User');
-const { encrypt, decrypt } = require('../utils/encryption');
-const { getProvider } = require('../services/aiProviders');
+const { encrypt } = require('../utils/encryption');
+const aiService = require('../services/aiService');
 const logger = require('../utils/logger');
 
 exports.getAIConfig = async (req, res, next) => {
@@ -9,17 +9,24 @@ exports.getAIConfig = async (req, res, next) => {
       .select('+aiConfig.apiKeyEncrypted');
 
     const hasApiKey = !!user.aiConfig?.apiKeyEncrypted;
+    const envFallbackAvailable = Boolean(ai.anthropicApiKey || ai.openaiApiKey);
 
     res.json({
       provider: user.aiConfig?.provider || 'anthropic',
       hasApiKey,
       modelAnalysis: user.aiConfig?.modelAnalysis || '',
       modelChat: user.aiConfig?.modelChat || '',
+      modelReports: user.aiConfig?.modelReports || '',
       globalInstructions: user.aiConfig?.globalInstructions || '',
       globalFiles: (user.aiConfig?.globalFiles || []).map((f) => ({
         filename: f.filename,
         uploadedAt: f.uploadedAt,
       })),
+      readiness: {
+        ready: hasApiKey || envFallbackAvailable,
+        mode: hasApiKey ? 'user_key' : envFallbackAvailable ? 'env_fallback' : 'missing',
+        envFallbackAvailable,
+      },
     });
   } catch (error) {
     next(error);
@@ -28,12 +35,13 @@ exports.getAIConfig = async (req, res, next) => {
 
 exports.updateAIConfig = async (req, res, next) => {
   try {
-    const { provider, apiKey, modelAnalysis, modelChat } = req.body;
+    const { provider, apiKey, modelAnalysis, modelChat, modelReports } = req.body;
     const update = {};
 
     if (provider) update['aiConfig.provider'] = provider;
     if (modelAnalysis !== undefined) update['aiConfig.modelAnalysis'] = modelAnalysis;
     if (modelChat !== undefined) update['aiConfig.modelChat'] = modelChat;
+    if (modelReports !== undefined) update['aiConfig.modelReports'] = modelReports;
 
     // Encrypt API key if provided
     if (apiKey) {
@@ -111,34 +119,8 @@ exports.deleteGlobalFile = async (req, res, next) => {
 
 exports.testConnection = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user._id)
-      .select('+aiConfig.apiKeyEncrypted +aiConfig.apiKeyIV +aiConfig.apiKeyAuthTag');
-
-    let provider = user.aiConfig?.provider || 'anthropic';
-    let apiKey;
-
-    if (user.aiConfig?.apiKeyEncrypted) {
-      apiKey = decrypt(user.aiConfig.apiKeyEncrypted, user.aiConfig.apiKeyIV, user.aiConfig.apiKeyAuthTag);
-    } else {
-      const { ai } = require('../config/environment');
-      if (!ai.anthropicApiKey) {
-        return res.status(400).json({ error: 'No hay API key configurada (ni personal ni en .env)' });
-      }
-      apiKey = ai.anthropicApiKey;
-      provider = 'anthropic';
-    }
-
-    const client = getProvider(provider, apiKey);
-    const testModel = provider === 'anthropic' ? 'claude-haiku-4-5-20251001' : 'gpt-4o-mini';
-
-    await client.createMessage({
-      model: testModel,
-      maxTokens: 10,
-      system: 'Respond OK',
-      messages: [{ role: 'user', content: 'test' }],
-    });
-
-    res.json({ status: 'ok', provider });
+    const result = await aiService.testConnection(req.user._id);
+    res.json(result);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

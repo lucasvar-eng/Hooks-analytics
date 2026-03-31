@@ -1,8 +1,10 @@
 const MetaCampaign = require('../models/MetaCampaign');
 const MetaDailyInsight = require('../models/MetaDailyInsight');
 const ImportLog = require('../models/ImportLog');
+const ImportBatch = require('../models/ImportBatch');
 const { recalculateDailyMetric } = require('./metricCalculator');
 const logger = require('../utils/logger');
+const crypto = require('crypto');
 
 /**
  * Column mappings from Meta Ads Manager CSV export to our schema.
@@ -115,17 +117,39 @@ function mapRow(row, headers) {
  * @param {string} storeId - Store ObjectId
  * @returns {object} { imported, errors }
  */
-async function importMetaCSV(rows, storeId, fileName) {
+async function importMetaCSV(rows, storeId, fileName, createdBy) {
   if (!rows || rows.length < 2) {
     return { imported: 0, errors: ['CSV is empty or has no data rows'] };
   }
 
   const headers = rows[0];
+  const { detected, missing, isValid } = validateHeaders(headers);
+  if (!isValid) {
+    return {
+      imported: 0,
+      total: rows.length - 1,
+      errors: [`Faltan columnas requeridas: ${missing.join(', ')}`],
+      dateRange: null,
+      columnsDetected: detected,
+      columnsMissing: missing,
+    };
+  }
+
   const dataRows = rows.slice(1);
   let imported = 0;
   const errors = [];
   const affectedDates = new Set();
   const seenCampaigns = new Map();
+  const importBatchId = crypto.randomUUID();
+  const batch = await ImportBatch.create({
+    storeId,
+    type: 'meta_csv',
+    source: 'csv',
+    sourceFileName: fileName || 'unknown.csv',
+    status: 'validated',
+    rowsTotal: dataRows.length,
+    createdBy,
+  });
 
   for (let i = 0; i < dataRows.length; i++) {
     try {
@@ -182,8 +206,18 @@ async function importMetaCSV(rows, storeId, fileName) {
       const parseNum = (v) => parseFloat(String(v).replace(/,/g, '')) || 0;
 
       await MetaDailyInsight.findOneAndUpdate(
-        { storeId, metaId, date },
         {
+          storeId,
+          metaId,
+          date,
+          source: 'csv',
+          granularity: level,
+        },
+        {
+          source: 'csv',
+          granularity: level,
+          importBatchId,
+          sourceFileName: fileName || 'unknown.csv',
           spend: parseNum(data.spend),
           impressions: parseNum(data.impressions),
           reach: parseNum(data.reach),
@@ -218,14 +252,12 @@ async function importMetaCSV(rows, storeId, fileName) {
   const dateRangeFrom = sortedDates[0] ? new Date(sortedDates[0]) : null;
   const dateRangeTo = sortedDates[sortedDates.length - 1] ? new Date(sortedDates[sortedDates.length - 1]) : null;
 
-  // Validate headers
-  const { detected, missing } = validateHeaders(headers);
-
   // Save import log
   const status = errors.length === 0 ? 'success' : imported > 0 ? 'partial' : 'error';
   await ImportLog.create({
     storeId,
     type: 'meta_csv',
+    importBatchId,
     fileName: fileName || 'unknown.csv',
     rowsImported: imported,
     rowsTotal: dataRows.length,
@@ -235,6 +267,21 @@ async function importMetaCSV(rows, storeId, fileName) {
     columnsDetected: detected,
     columnsMissing: missing,
     status,
+  });
+
+  await ImportBatch.findByIdAndUpdate(batch._id, {
+    status: status === 'success' ? 'completed' : status === 'partial' ? 'partial' : 'failed',
+    rowsAccepted: imported,
+    rowsRejected: Math.max(dataRows.length - imported, 0),
+    warnings: missing,
+    validationErrors: errors.slice(0, 20),
+    meta: {
+      importBatchId,
+      dateRangeFrom,
+      dateRangeTo,
+      columnsDetected: detected,
+      columnsMissing: missing,
+    },
   });
 
   logger.info(`Meta CSV imported for store ${storeId}: ${imported} rows, ${errors.length} errors`);
@@ -247,6 +294,7 @@ async function importMetaCSV(rows, storeId, fileName) {
       from: sortedDates[0],
       to: sortedDates[sortedDates.length - 1],
     } : null,
+    importBatchId,
     columnsDetected: detected,
     columnsMissing: missing,
   };

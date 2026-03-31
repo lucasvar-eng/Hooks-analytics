@@ -10,10 +10,10 @@ const VERDICT_COLORS = {
 };
 
 const DEFAULT_COLUMNS = [
-  { key: 'status', label: 'Status', format: 'status' },
+  { key: 'status', label: 'Estado', format: 'status', align: 'left' },
   { key: 'nombre', label: 'Campaña', format: 'text', align: 'left' },
   { key: 'spend', label: 'Gasto', format: 'currency' },
-  { key: 'revenue', label: 'Revenue', format: 'currency' },
+  { key: 'revenue', label: 'Ingresos Ads', format: 'currency' },
   { key: 'purchases', label: 'Compras', format: 'number' },
   { key: 'roas', label: 'ROAS', format: 'decimal', suffix: 'x' },
   { key: 'cpa', label: 'CPA', format: 'currency' },
@@ -22,20 +22,36 @@ const DEFAULT_COLUMNS = [
 ];
 
 function formatValue(value, format, suffix = '') {
-  if (value == null || isNaN(value)) return '—';
   switch (format) {
-    case 'currency':
-      return `$${Number(value).toLocaleString('es-AR', { maximumFractionDigits: 0 })}`;
-    case 'number':
-      return Number(value).toLocaleString('es-AR');
-    case 'decimal':
-      return `${Number(value).toFixed(2)}${suffix}`;
-    case 'percent':
-      return `${Number(value).toFixed(2)}%`;
+    case 'text':
+      return value ? String(value) : '—';
     case 'status':
-      return value === 'ACTIVE' ? 'On' : value === 'PAUSED' ? 'Off' : value || '—';
+      if (!value) return '—';
+      return value === 'ACTIVE'
+        ? 'Activa'
+        : value === 'PAUSED'
+          ? 'Pausada'
+          : value === 'ARCHIVED'
+            ? 'Archivada'
+            : value === 'DELETED'
+              ? 'Eliminada'
+              : value === 'SIN_ESTADO'
+                ? 'Sin estado'
+                : String(value);
     case 'verdict':
       return value || '—';
+    case 'currency':
+      if (value == null || Number.isNaN(Number(value))) return '—';
+      return `$${Number(value).toLocaleString('es-AR', { maximumFractionDigits: 0 })}`;
+    case 'number':
+      if (value == null || Number.isNaN(Number(value))) return '—';
+      return Number(value).toLocaleString('es-AR');
+    case 'decimal':
+      if (value == null || Number.isNaN(Number(value))) return '—';
+      return `${Number(value).toFixed(2)}${suffix}`;
+    case 'percent':
+      if (value == null || Number.isNaN(Number(value))) return '—';
+      return `${Number(value).toFixed(2)}%`;
     default:
       return String(value || '—');
   }
@@ -43,6 +59,8 @@ function formatValue(value, format, suffix = '') {
 
 export default function CampaignTable({ campaigns, storeId, from, to }) {
   const [columns] = useState(DEFAULT_COLUMNS);
+  const campaignsWithSpend = campaigns.filter((campaign) => Number(campaign.metrics?.spend || 0) > 0).length;
+  const activeCampaigns = campaigns.filter((campaign) => campaign.status === 'ACTIVE').length;
 
   if (!campaigns || campaigns.length === 0) {
     return (
@@ -53,7 +71,23 @@ export default function CampaignTable({ campaigns, storeId, from, to }) {
   }
 
   return (
-    <div className="overflow-x-auto">
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-3">
+        <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-3">
+          <p className="text-app-muted text-[10px] uppercase tracking-[0.16em]">Campañas</p>
+          <p className="text-white text-lg font-semibold mt-1">{campaigns.length}</p>
+        </div>
+        <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-3">
+          <p className="text-app-muted text-[10px] uppercase tracking-[0.16em]">Con gasto</p>
+          <p className="text-white text-lg font-semibold mt-1">{campaignsWithSpend}</p>
+        </div>
+        <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-3">
+          <p className="text-app-muted text-[10px] uppercase tracking-[0.16em]">Activas</p>
+          <p className="text-white text-lg font-semibold mt-1">{activeCampaigns}</p>
+        </div>
+      </div>
+
+      <div className="overflow-x-auto">
       <table className="w-full table-dark">
         <thead>
           <tr>
@@ -84,6 +118,7 @@ export default function CampaignTable({ campaigns, storeId, from, to }) {
           ))}
         </tbody>
       </table>
+    </div>
     </div>
   );
 }

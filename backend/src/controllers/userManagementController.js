@@ -22,11 +22,9 @@ exports.create = async (req, res) => {
       return res.status(400).json({ error: 'Ya existe un usuario con ese email' });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 12);
-
     const user = await User.create({
       email,
-      password: hashedPassword,
+      password,
       nombre,
       role,
       storeAccess: storeAccess || [],

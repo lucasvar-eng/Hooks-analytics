@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const metaCampaignSchema = new mongoose.Schema(
   {
     storeId: { type: mongoose.Schema.Types.ObjectId, ref: 'Store', required: true },
+    adAccountId: { type: String },
     metaId: { type: String, required: true },
     nombre: { type: String },
     status: { type: String, enum: ['ACTIVE', 'PAUSED', 'DELETED', 'ARCHIVED'] },

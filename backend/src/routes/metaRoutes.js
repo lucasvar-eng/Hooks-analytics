@@ -3,8 +3,11 @@ const multer = require('multer');
 const router = express.Router();
 const metaController = require('../controllers/metaController');
 const { auth, requireRole } = require('../middleware/auth');
+const storeContext = require('../middleware/storeContext');
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
+
+router.use('/stores/:id', auth, storeContext);
 
 // OAuth
 router.get('/connect/:storeId', auth, metaController.connect);

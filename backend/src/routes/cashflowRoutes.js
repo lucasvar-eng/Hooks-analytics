@@ -2,6 +2,9 @@ const express = require('express');
 const router = express.Router();
 const cashflowController = require('../controllers/cashflowController');
 const { auth } = require('../middleware/auth');
+const storeContext = require('../middleware/storeContext');
+
+router.use('/stores/:id', auth, storeContext);
 
 router.get('/stores/:id/cashflow/summary', auth, cashflowController.getSummary);
 router.get('/stores/:id/cashflow/forecast', auth, cashflowController.getForecast);

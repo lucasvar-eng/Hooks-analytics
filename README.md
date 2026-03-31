@@ -1,4 +1,4 @@
-# ecom-analytics
+# Hooks Analytics
 
 Plataforma de analytics para agencias de e-commerce. Conecta TiendaNube + Meta Ads, centraliza métricas, genera insights con AI, y permite gestionar múltiples tiendas desde un solo dashboard configurable.
 

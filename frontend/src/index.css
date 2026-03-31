@@ -21,10 +21,33 @@
     --text-muted: #6b7280;
     --accent: #3b82f6;
     --accent-hover: #2563eb;
+    --accent-soft: rgba(59,130,246,0.18);
     --success: #22c55e;
     --danger: #ef4444;
     --warning: #f59e0b;
   }
+
+  :root[data-accent='cyan'] {
+    --accent: #06b6d4;
+    --accent-hover: #0891b2;
+    --accent-soft: rgba(6,182,212,0.18);
+  }
+
+  :root[data-accent='green'] {
+    --accent: #22c55e;
+    --accent-hover: #16a34a;
+    --accent-soft: rgba(34,197,94,0.18);
+  }
+
+  :root[data-contrast='high'] {
+    --text-secondary: #cbd5e1;
+    --text-muted: #94a3b8;
+  }
+
+  :root[data-contrast='high'] .text-gray-700 { color: #b7c2d3 !important; }
+  :root[data-contrast='high'] .text-gray-600 { color: #aeb9ca !important; }
+  :root[data-contrast='high'] .text-gray-500 { color: #c2ccda !important; }
+  :root[data-contrast='high'] .text-gray-400 { color: #d7deea !important; }
 
   ::-webkit-scrollbar { width: 4px; height: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
@@ -40,10 +63,13 @@
 @layer components {
   /* Cards */
   .card {
-    @apply bg-[#161616] rounded-xl border border-white/[0.06];
+    @apply rounded-xl border border-white/[0.06];
+    background: var(--bg-card);
+    border-color: var(--border-subtle);
   }
   .card-hover {
-    @apply card transition hover:border-white/[0.10] hover:bg-[#1a1a1a];
+    @apply card transition hover:border-white/[0.10];
+    background: color-mix(in srgb, var(--bg-card) 88%, white 12%);
   }
 
   /* KPI / Stat cards */
@@ -67,14 +93,45 @@
   .input-dark {
     @apply w-full px-3.5 py-2.5 rounded-lg border border-white/[0.08] bg-white/[0.04]
            text-[13px] text-gray-100 placeholder:text-gray-600
-           focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none transition;
+           focus:ring-1 outline-none transition;
+    border-color: var(--border-default);
+    color: var(--text-primary);
+    --tw-ring-color: var(--accent);
+  }
+
+  .date-input-dark {
+    @apply h-9 min-w-[132px] rounded-lg border border-white/[0.08] bg-[#101010]
+           px-3 text-[11px] font-medium text-gray-200 outline-none transition
+           focus:ring-1;
+    border-color: var(--border-default);
+    color: var(--text-primary);
+    color-scheme: dark;
+    --tw-ring-color: var(--accent);
+  }
+
+  .date-input-dark:focus {
+    border-color: var(--accent);
+  }
+
+  .date-input-dark::-webkit-calendar-picker-indicator {
+    opacity: 0.72;
+    cursor: pointer;
+    filter: invert(0.82);
+  }
+
+  .date-input-dark::-webkit-datetime-edit {
+    color: #e5e7eb;
   }
 
   /* Buttons */
   .btn-primary {
     @apply inline-flex items-center justify-center gap-2
-           px-4 py-2.5 bg-blue-500 hover:bg-blue-600 active:bg-blue-700
+           px-4 py-2.5
            text-white text-[13px] font-semibold rounded-lg transition;
+    background: var(--accent);
+  }
+  .btn-primary:hover {
+    background: var(--accent-hover);
   }
   .btn-secondary {
     @apply inline-flex items-center justify-center gap-2
@@ -120,7 +177,117 @@
     @apply text-2xl font-bold text-white;
   }
   .page-subtitle {
-    @apply text-[13px] text-gray-500 mt-0.5;
+    @apply text-[13px] mt-0.5;
+    color: var(--text-secondary);
+  }
+
+  .master-board {
+    @apply rounded-2xl border border-white/[0.06] p-4 md:p-5;
+    background: color-mix(in srgb, var(--bg-card) 92%, white 8%);
+    border-color: var(--border-subtle);
+  }
+
+  .master-board__topbar {
+    @apply flex flex-wrap items-center justify-between gap-2;
+  }
+
+  .master-board__meta {
+    @apply flex flex-wrap items-center gap-2;
+  }
+
+  .master-source-pill,
+  .master-period-pill {
+    @apply inline-flex items-center rounded-full border px-3 py-1.5 text-[11px] font-semibold;
+  }
+
+  .master-source-pill {
+    @apply text-white;
+    background: var(--accent-soft);
+    border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  }
+
+  .master-period-pill {
+    color: var(--text-secondary);
+    background: white;
+    background: rgba(255,255,255,0.04);
+    border-color: var(--border-default);
+  }
+
+  .master-board__heading {
+    @apply mt-4 mb-4;
+  }
+
+  .master-board__title {
+    @apply text-[28px] font-bold tracking-[-0.02em] text-white;
+  }
+
+  .master-board__subtitle {
+    @apply mt-1 text-[13px];
+    color: var(--text-secondary);
+  }
+
+  .master-metric-card {
+    @apply rounded-2xl border p-4 min-w-0 overflow-hidden;
+    background: rgba(255,255,255,0.03);
+    border-color: rgba(255,255,255,0.07);
+  }
+
+  .master-metric-card__badge {
+    @apply inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.16em];
+    color: var(--accent);
+  }
+
+  .master-metric-card__value {
+    @apply text-white font-bold leading-[0.95] tracking-[-0.03em] break-words;
+    font-size: clamp(1.55rem, 1.15rem + 0.8vw, 2.05rem);
+  }
+
+  .master-metric-card__label {
+    @apply text-[11px] font-bold uppercase tracking-[0.16em];
+    color: var(--text-secondary);
+  }
+
+  .master-metric-card__sub {
+    @apply mt-1 text-[11px];
+    color: var(--text-muted);
+  }
+
+  .master-metric-card__micro {
+    @apply rounded-full border px-2 py-1 text-[10px] font-semibold;
+    color: var(--text-secondary);
+    border-color: rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.03);
+  }
+
+  .master-source-icon {
+    @apply inline-flex h-5 w-5 items-center justify-center rounded-full border;
+    color: var(--text-secondary);
+    border-color: rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.04);
+  }
+
+  .master-source-icon--meta {
+    color: #7f8cff;
+    border-color: rgba(127,140,255,0.25);
+    background: rgba(127,140,255,0.12);
+  }
+
+  .master-source-icon--store {
+    color: #60a5fa;
+    border-color: rgba(96,165,250,0.25);
+    background: rgba(96,165,250,0.12);
+  }
+
+  .master-source-icon--cash {
+    color: #f59e0b;
+    border-color: rgba(245,158,11,0.25);
+    background: rgba(245,158,11,0.12);
+  }
+
+  .master-source-icon--clients {
+    color: #22c55e;
+    border-color: rgba(34,197,94,0.25);
+    background: rgba(34,197,94,0.12);
   }
 
   /* Filter chips */
@@ -138,9 +305,91 @@
     @apply h-1 rounded-full bg-white/[0.06] overflow-hidden;
   }
   .progress-fill {
-    @apply h-full rounded-full bg-blue-500 transition-all;
+    @apply h-full rounded-full transition-all;
+    background: var(--accent);
   }
   .progress-fill-green  { @apply progress-fill bg-emerald-500; }
   .progress-fill-red    { @apply progress-fill bg-red-500; }
   .progress-fill-amber  { @apply progress-fill bg-amber-500; }
+
+  .text-app-accent {
+    color: var(--accent);
+  }
+
+  .text-app-primary {
+    color: var(--text-primary);
+  }
+
+  .text-app-secondary {
+    color: var(--text-secondary);
+  }
+
+  .text-app-muted {
+    color: var(--text-muted);
+  }
+
+  .bg-app-accent {
+    background: var(--accent);
+  }
+
+  .header-icon-button {
+    @apply inline-flex h-8 w-8 items-center justify-center rounded-lg transition hover:bg-white/[0.05];
+    color: var(--text-muted);
+  }
+
+  .header-icon-button:hover {
+    color: var(--text-secondary);
+  }
+
+  .header-link {
+    @apply rounded-lg px-2 py-1.5 text-[11px] transition hover:bg-white/[0.05];
+    color: var(--text-muted);
+  }
+
+  .header-link:hover {
+    color: var(--text-secondary);
+  }
+
+  .user-avatar-accent {
+    @apply flex h-6 w-6 items-center justify-center rounded-full border;
+    background: var(--accent-soft);
+    border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  }
+
+  .app-shell {
+    background: var(--bg-base);
+  }
+
+  .app-surface {
+    background: var(--bg-surface);
+  }
+
+  .widget-surface {
+    --widget-bg: var(--bg-card);
+    --widget-text: var(--text-primary);
+    --widget-muted: var(--text-secondary);
+    --widget-border: var(--border-subtle);
+    background: var(--widget-bg);
+    color: var(--widget-text);
+    border-color: var(--widget-border);
+  }
+
+  .widget-surface .kpi-label,
+  .widget-surface .section-label,
+  .widget-surface .text-app-secondary,
+  .widget-surface .text-gray-600,
+  .widget-surface .text-gray-500,
+  .widget-surface .text-gray-400 {
+    color: var(--widget-muted) !important;
+  }
+
+  .widget-surface .text-white,
+  .widget-surface .text-app-primary,
+  .widget-surface .table-dark tbody td {
+    color: var(--widget-text) !important;
+  }
+
+  .widget-surface .table-dark thead th {
+    color: var(--widget-muted) !important;
+  }
 }

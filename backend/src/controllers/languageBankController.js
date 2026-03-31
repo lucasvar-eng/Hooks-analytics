@@ -8,16 +8,28 @@ exports.list = async (req, res) => {
 };
 
 exports.create = async (req, res) => {
-  const { tipo, texto, response, tags, sentiment } = req.body;
-  const entry = await LanguageBank.create({ storeId: req.params.id, tipo, texto, response, tags, sentiment });
+  const { tipo, texto, response, tags, sentiment, avatar, awarenessLevel, angle, territory, objectionStage } = req.body;
+  const entry = await LanguageBank.create({
+    storeId: req.params.id,
+    tipo,
+    texto,
+    response,
+    tags,
+    sentiment,
+    avatar,
+    awarenessLevel,
+    angle,
+    territory,
+    objectionStage,
+  });
   res.status(201).json(entry);
 };
 
 exports.update = async (req, res) => {
-  const { tipo, texto, response, tags, sentiment } = req.body;
+  const { tipo, texto, response, tags, sentiment, avatar, awarenessLevel, angle, territory, objectionStage } = req.body;
   const entry = await LanguageBank.findOneAndUpdate(
     { _id: req.params.entryId, storeId: req.params.id },
-    { tipo, texto, response, tags, sentiment },
+    { tipo, texto, response, tags, sentiment, avatar, awarenessLevel, angle, territory, objectionStage },
     { new: true }
   );
   if (!entry) return res.status(404).json({ error: 'Not found' });

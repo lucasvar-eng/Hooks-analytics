@@ -15,6 +15,8 @@ module.exports = {
     appId: process.env.TN_APP_ID,
     appSecret: process.env.TN_APP_SECRET,
     callbackUrl: process.env.TN_CALLBACK_URL,
+    croServiceApiUrl: process.env.CRO_SERVICE_API_URL || 'https://app.ecomclub.com.ar/api/service/stores',
+    croServiceApiKey: process.env.CRO_SERVICE_API_KEY || '',
   },
 
   // Meta (Sprint 3)
@@ -29,8 +31,18 @@ module.exports = {
   // AI (Sprint 9)
   ai: {
     anthropicApiKey: process.env.ANTHROPIC_API_KEY,
-    modelAnalysis: process.env.AI_MODEL_ANALYSIS || 'claude-sonnet-4-6',
-    modelChat: process.env.AI_MODEL_CHAT || 'claude-sonnet-4-6',
-    modelReports: process.env.AI_MODEL_REPORTS || 'claude-opus-4-6',
+    openaiApiKey: process.env.OPENAI_API_KEY,
+    modelAnalysis: process.env.AI_MODEL_ANALYSIS || 'claude-sonnet-4-20250514',
+    modelChat: process.env.AI_MODEL_CHAT || 'claude-3-5-haiku-latest',
+    modelReports: process.env.AI_MODEL_REPORTS || 'claude-opus-4-1-20250805',
+  },
+
+  google: {
+    sheetsClientEmail: process.env.GOOGLE_SHEETS_CLIENT_EMAIL || '',
+    sheetsPrivateKey: process.env.GOOGLE_SHEETS_PRIVATE_KEY || '',
+  },
+
+  mcp: {
+    defaultAuthorEmail: process.env.MCP_DEFAULT_AUTHOR_EMAIL || 'lucas@hooks.com.ar',
   },
 };

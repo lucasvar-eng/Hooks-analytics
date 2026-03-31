@@ -2,6 +2,9 @@ const express = require('express');
 const router = express.Router();
 const topicMapController = require('../controllers/topicMapController');
 const { auth } = require('../middleware/auth');
+const storeContext = require('../middleware/storeContext');
+
+router.use('/stores/:id', auth, storeContext);
 
 router.get('/stores/:id/topic-maps', auth, topicMapController.list);
 router.post('/stores/:id/topic-maps', auth, topicMapController.create);

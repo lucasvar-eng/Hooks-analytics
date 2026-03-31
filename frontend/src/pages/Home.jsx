@@ -27,7 +27,7 @@ export default function Home() {
   }, [dispatch, stores, from, to]);
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a]">
+    <div className="app-shell min-h-screen">
       <Header />
       <main className="max-w-7xl mx-auto px-4 py-6">
         <div className="flex items-center justify-between mb-6">
@@ -49,7 +49,7 @@ export default function Home() {
         </div>
 
         {loading ? (
-          <div className="text-center py-20 text-gray-600 text-sm">Cargando tiendas...</div>
+          <div className="text-center py-20 text-app-secondary text-sm">Cargando tiendas...</div>
         ) : (
           <StoreGrid stores={stores} metrics={metrics} alertCounts={alertCounts} onAddStore={() => setShowAddModal(true)} />
         )}

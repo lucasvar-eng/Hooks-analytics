@@ -8,6 +8,7 @@ const orderSchema = new mongoose.Schema(
 
     // Cliente
     customerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Customer' },
+    externalCustomerId: { type: String },
     customerName: { type: String },
     customerEmail: { type: String },
 

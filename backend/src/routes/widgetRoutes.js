@@ -2,6 +2,9 @@ const express = require('express');
 const router = express.Router();
 const widgetController = require('../controllers/widgetController');
 const { auth } = require('../middleware/auth');
+const storeContext = require('../middleware/storeContext');
+
+router.use('/stores/:id', auth, storeContext);
 
 router.get('/stores/:id/widgets', auth, widgetController.list);
 router.post('/stores/:id/widgets', auth, widgetController.create);

@@ -37,6 +37,10 @@ export default function AIAnalysisPanel({ storeId, section, from, to }) {
         dateRange: { from, to },
         tokensUsed: analysis.tokensUsed,
         model: analysis.model,
+        provider: analysis.provider,
+        confidence: analysis.confidence,
+        qualityNote: analysis.qualityNote,
+        generationMode: analysis.generationMode || 'ai',
       });
       setSaveSuccess(true);
     } catch {
@@ -57,7 +61,24 @@ export default function AIAnalysisPanel({ storeId, section, from, to }) {
       {error && <p className="text-[12px] text-red-400 mb-2">{error}</p>}
 
       {analysis && (
-        <div className="text-[12px] leading-relaxed text-gray-400 space-y-1">
+        <div className="text-[12px] leading-relaxed text-app-primary space-y-1">
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            {analysis.confidence != null && (
+              <span className={`badge ${
+                analysis.confidence >= 0.8
+                  ? 'bg-emerald-500/15 text-emerald-400'
+                  : analysis.confidence >= 0.5
+                    ? 'bg-amber-500/15 text-amber-400'
+                    : 'bg-red-500/15 text-red-400'
+              }`}>
+                Confianza {(analysis.confidence * 100).toFixed(0)}%
+              </span>
+            )}
+            {analysis.qualityNote && (
+              <span className="text-[11px] text-app-secondary">{analysis.qualityNote}</span>
+            )}
+          </div>
+
           <div
             dangerouslySetInnerHTML={{
               __html: analysis.analysis
@@ -71,7 +92,7 @@ export default function AIAnalysisPanel({ storeId, section, from, to }) {
           />
           <div className="flex items-center gap-3 mt-3 pt-3 border-t border-white/[0.06]">
             {analysis.tokensUsed && (
-              <p className="text-[10px] text-gray-600">{analysis.tokensUsed} tokens · {analysis.model}</p>
+              <p className="text-[10px] text-app-secondary">{analysis.tokensUsed} tokens · {analysis.model}</p>
             )}
             <button onClick={handleSave} disabled={saving} className="btn-ghost text-[11px] disabled:opacity-50">
               {saving ? 'Guardando...' : 'Guardar análisis'}
@@ -82,7 +103,7 @@ export default function AIAnalysisPanel({ storeId, section, from, to }) {
       )}
 
       {!analysis && !loading && !error && (
-        <p className="text-[12px] text-gray-600">
+        <p className="text-[12px] text-app-secondary">
           Hacé click en "Generar análisis" para obtener insights de AI sobre esta sección.
         </p>
       )}

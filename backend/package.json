@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "nodemon src/server.js",
-    "start": "node src/server.js"
+    "start": "node src/server.js",
+    "mcp": "node src/mcp/hooksMcpServer.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.80.0",

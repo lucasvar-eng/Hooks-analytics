@@ -1,51 +1,98 @@
 const Product = require('../models/Product');
 const Order = require('../models/Order');
 const DailyMetric = require('../models/DailyMetric');
+const ProductCost = require('../models/ProductCost');
 const mongoose = require('mongoose');
+const { getFixedCostsForRange } = require('./fixedCostService');
+
+const POSITIVE_PAYMENT_STATUSES = ['paid'];
 
 /**
  * Import product costs from CSV rows.
  * Expects rows with: sku/tnProductId, costoUnitario, (optional) costoEmpaque
  */
-async function importProductCosts(storeId, rows) {
+async function importProductCosts(storeId, rows, options = {}) {
   let updated = 0;
-  let notFound = [];
+  const notFound = [];
+  const invalidRows = [];
+  const seenSkus = new Set();
+  const effectiveFrom = options.effectiveFrom ? new Date(options.effectiveFrom) : new Date();
+  effectiveFrom.setHours(0, 0, 0, 0);
 
-  for (const row of rows) {
+  for (const [index, row] of rows.entries()) {
     const sku = row.sku || row.tnProductId || row.id || row.SKU;
-    const costo = parseFloat(row.costoUnitario || row.costo || row.cost || 0);
-    const empaque = parseFloat(row.costoEmpaque || row.empaque || row.packaging || 0);
+    const rawCosto = row.costoUnitario ?? row.costo ?? row.cost;
+    const rawEmpaque = row.costoEmpaque ?? row.empaque ?? row.packaging;
+    const costo = parseFloat(rawCosto || 0);
+    const empaque = parseFloat(rawEmpaque || 0);
 
-    if (!sku) continue;
+    if (!sku) {
+      invalidRows.push(`Fila ${index + 2}: falta tnProductId/sku`);
+      continue;
+    }
 
-    const product = await Product.findOne({ storeId, tnProductId: String(sku) });
+    const normalizedSku = String(sku).trim();
+    if (seenSkus.has(normalizedSku)) {
+      invalidRows.push(`Fila ${index + 2}: tnProductId/sku duplicado (${normalizedSku})`);
+      continue;
+    }
+    seenSkus.add(normalizedSku);
+
+    if (rawCosto === undefined || Number.isNaN(costo) || costo < 0) {
+      invalidRows.push(`Fila ${index + 2}: costoUnitario inválido para ${normalizedSku}`);
+      continue;
+    }
+
+    if (rawEmpaque !== undefined && (Number.isNaN(empaque) || empaque < 0)) {
+      invalidRows.push(`Fila ${index + 2}: costoEmpaque inválido para ${normalizedSku}`);
+      continue;
+    }
+
+    const product = await Product.findOne({ storeId, tnProductId: normalizedSku });
     if (!product) {
-      // Also try matching by nombre
-      const byName = await Product.findOne({
-        storeId,
-        nombre: { $regex: new RegExp(`^${sku.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') },
-      });
-
-      if (byName) {
-        byName.costoUnitario = costo;
-        if (empaque) byName.costoEmpaque = empaque;
-        calculateProductMargins(byName);
-        await byName.save();
-        updated++;
-      } else {
-        notFound.push(sku);
-      }
+      notFound.push(normalizedSku);
       continue;
     }
 
     product.costoUnitario = costo;
-    if (empaque) product.costoEmpaque = empaque;
+    if (rawEmpaque !== undefined) product.costoEmpaque = empaque;
     calculateProductMargins(product);
     await product.save();
+
+    await ProductCost.updateMany(
+      {
+        storeId,
+        tnProductId: normalizedSku,
+        isActive: true,
+        $or: [
+          { effectiveTo: { $exists: false } },
+          { effectiveTo: null },
+          { effectiveTo: { $gte: effectiveFrom } },
+        ],
+      },
+      {
+        $set: {
+          isActive: false,
+          effectiveTo: new Date(effectiveFrom.getTime() - 1),
+        },
+      }
+    );
+
+    await ProductCost.create({
+      storeId,
+      tnProductId: normalizedSku,
+      sku: normalizedSku,
+      costoUnitario: costo,
+      costoEmpaque: rawEmpaque !== undefined ? empaque : (product.costoEmpaque || 0),
+      source: options.source || 'csv',
+      effectiveFrom,
+      createdBy: options.createdBy,
+    });
+
     updated++;
   }
 
-  return { updated, notFound };
+  return { updated, notFound, invalidRows };
 }
 
 function calculateProductMargins(product) {
@@ -59,64 +106,121 @@ function calculateProductMargins(product) {
  * Generate P&L for a date range.
  */
 async function getPnL(storeId, from, to) {
-  const match = { storeId: new mongoose.Types.ObjectId(storeId) };
+  const storeObjectId = new mongoose.Types.ObjectId(storeId);
+  const orderMatch = {
+    storeId: storeObjectId,
+    estado: { $nin: ['cancelled'] },
+    paymentStatus: { $in: POSITIVE_PAYMENT_STATUSES },
+  };
+  const dailyMatch = { storeId: storeObjectId };
+
   if (from || to) {
-    match.date = {};
-    if (from) match.date.$gte = new Date(from);
+    orderMatch.fechaCreacion = {};
+    dailyMatch.date = {};
+    if (from) {
+      orderMatch.fechaCreacion.$gte = new Date(from);
+      dailyMatch.date.$gte = new Date(from);
+    }
     if (to) {
       const toDate = new Date(to);
-      toDate.setHours(23, 59, 59, 999);
-      match.date.$lte = toDate;
+      toDate.setUTCHours(23, 59, 59, 999);
+      orderMatch.fechaCreacion.$lte = toDate;
+      dailyMatch.date.$lte = toDate;
     }
   }
 
-  const [agg] = await DailyMetric.aggregate([
-    { $match: match },
-    {
-      $group: {
-        _id: null,
-        revenue: { $sum: '$revenue' },
-        netRevenue: { $sum: '$netRevenue' },
-        costoProductos: { $sum: '$costoProductos' },
-        costoEnvio: { $sum: '$costoEnvio' },
-        comisionPago: { $sum: '$comisionPago' },
-        comisionCuotas: { $sum: '$comisionCuotas' },
-        impuestosIBB: { $sum: '$impuestosIBB' },
-        feePlataforma: { $sum: '$feePlataforma' },
-        adSpend: { $sum: '$adSpend' },
-        profit: { $sum: '$profit' },
-        ordenes: { $sum: '$ordenes' },
+  const [[agg], [adsAgg]] = await Promise.all([
+    Order.aggregate([
+      { $match: orderMatch },
+      {
+        $group: {
+          _id: null,
+          revenue: { $sum: '$totalOrden' },
+          netRevenue: { $sum: '$totalNeto' },
+          costoProductos: { $sum: '$costoProductos' },
+          costoEnvio: { $sum: '$costoEnvio' },
+          comisionPago: { $sum: '$comisionPago' },
+          comisionCuotas: { $sum: '$comisionCuotas' },
+          impuestosIBB: { $sum: '$impuestosIBB' },
+          feePlataforma: { $sum: '$feePlataforma' },
+          ordenes: { $sum: 1 },
+        },
       },
-    },
+    ]),
+    DailyMetric.aggregate([
+      { $match: dailyMatch },
+      {
+        $group: {
+          _id: null,
+          adSpend: { $sum: '$adSpend' },
+        },
+      },
+    ]),
   ]);
 
-  if (!agg) {
+  let baseAgg = agg;
+  let dataSource = 'orders';
+
+  if (!baseAgg) {
+    const [legacyAgg] = await DailyMetric.aggregate([
+      { $match: dailyMatch },
+      {
+        $group: {
+          _id: null,
+          revenue: { $sum: '$revenue' },
+          netRevenue: { $sum: '$netRevenue' },
+          costoProductos: { $sum: '$costoProductos' },
+          costoEnvio: { $sum: '$costoEnvio' },
+          comisionPago: { $sum: '$comisionPago' },
+          comisionCuotas: { $sum: '$comisionCuotas' },
+          impuestosIBB: { $sum: '$impuestosIBB' },
+          feePlataforma: { $sum: '$feePlataforma' },
+          ordenes: { $sum: '$ordenes' },
+        },
+      },
+    ]);
+    baseAgg = legacyAgg;
+    dataSource = 'daily_metrics_fallback';
+  }
+
+  if (!baseAgg) {
     return {
       revenue: 0, lines: [], totalCosts: 0, profit: 0, profitMargin: 0, ordenes: 0,
     };
   }
 
+  const fixedCosts = await getFixedCostsForRange(storeId, from, to);
+  const adSpend = adsAgg?.adSpend || 0;
+
   const lines = [
-    { label: 'Costo de Productos (COGS)', value: agg.costoProductos, pct: agg.revenue ? (agg.costoProductos / agg.revenue * 100) : 0 },
-    { label: 'Comisión de Pago', value: agg.comisionPago, pct: agg.revenue ? (agg.comisionPago / agg.revenue * 100) : 0 },
-    { label: 'Comisión de Cuotas', value: agg.comisionCuotas, pct: agg.revenue ? (agg.comisionCuotas / agg.revenue * 100) : 0 },
-    { label: 'Impuestos IBB', value: agg.impuestosIBB, pct: agg.revenue ? (agg.impuestosIBB / agg.revenue * 100) : 0 },
-    { label: 'Fee Plataforma', value: agg.feePlataforma, pct: agg.revenue ? (agg.feePlataforma / agg.revenue * 100) : 0 },
-    { label: 'Costo de Envío', value: agg.costoEnvio, pct: agg.revenue ? (agg.costoEnvio / agg.revenue * 100) : 0 },
-    { label: 'Ad Spend', value: agg.adSpend, pct: agg.revenue ? (agg.adSpend / agg.revenue * 100) : 0 },
+    { label: 'Costo de Productos (COGS)', value: baseAgg.costoProductos, pct: baseAgg.revenue ? (baseAgg.costoProductos / baseAgg.revenue * 100) : 0 },
+    { label: 'Comisión de Pago', value: baseAgg.comisionPago, pct: baseAgg.revenue ? (baseAgg.comisionPago / baseAgg.revenue * 100) : 0 },
+    { label: 'Comisión de Cuotas', value: baseAgg.comisionCuotas, pct: baseAgg.revenue ? (baseAgg.comisionCuotas / baseAgg.revenue * 100) : 0 },
+    { label: 'Impuestos IBB', value: baseAgg.impuestosIBB, pct: baseAgg.revenue ? (baseAgg.impuestosIBB / baseAgg.revenue * 100) : 0 },
+    { label: 'Fee Plataforma', value: baseAgg.feePlataforma, pct: baseAgg.revenue ? (baseAgg.feePlataforma / baseAgg.revenue * 100) : 0 },
+    { label: 'Costo de Envío', value: baseAgg.costoEnvio, pct: baseAgg.revenue ? (baseAgg.costoEnvio / baseAgg.revenue * 100) : 0 },
+    { label: 'Ad Spend', value: adSpend, pct: baseAgg.revenue ? (adSpend / baseAgg.revenue * 100) : 0 },
+    { label: 'Costos Fijos', value: fixedCosts.total, pct: baseAgg.revenue ? (fixedCosts.total / baseAgg.revenue * 100) : 0 },
   ];
 
   const totalCosts = lines.reduce((s, l) => s + l.value, 0);
-  const profit = agg.revenue - totalCosts;
-  const profitMargin = agg.revenue ? (profit / agg.revenue * 100) : 0;
+  const contributionProfit = baseAgg.netRevenue || 0;
+  const profit =
+    contributionProfit > 0
+      ? contributionProfit - adSpend - fixedCosts.total
+      : baseAgg.revenue - totalCosts;
+  const profitMargin = baseAgg.revenue ? (profit / baseAgg.revenue * 100) : 0;
 
   return {
-    revenue: agg.revenue,
+    revenue: baseAgg.revenue,
     lines,
     totalCosts,
     profit,
     profitMargin,
-    ordenes: agg.ordenes,
+    ordenes: baseAgg.ordenes,
+    fixedCosts: fixedCosts.lines,
+    contributionProfit,
+    dataSource,
   };
 }
 

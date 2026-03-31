@@ -84,8 +84,8 @@ export default function UserManagement() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a]">
-      <header className="bg-[#0f0f0f] border-b border-white/[0.06] px-4 py-3">
+    <div className="app-shell min-h-screen">
+      <header className="app-surface border-b border-white/[0.06] px-4 py-3">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <button onClick={() => navigate('/')} className="text-[13px] text-blue-400 hover:text-blue-300 flex items-center gap-1 transition">
             ← Volver

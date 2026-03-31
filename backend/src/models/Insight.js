@@ -13,6 +13,7 @@ const insightSchema = new mongoose.Schema({
   generatedBy: { type: String, enum: ['rule_engine', 'claude', 'openai', 'manual'], default: 'rule_engine' },
   metricKey: { type: String }, // optional: which metric this relates to
   metadata: { type: mongoose.Schema.Types.Mixed }, // flexible extra data
+  confidence: { type: Number, default: 0.5 },
   pinned: { type: Boolean, default: false }, // if pinned as top insight
   estado: { type: String, enum: ['active', 'dismissed', 'resolved'], default: 'active' },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },

@@ -1,4 +1,4 @@
-const { getCustomers, getCohortTable, getSegments, calculateRFM } = require('../services/customerService');
+const { getCustomers, getCohortTable, getSegments, calculateRFM, getQualityChecks } = require('../services/customerService');
 
 exports.list = async (req, res) => {
   const { page = 1, limit = 50, segment } = req.query;
@@ -19,4 +19,9 @@ exports.segments = async (req, res) => {
 exports.recalculateRFM = async (req, res) => {
   const count = await calculateRFM(req.params.id);
   res.json({ message: `RFM calculated for ${count} customers` });
+};
+
+exports.quality = async (req, res) => {
+  const checks = await getQualityChecks(req.params.id);
+  res.json(checks);
 };

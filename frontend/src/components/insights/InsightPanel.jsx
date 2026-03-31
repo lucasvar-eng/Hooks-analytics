@@ -107,6 +107,20 @@ export default function InsightPanel({ storeId, section, onClose }) {
         ))}
       </div>
 
+      <div className="grid grid-cols-4 gap-2 px-3 py-2 border-b border-white/[0.06] shrink-0">
+        {[
+          { label: 'Alertas', value: alertas.length },
+          { label: 'Wins', value: wins.length },
+          { label: 'Acciones', value: acciones.length },
+          { label: 'Notas', value: notes.length },
+        ].map((item) => (
+          <div key={item.label} className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-2 py-2 text-center">
+            <p className="text-[9px] font-bold uppercase tracking-wider text-gray-600">{item.label}</p>
+            <p className="text-[14px] font-semibold text-app-primary mt-1">{item.value}</p>
+          </div>
+        ))}
+      </div>
+
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-3">
         {loading ? (
@@ -164,7 +178,12 @@ export default function InsightPanel({ storeId, section, onClose }) {
               </>
             )}
             {insights.length === 0 && (
-              <p className="text-[11px] text-gray-600 text-center py-8">Sin insights para esta sección. Generá un análisis con AI.</p>
+              <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 text-center">
+                <p className="text-[12px] text-app-primary">Todavía no hay análisis para esta sección.</p>
+                <p className="text-[11px] text-gray-600 mt-2">
+                  El botón de abajo genera o actualiza automáticamente Alertas, Wins y Acciones con el contexto de esta hoja.
+                </p>
+              </div>
             )}
           </>
         ) : (
@@ -201,9 +220,12 @@ export default function InsightPanel({ storeId, section, onClose }) {
             disabled={generating}
             className="flex-1 py-1.5 rounded text-[11px] font-semibold bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/20 disabled:opacity-50 transition"
           >
-            {generating ? 'Generando...' : 'Generar análisis AI'}
+            {generating ? 'Actualizando...' : 'Generar / actualizar insights'}
           </button>
         </div>
+        <p className="text-[10px] text-gray-600">
+          Esto alimenta los tabs de Alertas, Wins y Acciones para la sección actual.
+        </p>
       </div>
     </div>
   );

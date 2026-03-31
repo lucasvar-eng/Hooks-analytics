@@ -27,17 +27,24 @@ function PnLSection({ pnl }) {
           <span className="text-[13px] font-bold text-white">{fmt(pnl.revenue)}</span>
         </div>
 
+        {pnl.contributionProfit != null && (
+          <div className="flex justify-between py-2 border-b border-white/[0.04]">
+            <span className="text-[13px] text-app-secondary">Profit de contribución</span>
+            <span className="text-[13px] text-emerald-400 font-semibold">{fmt(pnl.contributionProfit)}</span>
+          </div>
+        )}
+
         {pnl.lines?.map((line) => (
           <div key={line.label} className="flex justify-between py-2">
-            <span className="text-[13px] text-gray-500">– {line.label}</span>
+            <span className="text-[13px] text-app-secondary">– {line.label}</span>
             <span className="text-[13px] text-red-400">
-              {fmt(line.value)} <span className="text-gray-600 text-[11px]">({pct(line.pct)})</span>
+              {fmt(line.value)} <span className="text-app-muted text-[11px]">({pct(line.pct)})</span>
             </span>
           </div>
         ))}
 
         <div className="flex justify-between py-2.5 border-t border-white/[0.06]">
-          <span className="text-[13px] font-medium text-gray-400">Total Costos</span>
+          <span className="text-[13px] font-medium text-app-secondary">Total Costos</span>
           <span className="text-[13px] font-bold text-red-400">{fmt(pnl.totalCosts)}</span>
         </div>
 
@@ -47,6 +54,12 @@ function PnLSection({ pnl }) {
             {fmt(pnl.profit)} <span className="text-[12px]">({pct(pnl.profitMargin)})</span>
           </span>
         </div>
+
+        {pnl.dataSource && (
+          <p className="pt-2 text-[11px] text-app-muted">
+            Fuente P&L: {pnl.dataSource === 'orders' ? 'órdenes crudas' : 'daily metrics heredadas'}
+          </p>
+        )}
       </div>
     </div>
   );
@@ -77,8 +90,146 @@ function BreakevenSection({ be }) {
   );
 }
 
+function FinancialConsistencySection({ data }) {
+  if (!data) return null;
+
+  const statusTone =
+    data.reconciliation?.status === 'aligned'
+      ? 'badge-green'
+      : 'badge-amber';
+
+  return (
+    <div className="card p-5">
+      <div className="flex items-center justify-between gap-3 mb-4">
+        <div>
+          <p className="kpi-label">Verdad financiera</p>
+          <p className="text-app-secondary text-[12px] mt-1">Definición oficial y calidad de respaldo del período.</p>
+        </div>
+        <span className={statusTone}>{data.reconciliation?.status === 'aligned' ? 'Alineado' : 'Revisar'}</span>
+      </div>
+
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 mb-4">
+        <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
+          <p className="text-app-muted text-[10px] uppercase tracking-wider">Profit oficial</p>
+          <p className="text-white text-xl font-semibold mt-1">{fmt(data.officialMetric?.profit)}</p>
+        </div>
+        <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
+          <p className="text-app-muted text-[10px] uppercase tracking-wider">Margen oficial</p>
+          <p className="text-white text-xl font-semibold mt-1">{pct(data.officialMetric?.profitMargin)}</p>
+        </div>
+        <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
+          <p className="text-app-muted text-[10px] uppercase tracking-wider">True ROAS oficial</p>
+          <p className="text-white text-xl font-semibold mt-1">{Number(data.officialMetric?.trueRoas || 0).toFixed(2)}x</p>
+        </div>
+        <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
+          <p className="text-app-muted text-[10px] uppercase tracking-wider">Días con órdenes</p>
+          <p className="text-white text-xl font-semibold mt-1">{Number(data.integrity?.ordersBackedPct || 0).toFixed(0)}%</p>
+        </div>
+      </div>
+
+      <div className="space-y-1 text-[12px]">
+        <p className="text-app-secondary">Fuente: <span className="text-app-primary">{data.officialMetric?.dataSource === 'orders' ? 'órdenes crudas' : 'daily metrics heredadas'}</span></p>
+        <p className="text-app-secondary">Diferencia contribución vs aggregate: <span className="text-app-primary">{fmt(data.reconciliation?.contributionDiff)}</span></p>
+        <p className="text-app-secondary">Diferencia profit oficial vs aggregate ajustado: <span className="text-app-primary">{fmt(data.reconciliation?.officialDiff)}</span></p>
+        <p className="text-app-secondary">Calidad: <span className="text-app-primary">{data.quality?.note}</span></p>
+      </div>
+    </div>
+  );
+}
+
+function CostCatalogSection({ overview, metrics }) {
+  if (!overview?.summary) return null;
+
+  const summary = overview.summary;
+  const currentMetrics = metrics?.current || null;
+  const storeRevenue = currentMetrics?.revenue || 0;
+  const storeNetRevenue = currentMetrics?.netRevenue || 0;
+  const productRevenue = summary.periodRevenue || 0;
+  const grossGap = storeRevenue - productRevenue;
+  const netGap = storeNetRevenue - productRevenue;
+  const coveragePct = Number(summary.costCoveragePct || 0);
+
+  let recommendation = 'La cobertura ya permite leer mejor el margen por SKU, aunque todavía conviene validar top sellers y categorías críticas.';
+  if (coveragePct === 0) {
+    recommendation = 'Todavía no hay costos de producto cargados. Empezá por los top sellers del período para desbloquear margen real y stock valorizado.';
+  } else if (coveragePct < 40) {
+    recommendation = 'La cobertura sigue baja. Priorizá los productos con más ingresos o unidades vendidas antes de expandir al catálogo completo.';
+  } else if (coveragePct < 80) {
+    recommendation = 'La base ya sirve para análisis parciales. Cerrá primero las categorías más vendidas para que el mix comercial quede confiable.';
+  }
+
+  return (
+    <div className="grid grid-cols-1 xl:grid-cols-[1.15fr_0.85fr] gap-5">
+      <div className="card p-5">
+        <div className="flex items-start justify-between gap-3 mb-4">
+          <div>
+            <p className="kpi-label">Cobertura de costos del catálogo</p>
+            <p className="text-app-secondary text-[12px] mt-1">Qué tan accionable es hoy la lectura de margen por producto.</p>
+          </div>
+          <span className={coveragePct >= 80 ? 'badge-green' : coveragePct >= 40 ? 'badge-amber' : 'badge-red'}>
+            {coveragePct.toFixed(0)}% cubierto
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
+          <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
+            <p className="text-app-muted text-[10px] uppercase tracking-wider">Productos</p>
+            <p className="text-white text-xl font-semibold mt-1">{summary.totalProducts || 0}</p>
+          </div>
+          <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
+            <p className="text-app-muted text-[10px] uppercase tracking-wider">Con costo</p>
+            <p className="text-white text-xl font-semibold mt-1">{summary.productsWithCosts || 0}</p>
+          </div>
+          <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
+            <p className="text-app-muted text-[10px] uppercase tracking-wider">Sin costo</p>
+            <p className="text-white text-xl font-semibold mt-1">{summary.productsWithoutCosts || 0}</p>
+          </div>
+          <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
+            <p className="text-app-muted text-[10px] uppercase tracking-wider">Stock valorizado</p>
+            <p className="text-white text-xl font-semibold mt-1">{fmt(summary.stockValue)}</p>
+          </div>
+        </div>
+
+        <div className="mt-4 rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
+          <p className="text-app-muted text-[10px] uppercase tracking-wider">Próximo paso recomendado</p>
+          <p className="text-app-secondary text-[13px] mt-2">{recommendation}</p>
+        </div>
+      </div>
+
+      <div className="card p-5">
+        <div className="mb-4">
+          <p className="kpi-label">Cruce con ingresos</p>
+          <p className="text-app-secondary text-[12px] mt-1">Para saber si el problema es costo faltante o una diferencia normal entre tienda y productos.</p>
+        </div>
+
+        <div className="space-y-3">
+          {[
+            ['Tienda ingresos', fmt(storeRevenue)],
+            ['Tienda neto', fmt(storeNetRevenue)],
+            ['Productos netos', fmt(productRevenue)],
+            ['Gap vs neto', fmt(netGap)],
+          ].map(([label, value]) => (
+            <div key={label} className="flex items-center justify-between rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-3">
+              <span className="text-app-secondary text-[12px]">{label}</span>
+              <span className="text-white text-[13px] font-semibold">{value}</span>
+            </div>
+          ))}
+        </div>
+
+        <p className="text-app-secondary text-[12px] mt-4">
+          Productos distribuye descuentos sobre los ítems, pero no representa envío ni todos los ajustes del pedido. El cierre útil es primero contra <span className="text-white">net revenue</span>.
+        </p>
+        <p className="text-app-secondary text-[12px] mt-2">
+          Gap contra ingresos brutos: <span className="text-white">{fmt(grossGap)}</span>
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function CSVUploadSection({ storeId, onUploaded }) {
   const fileRef = useRef();
+  const [effectiveFrom, setEffectiveFrom] = useState(new Date().toISOString().slice(0, 10));
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState(null);
 
@@ -88,6 +239,7 @@ function CSVUploadSection({ storeId, onUploaded }) {
     setUploading(true);
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('effectiveFrom', effectiveFrom);
     try {
       const { data } = await api.post(
         `/api/stores/${storeId}/products/costs`,
@@ -125,6 +277,12 @@ function CSVUploadSection({ storeId, onUploaded }) {
 
       <div className="flex items-center gap-3">
         <input
+          type="date"
+          value={effectiveFrom}
+          onChange={(e) => setEffectiveFrom(e.target.value)}
+          className="input-dark"
+        />
+        <input
           ref={fileRef}
           type="file"
           accept=".csv"
@@ -136,12 +294,161 @@ function CSVUploadSection({ storeId, onUploaded }) {
       </div>
 
       {result && !result.error && (
-        <p className="mt-3 text-[12px] text-emerald-400">
-          Actualizados: {result.updated}
-          {result.notFound?.length > 0 && ` | No encontrados: ${result.notFound.join(', ')}`}
-        </p>
+        <div className="mt-3 space-y-1">
+          <p className="text-[12px] text-emerald-400">
+            Actualizados: {result.updated} · Vigencia: {effectiveFrom}
+            {result.notFound?.length > 0 && ` | No encontrados: ${result.notFound.join(', ')}`}
+          </p>
+          {result.invalidRows?.length > 0 && (
+            <p className="text-[12px] text-amber-400">
+              Filas inválidas: {result.invalidRows.slice(0, 3).join(' | ')}
+            </p>
+          )}
+        </div>
       )}
       {result?.error && <p className="mt-3 text-[12px] text-red-400">{result.error}</p>}
+    </div>
+  );
+}
+
+function FixedCostsSection({ storeId, onChanged }) {
+  const [items, setItems] = useState([]);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({
+    nombre: '',
+    categoria: 'general',
+    monto: '',
+    cadence: 'monthly',
+    periodStart: '',
+    periodEnd: '',
+    notes: '',
+  });
+
+  const loadItems = useCallback(async () => {
+    try {
+      const { data } = await api.get(`/api/stores/${storeId}/fixed-costs`);
+      setItems(data);
+    } catch {
+      setItems([]);
+    }
+  }, [storeId]);
+
+  useEffect(() => { loadItems(); }, [loadItems]);
+
+  const submit = async () => {
+    if (!form.nombre.trim() || !form.monto) return;
+    setSaving(true);
+    try {
+      await api.post(`/api/stores/${storeId}/fixed-costs`, {
+        ...form,
+        monto: Number(form.monto),
+        periodStart: form.periodStart || undefined,
+        periodEnd: form.periodEnd || undefined,
+      });
+      setForm({
+        nombre: '',
+        categoria: 'general',
+        monto: '',
+        cadence: 'monthly',
+        periodStart: '',
+        periodEnd: '',
+        notes: '',
+      });
+      await loadItems();
+      onChanged?.();
+    } catch {}
+    setSaving(false);
+  };
+
+  const remove = async (id) => {
+    try {
+      await api.delete(`/api/stores/${storeId}/fixed-costs/${id}`);
+      await loadItems();
+      onChanged?.();
+    } catch {}
+  };
+
+  return (
+    <div className="card p-5">
+      <div className="flex items-center justify-between mb-4">
+        <p className="kpi-label">Costos fijos</p>
+        <span className="text-app-secondary text-[12px]">{items.length} activos</span>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 mb-4">
+        <input
+          value={form.nombre}
+          onChange={(e) => setForm({ ...form, nombre: e.target.value })}
+          placeholder="Nombre"
+          className="input-dark"
+        />
+        <input
+          value={form.categoria}
+          onChange={(e) => setForm({ ...form, categoria: e.target.value })}
+          placeholder="Categoría"
+          className="input-dark"
+        />
+        <input
+          type="number"
+          value={form.monto}
+          onChange={(e) => setForm({ ...form, monto: e.target.value })}
+          placeholder="Monto"
+          className="input-dark"
+        />
+        <select
+          value={form.cadence}
+          onChange={(e) => setForm({ ...form, cadence: e.target.value })}
+          className="input-dark"
+        >
+          <option value="monthly">Mensual</option>
+          <option value="weekly">Semanal</option>
+          <option value="daily">Diario</option>
+          <option value="one_time">Una vez</option>
+        </select>
+        <input
+          type="date"
+          value={form.periodStart}
+          onChange={(e) => setForm({ ...form, periodStart: e.target.value })}
+          className="input-dark"
+        />
+        <input
+          type="date"
+          value={form.periodEnd}
+          onChange={(e) => setForm({ ...form, periodEnd: e.target.value })}
+          className="input-dark"
+        />
+      </div>
+
+      <textarea
+        value={form.notes}
+        onChange={(e) => setForm({ ...form, notes: e.target.value })}
+        placeholder="Notas"
+        className="input-dark w-full min-h-[84px] mb-3"
+      />
+
+      <button onClick={submit} disabled={saving} className="btn-primary disabled:opacity-50">
+        {saving ? 'Guardando...' : 'Agregar costo fijo'}
+      </button>
+
+      <div className="mt-5 space-y-2">
+        {items.length === 0 ? (
+          <p className="text-app-secondary text-[12px]">Todavía no hay costos fijos cargados.</p>
+        ) : (
+          items.map((item) => (
+            <div key={item._id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-3">
+              <div className="min-w-0">
+                <p className="text-white text-[13px] font-medium">{item.nombre}</p>
+                <p className="text-app-secondary text-[11px]">
+                  {item.categoria || 'general'} · {item.cadence} · {fmt(item.monto)}
+                </p>
+              </div>
+              <button onClick={() => remove(item._id)} className="btn-ghost text-[12px]">
+                Archivar
+              </button>
+            </div>
+          ))
+        )}
+      </div>
     </div>
   );
 }
@@ -151,6 +458,9 @@ export default function Costos() {
   const { from, to } = useSelector((s) => s.date);
   const [pnl, setPnl] = useState(null);
   const [breakeven, setBreakeven] = useState(null);
+  const [financialConsistency, setFinancialConsistency] = useState(null);
+  const [productOverview, setProductOverview] = useState(null);
+  const [storeMetrics, setStoreMetrics] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const fetchData = useCallback(async () => {
@@ -159,15 +469,24 @@ export default function Costos() {
       const params = {};
       if (from) params.from = from;
       if (to) params.to = to;
-      const [pnlRes, beRes] = await Promise.all([
+      const [pnlRes, beRes, consistencyRes, productOverviewRes, metricsRes] = await Promise.all([
         api.get(`/api/stores/${storeId}/pnl`, { params }),
         api.get(`/api/stores/${storeId}/breakeven`, { params }),
+        api.get(`/api/stores/${storeId}/financial-consistency`, { params }),
+        api.get(`/api/stores/${storeId}/products/overview`, { params }),
+        api.get(`/api/stores/${storeId}/metrics`, { params }),
       ]);
       setPnl(pnlRes.data);
       setBreakeven(beRes.data);
+      setFinancialConsistency(consistencyRes.data);
+      setProductOverview(productOverviewRes.data);
+      setStoreMetrics(metricsRes.data);
     } catch {
       setPnl(null);
       setBreakeven(null);
+      setFinancialConsistency(null);
+      setProductOverview(null);
+      setStoreMetrics(null);
     }
     setLoading(false);
   }, [storeId, from, to]);
@@ -185,10 +504,15 @@ export default function Costos() {
         <p className="page-subtitle">Análisis de rentabilidad y punto de equilibrio del período.</p>
       </div>
 
+      <CostCatalogSection overview={productOverview} metrics={storeMetrics} />
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <PnLSection pnl={pnl} />
+        <FinancialConsistencySection data={financialConsistency} />
         <BreakevenSection be={breakeven} />
       </div>
+
+      <FixedCostsSection storeId={storeId} onChanged={fetchData} />
 
       <CSVUploadSection storeId={storeId} onUploaded={fetchData} />
 

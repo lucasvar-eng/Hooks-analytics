@@ -6,12 +6,19 @@ const reportSchema = new mongoose.Schema({
   titulo: { type: String, required: true },
   contenido: { type: String, required: true }, // markdown
   section: { type: String }, // which page generated it (dashboard, meta, etc)
+  summary: { type: String, default: '' },
   dateRange: {
     from: { type: Date },
     to: { type: Date },
   },
+  snapshot: { type: mongoose.Schema.Types.Mixed, default: null },
+  exportVersion: { type: Number, default: 1 },
   tokensUsed: { type: Number, default: 0 },
   model: { type: String },
+  provider: { type: String },
+  confidence: { type: Number, default: null },
+  qualityNote: { type: String, default: '' },
+  generationMode: { type: String, enum: ['ai', 'fallback', 'manual'], default: 'manual' },
   createdAt: { type: Date, default: Date.now },
 });
 

@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const CashflowEntry = require('../models/CashflowEntry');
+const { getFixedCostsForRange } = require('./fixedCostService');
 const logger = require('../utils/logger');
 
 /**
@@ -155,7 +156,9 @@ async function getCashflowSummary(storeId, from, to) {
     },
   ]);
 
-  return summary || {
+  const fixedCosts = await getFixedCostsForRange(storeId, from, to);
+
+  const base = summary || {
     totalLiquidable: 0,
     totalComisiones: 0,
     totalBruto: 0,
@@ -164,6 +167,12 @@ async function getCashflowSummary(storeId, from, to) {
     totalEntries: 0,
     entriesRecibidas: 0,
     entriesPendientes: 0,
+  };
+
+  return {
+    ...base,
+    fixedCosts: fixedCosts.total,
+    netAfterFixed: (base.totalLiquidable || 0) - fixedCosts.total,
   };
 }
 

@@ -3,9 +3,9 @@ import MetricValue from '../common/MetricValue';
 
 const METRICS_MAP = {
   ordenesPositivas: { label: 'Ventas', prefix: '', suffix: '', decimals: 0 },
-  revenue: { label: 'Revenue', prefix: '$', suffix: '', decimals: 0, compact: true },
-  netRevenue: { label: 'Net Revenue', prefix: '$', suffix: '', decimals: 0, compact: true },
-  profit: { label: 'Profit', prefix: '$', suffix: '', decimals: 0, compact: true },
+  revenue: { label: 'Ingresos', prefix: '$', suffix: '', decimals: 0, compact: true },
+  netRevenue: { label: 'Ingresos netos', prefix: '$', suffix: '', decimals: 0, compact: true },
+  profit: { label: 'Ganancia', prefix: '$', suffix: '', decimals: 0, compact: true },
   profitMargin: { label: 'Margen', prefix: '', suffix: '%', decimals: 1 },
   adSpend: { label: 'Ad Spend', prefix: '$', suffix: '', decimals: 0, compact: true },
   roas: { label: 'ROAS', prefix: '', suffix: 'x', decimals: 2 },
@@ -20,7 +20,7 @@ const METRICS_MAP = {
   devoluciones: { label: 'Devol.', prefix: '', suffix: '', decimals: 0 },
 };
 
-const DEFAULT_METRICS = ['ordenesPositivas', 'revenue', 'trueRoas', 'profit', 'ncPct'];
+const DEFAULT_METRICS = ['ordenesPositivas', 'revenue', 'trueRoas', 'profit', 'conversionRate'];
 
 function getHealthBadge(current, objetivos) {
   if (!objetivos?.kpis) return { color: 'bg-gray-600', label: 'Sin objetivos' };
@@ -54,6 +54,18 @@ export default function StoreCard({ store, metrics, notes, alertCount = 0 }) {
   const current = metrics?.current || {};
   const deltas = metrics?.deltas || {};
   const badge = getHealthBadge(current, store.objetivos);
+  const platformLabel = store.plataforma === 'tiendanube' ? 'Tienda Nube' : store.plataforma === 'shopify' ? 'Shopify' : 'Manual';
+  const metaAccounts = Array.isArray(store.metaAdAccounts) ? store.metaAdAccounts.filter((item) => item?.id) : [];
+  const lastSync =
+    store.integrationStatus?.tiendanube?.lastSync ||
+    store.integrationStatus?.shopify?.lastSync ||
+    null;
+  const initials = (store.nombre || '?')
+    .split(' ')
+    .map((part) => part[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
 
   const metricKeys = store.metricasHome?.length ? store.metricasHome : DEFAULT_METRICS;
   const cardMetrics = metricKeys.map(key => ({ key, ...METRICS_MAP[key] })).filter(m => m.label);
@@ -66,10 +78,38 @@ export default function StoreCard({ store, metrics, notes, alertCount = 0 }) {
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2.5 min-w-0">
+          {store.logoUrl ? (
+            <img
+              src={store.logoUrl}
+              alt={store.nombre}
+              className="w-7 h-7 rounded-lg object-cover border border-white/[0.08] shrink-0"
+            />
+          ) : (
+            <div className="w-7 h-7 rounded-lg border border-white/[0.08] bg-white/[0.04] shrink-0 flex items-center justify-center text-[10px] font-semibold text-gray-300">
+              {initials}
+            </div>
+          )}
           <span className={`w-2 h-2 rounded-full shrink-0 ${badge.color}`} title={badge.label} />
-          <h3 className="font-bold text-[13px] text-white group-hover:text-blue-400 transition truncate">
-            {store.nombre}
-          </h3>
+          <div className="min-w-0">
+            <h3 className="font-bold text-[13px] text-white group-hover:text-blue-400 transition truncate">
+              {store.nombre}
+            </h3>
+            <div className="flex items-center gap-2 mt-0.5 min-w-0">
+              <p className="text-[9px] uppercase tracking-[0.22em] text-gray-600 truncate">
+                {platformLabel}
+              </p>
+              {store.integrationStatus?.metaAds?.connected && metaAccounts.length > 1 ? (
+                <span className="text-[9px] text-blue-300 truncate">
+                  Meta {metaAccounts.length} cuentas
+                </span>
+              ) : null}
+              {lastSync ? (
+                <span className="text-[9px] text-gray-700 truncate">
+                  Sync {new Date(lastSync).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })}
+                </span>
+              ) : null}
+            </div>
+          </div>
           {alertCount > 0 && (
             <span className="inline-flex items-center justify-center min-w-[16px] h-[16px] px-1 text-[9px] font-bold text-white bg-red-500 rounded-full shrink-0">
               {alertCount}

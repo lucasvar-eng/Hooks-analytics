@@ -45,6 +45,7 @@ const userSchema = new mongoose.Schema(
       apiKeyAuthTag: { type: String, select: false },
       modelAnalysis: { type: String },
       modelChat: { type: String },
+      modelReports: { type: String },
       // Global AI instructions (apply to all stores)
       globalInstructions: { type: String, default: '' },
       globalFiles: [{

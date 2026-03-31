@@ -3,12 +3,21 @@ import StoreCard from './StoreCard';
 function getStoreNotes(store, metrics) {
   const notes = [];
   const current = metrics?.current || {};
+  const metaAccounts = Array.isArray(store.metaAdAccounts) ? store.metaAdAccounts.filter((item) => item?.id) : [];
 
-  if (!store.integrationStatus?.tiendanube?.connected) {
-    notes.push({ text: 'TiendaNube no conectada' });
+  if (!store.integrationStatus?.tiendanube?.connected && !store.integrationStatus?.shopify?.connected) {
+    notes.push({ text: 'Tienda no conectada' });
+  }
+  if (store.plataforma === 'shopify' && store.integrationStatus?.shopify?.connected) {
+    notes.push({ text: 'Shopify conectada' });
+  }
+  if (store.plataforma === 'tiendanube' && store.integrationStatus?.tiendanube?.connected) {
+    notes.push({ text: 'Tienda Nube conectada' });
   }
   if (!store.integrationStatus?.metaAds?.connected) {
     notes.push({ text: 'Meta Ads no conectado' });
+  } else if (metaAccounts.length > 1) {
+    notes.push({ text: `Meta Ads con ${metaAccounts.length} cuentas conectadas` });
   }
   if (current.devoluciones > 0) {
     notes.push({ text: `${current.devoluciones} devoluciones recientes` });
@@ -40,7 +49,7 @@ function AddStoreCard({ onClick }) {
           Agregar tienda
         </p>
         <p className="text-[11px] text-gray-700 mt-1">
-          Conectá TiendaNube o Meta Ads
+          Conectá Tienda Nube, Shopify o cargala manual
         </p>
       </div>
     </button>

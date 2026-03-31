@@ -19,11 +19,11 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-[#0a0a0a] px-4">
+    <div className="app-shell min-h-screen flex flex-col items-center justify-center px-4">
       {/* Logo */}
       <div className="mb-8 text-center">
         <span className="text-[15px] font-extrabold tracking-[3px] text-white uppercase">
-          ECOM<span className="text-blue-500"> ANALYTICS</span>
+          HOOKS<span className="text-blue-500"> ANALYTICS</span>
         </span>
       </div>
 
@@ -101,7 +101,7 @@ export default function Login() {
       </div>
 
       <p className="mt-6 text-[12px] text-gray-600">
-        © 2024 Ecom Analytics
+        © 2026 Hooks Analytics
       </p>
     </div>
   );

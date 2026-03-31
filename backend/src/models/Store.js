@@ -3,19 +3,44 @@ const mongoose = require('mongoose');
 const storeSchema = new mongoose.Schema(
   {
     nombre: { type: String, required: true, trim: true },
+    plataforma: {
+      type: String,
+      enum: ['manual', 'tiendanube', 'shopify'],
+      default: 'manual',
+    },
+    logoUrl: { type: String },
+    storeUrl: { type: String },
 
     // TiendaNube
     tnAccessToken: { type: String },
     tnStoreId: { type: String },
     tnNombre: { type: String },
+    tnTokenSource: { type: String, enum: ['manual', 'cro_service'], default: 'manual' },
 
     // Meta OAuth (Sprint 3)
     metaAccessToken: { type: String },
     metaAdAccountId: { type: String },
+    metaAdAccounts: [
+      {
+        id: { type: String },
+        accountId: { type: String },
+        name: { type: String },
+        status: { type: Number },
+        currency: { type: String },
+        isPrimary: { type: Boolean, default: false },
+        connectedAt: { type: Date, default: Date.now },
+      },
+    ],
     metaPageId: { type: String },
     metaPixelId: { type: String },
     metaBusinessAccountId: { type: String },
     metaTokenExpiresAt: { type: Date },
+
+    // Shopify
+    shopifyAccessToken: { type: String },
+    shopifyShopDomain: { type: String },
+    shopifyShopName: { type: String },
+    shopifyShopId: { type: String },
 
     // Configuración financiera
     cotizacionDolar: { type: Number, default: 0 },
@@ -53,7 +78,7 @@ const storeSchema = new mongoose.Schema(
     // Home metrics config
     metricasHome: {
       type: [String],
-      default: ['ordenesPositivas', 'revenue', 'trueRoas', 'profit', 'ncPct'],
+      default: ['ordenesPositivas', 'revenue', 'trueRoas', 'profit', 'conversionRate'],
     },
 
     // Objetivos y benchmarks
@@ -123,6 +148,17 @@ const storeSchema = new mongoose.Schema(
       }],
     },
 
+    // Layouts editables por página
+    pageLayouts: { type: mongoose.Schema.Types.Mixed, default: {} },
+
+    // Google Sheets
+    googleSheets: {
+      spreadsheetId: { type: String, default: '' },
+      creativeMasterEnabled: { type: Boolean, default: false },
+      lastSync: { type: Date, default: null },
+      lastError: { type: String, default: '' },
+    },
+
     // Integration status
     integrationStatus: {
       tiendanube: {
@@ -133,9 +169,16 @@ const storeSchema = new mongoose.Schema(
         connected: { type: Boolean, default: false },
         lastSync: Date,
       },
+      shopify: {
+        connected: { type: Boolean, default: false },
+        lastSync: Date,
+      },
     },
   },
   { timestamps: true }
 );
+
+storeSchema.index({ tnStoreId: 1 }, { unique: true, sparse: true });
+storeSchema.index({ shopifyShopDomain: 1 }, { unique: true, sparse: true });
 
 module.exports = mongoose.model('Store', storeSchema);

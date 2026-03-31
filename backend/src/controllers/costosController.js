@@ -1,5 +1,6 @@
 const papa = require('papaparse');
 const Store = require('../models/Store');
+const FixedCost = require('../models/FixedCost');
 const { importProductCosts, getPnL, getBreakeven, getCostTemplate } = require('../services/costosService');
 const { recalculateAllOrders } = require('../services/orderFinancials');
 const logger = require('../utils/logger');
@@ -14,7 +15,11 @@ exports.uploadProductCosts = async (req, res) => {
     return res.status(400).json({ error: 'CSV parse error', details: errors.slice(0, 5) });
   }
 
-  const result = await importProductCosts(req.params.id, data);
+  const result = await importProductCosts(req.params.id, data, {
+    createdBy: req.user?._id,
+    source: 'csv',
+    effectiveFrom: req.body?.effectiveFrom,
+  });
 
   // Recalculate orders in background if costs changed
   if (result.updated > 0) {
@@ -65,4 +70,34 @@ exports.getBreakeven = async (req, res) => {
   const { from, to } = req.query;
   const be = await getBreakeven(req.params.id, from, to);
   res.json(be);
+};
+
+exports.listFixedCosts = async (req, res) => {
+  const items = await FixedCost.find({ storeId: req.params.id, active: true })
+    .sort({ createdAt: -1 })
+    .lean();
+  res.json(items);
+};
+
+exports.createFixedCost = async (req, res) => {
+  const item = await FixedCost.create({
+    storeId: req.params.id,
+    nombre: req.body.nombre,
+    categoria: req.body.categoria,
+    monto: req.body.monto,
+    cadence: req.body.cadence || 'monthly',
+    periodStart: req.body.periodStart,
+    periodEnd: req.body.periodEnd,
+    notes: req.body.notes,
+    createdBy: req.user?._id,
+  });
+  res.status(201).json(item);
+};
+
+exports.deleteFixedCost = async (req, res) => {
+  await FixedCost.findOneAndUpdate(
+    { _id: req.params.fixedCostId, storeId: req.params.id },
+    { $set: { active: false } }
+  );
+  res.json({ message: 'Fixed cost archived' });
 };

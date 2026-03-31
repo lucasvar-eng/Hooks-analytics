@@ -9,6 +9,9 @@ const syncLogSchema = new mongoose.Schema(
       enum: [
         'tiendanube_orders',
         'tiendanube_products',
+        'tiendanube_token_check',
+        'shopify_orders',
+        'shopify_products',
         'meta_structure',
         'meta_insights',
         'meta_token_refresh',

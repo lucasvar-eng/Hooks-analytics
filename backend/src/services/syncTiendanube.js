@@ -2,9 +2,12 @@ const tnAPI = require('./tiendanubeAPI');
 const Order = require('../models/Order');
 const Product = require('../models/Product');
 const SyncLog = require('../models/SyncLog');
+const { isCentralizedTiendanubeStore, invalidateTiendanubeToken } = require('../utils/tiendanubeToken');
 const { recalculateDailyMetric } = require('./metricCalculator');
 const { calculateOrderFinancials, classifyCustomer } = require('./orderFinancials');
 const { generateCashflowEntries } = require('./cashflow');
+const { rebuildCustomersFromOrders, calculateRFM } = require('./customerService');
+const { refreshProductDerivedMetrics } = require('./productService');
 const logger = require('../utils/logger');
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -12,6 +15,7 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 function mapTnOrderToSchema(tnOrder) {
   return {
     tnOrderNumber: String(tnOrder.number),
+    externalCustomerId: tnOrder.customer?.id ? String(tnOrder.customer.id) : undefined,
     customerName: tnOrder.customer?.name,
     customerEmail: tnOrder.customer?.email?.toLowerCase(),
     totalOrden: parseFloat(tnOrder.total) || 0,
@@ -54,19 +58,35 @@ async function syncOrders(store) {
 
   try {
     while (hasMore) {
-      const response = await tnAPI.get(
-        store.tnStoreId,
-        '/orders',
-        store.tnAccessToken,
-        {
-          updated_at_min: lastSync.toISOString(),
-          per_page: perPage,
-          page,
-          status: 'any',
-          fields:
-            'id,number,total,subtotal,discount,shipping_cost_customer,shipping_cost_owner,gateway,gateway_name,payment_status,payment_details,paid_at,customer,products,status,created_at,updated_at,cancelled_at',
-        }
-      );
+      let response;
+      try {
+        response = await tnAPI.get(
+          store.tnStoreId,
+          '/orders',
+          store.tnAccessToken,
+          {
+            updated_at_min: lastSync.toISOString(),
+            per_page: perPage,
+            page,
+            status: 'any',
+            fields:
+              'id,number,total,subtotal,discount,shipping_cost_customer,shipping_cost_owner,gateway,gateway_name,payment_status,payment_details,paid_at,customer,products,status,created_at,updated_at,cancelled_at',
+          }
+        );
+      } catch (error) {
+        if (error.response?.status !== 422) throw error;
+        response = await tnAPI.get(
+          store.tnStoreId,
+          '/orders',
+          store.tnAccessToken,
+          {
+            updated_at_min: lastSync.toISOString(),
+            per_page: perPage,
+            page,
+            status: 'any',
+          }
+        );
+      }
 
       const orders = response.data;
 
@@ -108,6 +128,10 @@ async function syncOrders(store) {
       await recalculateDailyMetric(store._id, new Date(dateStr));
     }
 
+    await rebuildCustomersFromOrders(store._id);
+    await calculateRFM(store._id);
+    await refreshProductDerivedMetrics(store._id);
+
     log.status = 'success';
     log.recordsFetched = totalRecords;
     log.duration = Date.now() - startTime;
@@ -128,17 +152,29 @@ async function syncOrders(store) {
 
 function mapTnProductToSchema(tnProduct) {
   const mainVariant = tnProduct.variants?.[0];
+  const localizedName = tnProduct.name?.es || tnProduct.name?.en || tnProduct.name;
+  const localizedHandle = tnProduct.handle?.es || tnProduct.handle?.en || tnProduct.handle || '';
+  const rootCategory = (tnProduct.categories || []).find((category) => !category.parent);
+  const childCategory = (tnProduct.categories || []).find((category) => category.parent);
+
   return {
-    nombre: tnProduct.name?.es || tnProduct.name?.en || tnProduct.name,
+    nombre: localizedName,
+    sku: mainVariant?.sku || '',
+    handle: localizedHandle,
+    productUrl: tnProduct.canonical_url || (localizedHandle ? `https://${tnProduct.store_domain || ''}/productos/${localizedHandle}` : ''),
+    activo: Boolean(tnProduct.published),
+    estadoPublicacion: tnProduct.published ? 'activo' : 'inactivo',
     precio: parseFloat(mainVariant?.price || tnProduct.price || 0),
     stock: tnProduct.variants?.reduce((sum, v) => sum + (v.stock || 0), 0) || 0,
     variantes: (tnProduct.variants || []).map((v) => ({
       tnVariantId: String(v.id),
       nombre: v.name || '',
+      sku: v.sku || '',
       precio: parseFloat(v.price || 0),
       stock: v.stock || 0,
     })),
-    categoria: tnProduct.categories?.[0]?.name?.es || '',
+    categoria: rootCategory?.name?.es || rootCategory?.name?.en || '',
+    subcategoria: childCategory?.name?.es || childCategory?.name?.en || '',
     imagenUrl: tnProduct.images?.[0]?.src,
   };
 }
@@ -158,17 +194,28 @@ async function syncProducts(store) {
 
   try {
     while (hasMore) {
-      const response = await tnAPI.get(
-        store.tnStoreId,
-        '/products',
-        store.tnAccessToken,
-        {
-          per_page: perPage,
-          page,
-          fields:
-            'id,name,price,variants,categories,images,created_at,updated_at',
-        }
-      );
+      let response;
+      try {
+        response = await tnAPI.get(
+          store.tnStoreId,
+          '/products',
+          store.tnAccessToken,
+          {
+            per_page: perPage,
+            page,
+            fields:
+              'id,name,price,variants,categories,images,created_at,updated_at',
+          }
+        );
+      } catch (error) {
+        if (error.response?.status !== 422) throw error;
+        response = await tnAPI.get(
+          store.tnStoreId,
+          '/products',
+          store.tnAccessToken,
+          { per_page: perPage, page }
+        );
+      }
 
       const products = response.data;
 
@@ -207,4 +254,50 @@ async function syncProducts(store) {
   }
 }
 
-module.exports = { syncOrders, syncProducts };
+async function checkTiendanubeTokenHealth(store) {
+  const startTime = Date.now();
+  const log = await SyncLog.create({
+    storeId: store._id,
+    type: 'tiendanube_token_check',
+    status: 'running',
+  });
+
+  try {
+    if (!store?.tnStoreId || !isCentralizedTiendanubeStore(store.tnStoreId)) {
+      log.status = 'success';
+      log.recordsFetched = 0;
+      log.duration = Date.now() - startTime;
+      await log.save();
+      return { checked: false, reason: 'not_centralized' };
+    }
+
+    invalidateTiendanubeToken(store.tnStoreId);
+    const info = await tnAPI.validateConnection(store.tnStoreId, null);
+
+    log.status = 'success';
+    log.recordsFetched = 1;
+    log.duration = Date.now() - startTime;
+    await log.save();
+
+    logger.info(`TN token health OK for ${store.nombre}`);
+    return {
+      checked: true,
+      ok: true,
+      storeName: info?.name?.es || info?.name || info?.business_name || null,
+    };
+  } catch (error) {
+    log.status = 'error';
+    log.error = error.message;
+    log.duration = Date.now() - startTime;
+    await log.save();
+    logger.error(`TN token health failed for ${store.nombre}: ${error.message}`);
+    return {
+      checked: true,
+      ok: false,
+      status: error.response?.status || null,
+      message: error.message,
+    };
+  }
+}
+
+module.exports = { syncOrders, syncProducts, checkTiendanubeTokenHealth };

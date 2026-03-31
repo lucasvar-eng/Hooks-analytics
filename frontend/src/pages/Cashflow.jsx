@@ -147,6 +147,21 @@ export default function Cashflow() {
         <SummaryCard label="Pendiente" value={summary?.pendiente} sub={`${summary?.entriesPendientes || 0} cuotas`} color="text-amber-400" />
       </div>
 
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <SummaryCard
+          label="Costos fijos prorrateados"
+          value={summary?.fixedCosts}
+          color="text-red-400"
+          sub="Descontados sobre el período filtrado"
+        />
+        <SummaryCard
+          label="Neto después de fijos"
+          value={summary?.netAfterFixed}
+          color={(summary?.netAfterFixed || 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}
+          sub="Liquidable menos estructura fija"
+        />
+      </div>
+
       {/* Comisiones card */}
       <div className="card p-4">
         <div className="flex items-center justify-between">

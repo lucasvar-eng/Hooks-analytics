@@ -7,16 +7,50 @@ exports.list = async (req, res) => {
 };
 
 exports.create = async (req, res) => {
-  const { nombre, url, notas } = req.body;
-  const competitor = await Competitor.create({ storeId: req.params.id, nombre, url, notas });
+  const {
+    nombre,
+    url,
+    positioning,
+    avatar,
+    awarenessLevel,
+    mainOffer,
+    angles,
+    territories,
+    objectionsDetected,
+    notas,
+  } = req.body;
+  const competitor = await Competitor.create({
+    storeId: req.params.id,
+    nombre,
+    url,
+    positioning,
+    avatar,
+    awarenessLevel,
+    mainOffer,
+    angles,
+    territories,
+    objectionsDetected,
+    notas,
+  });
   res.status(201).json(competitor);
 };
 
 exports.update = async (req, res) => {
-  const { nombre, url, notas } = req.body;
+  const {
+    nombre,
+    url,
+    positioning,
+    avatar,
+    awarenessLevel,
+    mainOffer,
+    angles,
+    territories,
+    objectionsDetected,
+    notas,
+  } = req.body;
   const competitor = await Competitor.findOneAndUpdate(
     { _id: req.params.competitorId, storeId: req.params.id },
-    { nombre, url, notas },
+    { nombre, url, positioning, avatar, awarenessLevel, mainOffer, angles, territories, objectionsDetected, notas },
     { new: true }
   );
   if (!competitor) return res.status(404).json({ error: 'Not found' });
@@ -53,6 +87,37 @@ exports.analyze = async (req, res) => {
     await competitor.save();
 
     res.json({ analysis: result.analysis, tokensUsed: result.tokensUsed });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.opportunities = async (req, res) => {
+  try {
+    const competitor = await Competitor.findOne({ _id: req.params.competitorId, storeId: req.params.id });
+    if (!competitor) return res.status(404).json({ error: 'Competidor no encontrado' });
+
+    const to = new Date();
+    const from = new Date();
+    from.setDate(from.getDate() - 30);
+
+    const result = await aiService.generateWorkflow(
+      'competitor_opportunities',
+      req.params.id,
+      from.toISOString().split('T')[0],
+      to.toISOString().split('T')[0],
+      req.user._id,
+      {
+        competitor: {
+          nombre: competitor.nombre,
+          url: competitor.url,
+          notas: competitor.notas,
+          analysisResult: competitor.analysisResult,
+        },
+      }
+    );
+
+    res.json(result);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

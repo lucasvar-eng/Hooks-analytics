@@ -2,6 +2,9 @@ const express = require('express');
 const router = express.Router();
 const insightController = require('../controllers/insightController');
 const { auth } = require('../middleware/auth');
+const storeContext = require('../middleware/storeContext');
+
+router.use('/stores/:id', auth, storeContext);
 
 router.get('/stores/:id/insights', auth, insightController.list);
 router.get('/stores/:id/insights/top', auth, insightController.getTopInsight);

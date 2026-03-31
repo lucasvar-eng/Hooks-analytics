@@ -1,4 +1,4 @@
-const prefix = '[ecom-analytics]';
+const prefix = '[hooks-analytics]';
 
 const logger = {
   info: (...args) => console.log(prefix, ...args),

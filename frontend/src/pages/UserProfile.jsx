@@ -8,6 +8,92 @@ const PROVIDERS = [
   { value: 'openai', label: 'OpenAI (GPT)' },
 ];
 
+const MODEL_OPTIONS = {
+  anthropic: {
+    analysis: [
+      { value: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4' },
+      { value: 'claude-opus-4-1-20250805', label: 'Claude Opus 4.1' },
+      { value: 'claude-opus-4-20250514', label: 'Claude Opus 4' },
+      { value: 'claude-3-7-sonnet-latest', label: 'Claude Sonnet 3.7' },
+      { value: '__custom__', label: 'Personalizado' },
+    ],
+    chat: [
+      { value: 'claude-3-5-haiku-latest', label: 'Claude Haiku 3.5' },
+      { value: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4' },
+      { value: 'claude-3-haiku-20240307', label: 'Claude Haiku 3' },
+      { value: '__custom__', label: 'Personalizado' },
+    ],
+    reports: [
+      { value: 'claude-opus-4-1-20250805', label: 'Claude Opus 4.1' },
+      { value: 'claude-opus-4-20250514', label: 'Claude Opus 4' },
+      { value: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4' },
+      { value: '__custom__', label: 'Personalizado' },
+    ],
+  },
+  openai: {
+    analysis: [
+      { value: 'gpt-5.1', label: 'GPT-5.1' },
+      { value: 'gpt-5', label: 'GPT-5' },
+      { value: 'gpt-4.1', label: 'GPT-4.1' },
+      { value: '__custom__', label: 'Personalizado' },
+    ],
+    chat: [
+      { value: 'gpt-5-mini', label: 'GPT-5 mini' },
+      { value: 'gpt-4.1-mini', label: 'GPT-4.1 mini' },
+      { value: 'gpt-4o-mini', label: 'GPT-4o mini' },
+      { value: '__custom__', label: 'Personalizado' },
+    ],
+    reports: [
+      { value: 'gpt-5.1', label: 'GPT-5.1' },
+      { value: 'gpt-5-pro', label: 'GPT-5 pro' },
+      { value: 'gpt-4.1', label: 'GPT-4.1' },
+      { value: '__custom__', label: 'Personalizado' },
+    ],
+  },
+};
+
+function isCustomModel(provider, purpose, value) {
+  const options = MODEL_OPTIONS[provider]?.[purpose] || [];
+  return Boolean(value) && !options.some((option) => option.value === value);
+}
+
+function ModelField({ label, purpose, value, onChange, provider, placeholder, help }) {
+  const options = MODEL_OPTIONS[provider]?.[purpose] || [];
+  const custom = isCustomModel(provider, purpose, value);
+  const selectValue = custom ? '__custom__' : (value || options[0]?.value || '');
+
+  return (
+    <div>
+      <label className="kpi-label mb-1 block">{label}</label>
+      <select
+        value={selectValue}
+        onChange={(e) => {
+          if (e.target.value === '__custom__') {
+            onChange('');
+            return;
+          }
+          onChange(e.target.value);
+        }}
+        className="input-dark w-full"
+      >
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>{option.label}</option>
+        ))}
+      </select>
+      {(custom || selectValue === '__custom__') && (
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className="input-dark w-full font-mono mt-2"
+        />
+      )}
+      <p className="text-[11px] text-app-secondary mt-1">{help}</p>
+    </div>
+  );
+}
+
 export default function UserProfile() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -17,10 +103,12 @@ export default function UserProfile() {
   const [hasApiKey, setHasApiKey] = useState(false);
   const [modelAnalysis, setModelAnalysis] = useState('');
   const [modelChat, setModelChat] = useState('');
+  const [modelReports, setModelReports] = useState('');
   const [savingConfig, setSavingConfig] = useState(false);
   const [configMsg, setConfigMsg] = useState(null);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState(null);
+  const [readiness, setReadiness] = useState(null);
   const [instructions, setInstructions] = useState('');
   const [savingInstructions, setSavingInstructions] = useState(false);
   const [instrMsg, setInstrMsg] = useState(null);
@@ -36,8 +124,10 @@ export default function UserProfile() {
       setHasApiKey(data.hasApiKey || false);
       setModelAnalysis(data.modelAnalysis || '');
       setModelChat(data.modelChat || '');
+      setModelReports(data.modelReports || '');
       setInstructions(data.globalInstructions || '');
       setFiles(data.globalFiles || []);
+      setReadiness(data.readiness || null);
     } catch {}
   };
 
@@ -45,7 +135,7 @@ export default function UserProfile() {
     setSavingConfig(true);
     setConfigMsg(null);
     try {
-      const payload = { provider, modelAnalysis, modelChat };
+      const payload = { provider, modelAnalysis, modelChat, modelReports };
       if (apiKey.trim()) payload.apiKey = apiKey.trim();
       await api.put('/api/user/ai-config', payload);
       setConfigMsg({ ok: true, text: 'Configuración guardada' });
@@ -62,7 +152,7 @@ export default function UserProfile() {
     setTestResult(null);
     try {
       const { data } = await api.post('/api/user/ai-test');
-      setTestResult({ ok: true, text: `Conexión exitosa (${data.provider})` });
+      setTestResult({ ok: true, text: `Conexión exitosa (${data.provider}${data.source ? ` · ${data.source === 'user' ? 'key personal' : 'fallback .env'}` : ''})` });
     } catch (err) {
       setTestResult({ ok: false, text: err.response?.data?.error || 'Error de conexión' });
     }
@@ -112,13 +202,13 @@ export default function UserProfile() {
   };
 
   const defaultModels = provider === 'anthropic'
-    ? { analysis: 'claude-sonnet-4-6', chat: 'claude-haiku-4-5-20251001' }
-    : { analysis: 'gpt-4o', chat: 'gpt-4o-mini' };
+    ? { analysis: 'claude-sonnet-4-20250514', chat: 'claude-3-5-haiku-latest', reports: 'claude-opus-4-1-20250805' }
+    : { analysis: 'gpt-5.1', chat: 'gpt-5-mini', reports: 'gpt-5.1' };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a]">
+    <div className="app-shell min-h-screen">
       {/* Header */}
-      <header className="bg-[#0f0f0f] border-b border-white/[0.06] px-4 py-3">
+      <header className="app-surface border-b border-white/[0.06] px-4 py-3">
         <div className="max-w-3xl mx-auto flex items-center justify-between">
           <button onClick={() => navigate('/')} className="text-[13px] text-blue-400 hover:text-blue-300 flex items-center gap-1 transition">
             ← Volver
@@ -150,6 +240,16 @@ export default function UserProfile() {
         <div className="card p-5">
           <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-4">Configuración AI</p>
           <div className="space-y-4">
+            {readiness && (
+              <div className={`rounded-lg border p-3 ${readiness.ready ? 'border-emerald-500/20 bg-emerald-500/[0.06]' : 'border-amber-500/20 bg-amber-500/[0.06]'}`}>
+                <p className={`text-[12px] font-medium ${readiness.ready ? 'text-emerald-300' : 'text-amber-200'}`}>
+                  {readiness.ready ? 'AI lista para usar con key personal' : 'AI sin key personal guardada'}
+                </p>
+                <p className="text-[12px] text-app-secondary mt-1">
+                  Análisis usa modelo fuerte, chat usa modelo rápido y reportes/automatizaciones usan el modelo de reportes. Si no hay key disponible, algunas automatizaciones caen a fallback local.
+                </p>
+              </div>
+            )}
             <div>
               <label className="kpi-label mb-1 block">Proveedor</label>
               <select value={provider} onChange={(e) => setProvider(e.target.value)} className="input-dark w-full">
@@ -172,15 +272,34 @@ export default function UserProfile() {
                 {provider === 'anthropic' ? 'Conseguila en console.anthropic.com' : 'Conseguila en platform.openai.com'}
               </p>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="kpi-label mb-1 block">Modelo análisis</label>
-                <input type="text" value={modelAnalysis} onChange={(e) => setModelAnalysis(e.target.value)} placeholder={defaultModels.analysis} className="input-dark w-full font-mono" />
-              </div>
-              <div>
-                <label className="kpi-label mb-1 block">Modelo chat</label>
-                <input type="text" value={modelChat} onChange={(e) => setModelChat(e.target.value)} placeholder={defaultModels.chat} className="input-dark w-full font-mono" />
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <ModelField
+                label="Modelo análisis"
+                purpose="analysis"
+                value={modelAnalysis}
+                onChange={setModelAnalysis}
+                provider={provider}
+                placeholder={defaultModels.analysis}
+                help="Recomendado: modelo fuerte para análisis largos y reportes."
+              />
+              <ModelField
+                label="Modelo chat"
+                purpose="chat"
+                value={modelChat}
+                onChange={setModelChat}
+                provider={provider}
+                placeholder={defaultModels.chat}
+                help="Recomendado: modelo más rápido y barato para ida y vuelta."
+              />
+              <ModelField
+                label="Modelo reportes"
+                purpose="reports"
+                value={modelReports}
+                onChange={setModelReports}
+                provider={provider}
+                placeholder={defaultModels.reports}
+                help="Usado por reportes, workflows y automatizaciones."
+              />
             </div>
             <div className="flex items-center gap-3 pt-1">
               <button onClick={saveConfig} disabled={savingConfig} className="btn-primary disabled:opacity-50">

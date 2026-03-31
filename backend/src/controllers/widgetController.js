@@ -1,48 +1,123 @@
 const Widget = require('../models/Widget');
 
 const DEFAULT_DASHBOARD = [
-  // Row 1: Main KPIs (8 small cards)
-  { type: 'separator', title: 'KPIs Principales', size: 'full', config: {} },
+  { type: 'separator', title: 'Salud ejecutiva', size: 'full', config: {} },
   { type: 'kpi', title: 'Órdenes', size: 'sm', config: { metricKey: 'ordenesPositivas', prefix: '', suffix: '', decimals: 0 } },
-  { type: 'kpi', title: 'Revenue', size: 'sm', config: { metricKey: 'revenue', prefix: '$', suffix: '', decimals: 0, compact: true } },
+  { type: 'kpi', title: 'Ingresos', size: 'sm', config: { metricKey: 'revenue', metricLabel: 'Ingresos', prefix: '$', suffix: '', decimals: 0, compact: true } },
   { type: 'kpi', title: 'Ad Spend', size: 'sm', config: { metricKey: 'adSpend', prefix: '$', suffix: '', decimals: 0, compact: true } },
-  { type: 'kpi', title: 'Profit', size: 'sm', config: { metricKey: 'profit', prefix: '$', suffix: '', decimals: 0, compact: true } },
+  { type: 'kpi', title: 'Ganancia', size: 'sm', config: { metricKey: 'profit', metricLabel: 'Ganancia', prefix: '$', suffix: '', decimals: 0, compact: true } },
   { type: 'kpi', title: 'Margen %', size: 'sm', config: { metricKey: 'profitMargin', prefix: '', suffix: '%', decimals: 1, targetKey: 'profitMarginMin' } },
   { type: 'kpi', title: 'ROAS', size: 'sm', config: { metricKey: 'roas', prefix: '', suffix: 'x', decimals: 2, targetKey: 'roasTarget' } },
   { type: 'kpi', title: 'True ROAS', size: 'sm', config: { metricKey: 'trueRoas', prefix: '', suffix: 'x', decimals: 2, targetKey: 'trueRoasTarget' } },
   { type: 'kpi', title: 'CPA', size: 'sm', config: { metricKey: 'cpa', prefix: '$', suffix: '', decimals: 0, targetKey: 'cpaMaximo', inverse: true } },
+  {
+    type: 'period-comparison',
+    title: 'Comparación de ingresos',
+    size: 'full',
+    config: {
+      metricKey: 'revenue',
+      metricLabel: 'Ingresos',
+      prefix: '$',
+      suffix: '',
+      decimals: 0,
+      compact: true,
+    },
+  },
 
-  // Row 2: Tienda group + NC/RC group
+  { type: 'separator', title: 'Adquisición y conversión', size: 'full', config: {} },
+  {
+    type: 'line-chart',
+    title: 'Tendencia de Ad Spend',
+    size: 'lg',
+    config: {
+      metricKey: 'adSpend',
+      metricLabel: 'Ad Spend',
+      prefix: '$',
+      suffix: '',
+      decimals: 0,
+      compact: true,
+    },
+  },
+  {
+    type: 'area-chart',
+    title: 'Tendencia de ROAS',
+    size: 'lg',
+    config: {
+      metricKey: 'roas',
+      metricLabel: 'ROAS',
+      prefix: '',
+      suffix: 'x',
+      decimals: 2,
+    },
+  },
+  { type: 'funnel-chart', title: 'Embudo de Meta Ads', size: 'md', config: { funnelPreset: 'meta' } },
+  {
+    type: 'heatmap',
+    title: 'Mapa de ingresos diarios',
+    size: 'full',
+    config: {
+      metricKey: 'revenue',
+      metricLabel: 'Ingresos',
+      prefix: '$',
+      suffix: '',
+      decimals: 0,
+      compact: true,
+    },
+  },
+
+  { type: 'separator', title: 'Tienda y clientes', size: 'full', config: {} },
   { type: 'kpi-group', title: 'Tienda', size: 'md', config: { metrics: [
     { key: 'ordenesPositivas', label: 'Órdenes totales', prefix: '', suffix: '', decimals: 0 },
     { key: 'ordenesPositivas', label: 'Órdenes >$0', prefix: '', suffix: '', decimals: 0 },
-    { key: 'revenue', label: 'Revenue', prefix: '$', suffix: '', decimals: 0, compact: true },
-    { key: 'netRevenue', label: 'Net Revenue', prefix: '$', suffix: '', decimals: 0, compact: true },
-    { key: 'aov', label: 'AOV', prefix: '$', suffix: '', decimals: 0 },
-    { key: 'aovNeto', label: 'AOV Neto', prefix: '$', suffix: '', decimals: 0 },
+    { key: 'revenue', label: 'Ingresos', prefix: '$', suffix: '', decimals: 0, compact: true },
+    { key: 'netRevenue', label: 'Ingresos netos', prefix: '$', suffix: '', decimals: 0, compact: true },
+    { key: 'aov', label: 'Ticket promedio', prefix: '$', suffix: '', decimals: 0 },
+    { key: 'aovNeto', label: 'Ticket neto', prefix: '$', suffix: '', decimals: 0 },
     { key: 'devoluciones', label: 'Devoluciones', prefix: '', suffix: '', decimals: 0 },
   ] } },
   { type: 'kpi-group', title: 'Clientes Nuevos vs Recurrentes', size: 'md', config: { metrics: [
     { key: 'ncPct', label: 'NC %', prefix: '', suffix: '%', decimals: 1 },
     { key: 'ncOrdenes', label: 'NC Órdenes', prefix: '', suffix: '', decimals: 0 },
-    { key: 'ncRevenue', label: 'NC Revenue', prefix: '$', suffix: '', decimals: 0, compact: true },
+    { key: 'ncRevenue', label: 'Ingresos NC', prefix: '$', suffix: '', decimals: 0, compact: true },
     { key: 'ncCpa', label: 'NC CPA', prefix: '$', suffix: '', decimals: 0 },
     { key: 'ncRoas', label: 'NC ROAS', prefix: '', suffix: 'x', decimals: 2 },
     { key: 'rcOrdenes', label: 'RC Órdenes', prefix: '', suffix: '', decimals: 0 },
-    { key: 'rcRevenue', label: 'RC Revenue', prefix: '$', suffix: '', decimals: 0, compact: true },
+    { key: 'rcRevenue', label: 'Ingresos RC', prefix: '$', suffix: '', decimals: 0, compact: true },
   ] } },
+  {
+    type: 'donut-chart',
+    title: 'Mix de ingresos NC vs RC',
+    size: 'md',
+    config: {
+      metrics: [
+        { key: 'ncRevenue', label: 'Ingresos NC', prefix: '$', suffix: '', decimals: 0, compact: true },
+        { key: 'rcRevenue', label: 'Ingresos RC', prefix: '$', suffix: '', decimals: 0, compact: true },
+      ],
+    },
+  },
 
-  // Row 3: Costos
+  { type: 'separator', title: 'Costos y operación', size: 'full', config: {} },
   { type: 'kpi-group', title: 'Costos', size: 'full', config: { metrics: [
-    { key: 'totalCostoProductos', label: 'COGS', prefix: '$', suffix: '', decimals: 0 },
+    { key: 'totalCostoProductos', label: 'Costo de productos', prefix: '$', suffix: '', decimals: 0 },
     { key: 'totalCostoEnvio', label: 'Costo Envío', prefix: '$', suffix: '', decimals: 0 },
     { key: 'totalComisionPago', label: 'Comisión Pago', prefix: '$', suffix: '', decimals: 0 },
     { key: 'totalComisionCuotas', label: 'Comisión Cuotas', prefix: '$', suffix: '', decimals: 0 },
     { key: 'totalImpuestosIBB', label: 'IBB', prefix: '$', suffix: '', decimals: 0 },
-    { key: 'totalFeePlataforma', label: 'Fee Plataforma', prefix: '$', suffix: '', decimals: 0 },
+    { key: 'totalFeePlataforma', label: 'Cargo de plataforma', prefix: '$', suffix: '', decimals: 0 },
   ] } },
-
-  // Row 4: Latest sales
+  {
+    type: 'donut-chart',
+    title: 'Composición de costos',
+    size: 'md',
+    config: {
+      metrics: [
+        { key: 'totalCostoProductos', label: 'Costo de productos', prefix: '$', suffix: '', decimals: 0, compact: true },
+        { key: 'totalCostoEnvio', label: 'Costo Envío', prefix: '$', suffix: '', decimals: 0, compact: true },
+        { key: 'totalComisionPago', label: 'Comisión Pago', prefix: '$', suffix: '', decimals: 0, compact: true },
+        { key: 'totalFeePlataforma', label: 'Cargo de plataforma', prefix: '$', suffix: '', decimals: 0, compact: true },
+      ],
+    },
+  },
   { type: 'table', title: 'Últimas Ventas', size: 'full', config: { dataSource: 'latest-sales' } },
 ];
 

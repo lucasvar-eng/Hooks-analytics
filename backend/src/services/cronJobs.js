@@ -1,16 +1,20 @@
 const cron = require('node-cron');
 const Store = require('../models/Store');
-const { syncOrders, syncProducts } = require('./syncTiendanube');
+const { syncOrders, syncProducts, checkTiendanubeTokenHealth } = require('./syncTiendanube');
 const { syncMetaStructure, syncMetaInsights, refreshMetaTokens } = require('./syncMeta');
 const { updateCashflowStates } = require('./cashflow');
 const { runDiagnostics } = require('./diagnosticsService');
+const { runDueRulesForAllStores } = require('./automationService');
 const logger = require('../utils/logger');
 
 async function runForTnStores(jobName, syncFn) {
   logger.info(`Cron: ${jobName} starting...`);
   const stores = await Store.find({
     'integrationStatus.tiendanube.connected': true,
-    tnAccessToken: { $exists: true, $ne: '' },
+    $or: [
+      { tnAccessToken: { $exists: true, $ne: '' } },
+      { tnTokenSource: 'cro_service' },
+    ],
   });
 
   for (const store of stores) {
@@ -21,6 +25,24 @@ async function runForTnStores(jobName, syncFn) {
     }
   }
   logger.info(`Cron: ${jobName} finished (${stores.length} stores)`);
+}
+
+async function runTiendanubeTokenHealthCheck() {
+  logger.info('Cron: tnTokenHealthCheck starting...');
+  const stores = await Store.find({
+    'integrationStatus.tiendanube.connected': true,
+    tnTokenSource: 'cro_service',
+  });
+
+  for (const store of stores) {
+    try {
+      await checkTiendanubeTokenHealth(store);
+    } catch (error) {
+      logger.error(`Cron tnTokenHealthCheck failed for ${store.nombre}: ${error.message}`);
+    }
+  }
+
+  logger.info(`Cron: tnTokenHealthCheck finished (${stores.length} stores)`);
 }
 
 async function runForMetaStores(jobName, syncFn) {
@@ -42,6 +64,7 @@ async function runForMetaStores(jobName, syncFn) {
 
 function startCronJobs() {
   // TiendaNube
+  cron.schedule('15 */2 * * *', () => runTiendanubeTokenHealthCheck());
   cron.schedule('0 */4 * * *', () => runForTnStores('syncTnOrders', syncOrders));
   cron.schedule('0 */12 * * *', () => runForTnStores('syncTnProducts', syncProducts));
 
@@ -81,7 +104,18 @@ function startCronJobs() {
     }
   });
 
-  logger.info('Cron jobs scheduled: TN orders(4h), TN products(12h), Meta structure(12h), Meta insights(4x/day), Meta tokens(daily), Cashflow states(daily), Diagnostics(6h)');
+  // Local automations
+  cron.schedule('15 * * * *', async () => {
+    logger.info('Cron: automation rules starting...');
+    try {
+      const result = await runDueRulesForAllStores();
+      logger.info(`Cron: automation rules finished (${result.total} due, ${result.success} ok, ${result.error} error)`);
+    } catch (error) {
+      logger.error(`Cron automation rules failed: ${error.message}`);
+    }
+  });
+
+  logger.info('Cron jobs scheduled: TN token health(2h), TN orders(4h), TN products(12h), Meta structure(12h), Meta insights(4x/day), Meta tokens(daily), Cashflow states(daily), Diagnostics(6h), Automations(hourly)');
 }
 
 module.exports = { startCronJobs };

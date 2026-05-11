@@ -61,10 +61,12 @@ exports.callback = async (req, res, next) => {
 
     logger.info(`TN OAuth complete for store ${store.nombre} (${user_id})`);
 
-    // Redirect to frontend
-    res.redirect(`/store/${storeId}?tn_connected=true`);
+    // Redirect a Settings así el usuario ve la confirmación inmediata + puede continuar la config.
+    res.redirect(`/store/${storeId}/settings?tn_connected=true`);
   } catch (error) {
     logger.error(`TN OAuth callback error: ${error.message}`);
-    res.redirect('/?error=tn_oauth_failed');
+    const storeId = req.query.state;
+    const target = storeId ? `/store/${storeId}/settings?error=tn_oauth_failed` : '/?error=tn_oauth_failed';
+    res.redirect(target);
   }
 };

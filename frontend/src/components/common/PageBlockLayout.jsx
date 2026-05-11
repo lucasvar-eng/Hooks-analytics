@@ -438,12 +438,26 @@ export default function PageBlockLayout({
   initiallyEmpty = false,
   blockContext = {},
   presetTemplates = [],
+  defaultPresetId = null,
 }) {
+  // Si no hay layout guardado y se definió un defaultPresetId, arrancar con ese preset
+  // en vez de mostrar "Esta hoja está vacía". Tiendas existentes que nunca guardaron
+  // un layout dejan de aterrizar en una pantalla vacía sin contexto.
+  const resolveDefault = (raw, blockConfigRaw) => {
+    const hasRawSlots = Array.isArray(raw) && raw.length > 0;
+    if (hasRawSlots || !defaultPresetId) {
+      return { slots: normalizeSlots(blocks, raw, initiallyEmpty), config: blockConfigRaw };
+    }
+    const preset = presetTemplates.find((p) => (p.id || `custom-${presetTemplates.indexOf(p)}`) === defaultPresetId);
+    if (!preset) return { slots: normalizeSlots(blocks, raw, initiallyEmpty), config: blockConfigRaw };
+    const presetSlots = buildPresetSlots(blocks, (block) => (preset.blockIds || []).includes(block.id));
+    return { slots: normalizeSlots(blocks, presetSlots, false), config: null };
+  };
+
   const [editMode, setEditMode] = useState(false);
-  const [slots, setSlots] = useState(() => normalizeSlots(blocks, storeLayouts?.[pageKey]?.slots, initiallyEmpty));
-  const [blockConfig, setBlockConfig] = useState(() =>
-    normalizeBlockConfig(blocks, normalizeSlots(blocks, storeLayouts?.[pageKey]?.slots, initiallyEmpty), storeLayouts?.[pageKey]?.blockConfig)
-  );
+  const initial = resolveDefault(storeLayouts?.[pageKey]?.slots, storeLayouts?.[pageKey]?.blockConfig);
+  const [slots, setSlots] = useState(() => initial.slots);
+  const [blockConfig, setBlockConfig] = useState(() => normalizeBlockConfig(blocks, initial.slots, initial.config));
   const [saving, setSaving] = useState(false);
   const [dragIndex, setDragIndex] = useState(null);
   const [editingBlockId, setEditingBlockId] = useState(null);
@@ -451,10 +465,11 @@ export default function PageBlockLayout({
   const [libraryFilter, setLibraryFilter] = useState('all');
 
   useEffect(() => {
-    const normalizedSlots = normalizeSlots(blocks, storeLayouts?.[pageKey]?.slots, initiallyEmpty);
-    setSlots(normalizedSlots);
-    setBlockConfig(normalizeBlockConfig(blocks, normalizedSlots, storeLayouts?.[pageKey]?.blockConfig));
-  }, [blocks, initiallyEmpty, pageKey, storeLayouts]);
+    const resolved = resolveDefault(storeLayouts?.[pageKey]?.slots, storeLayouts?.[pageKey]?.blockConfig);
+    setSlots(resolved.slots);
+    setBlockConfig(normalizeBlockConfig(blocks, resolved.slots, resolved.config));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [blocks, initiallyEmpty, pageKey, storeLayouts, defaultPresetId]);
 
   const blockMap = useMemo(() => new Map(blocks.map((block) => [block.id, block])), [blocks]);
   const availableBlocks = useMemo(() => {

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 
 const CRO_CENTRAL_TN_STORES = {
@@ -610,6 +610,8 @@ function MetricSelectorSection({ storeId }) {
 
 export default function Settings() {
   const { storeId } = useParams();
+  const location = useLocation();
+  const navigate = useNavigate();
   const extractMetaAccountIds = (storeData) => {
     if (Array.isArray(storeData?.metaAdAccounts) && storeData.metaAdAccounts.length) {
       return storeData.metaAdAccounts.map((item) => item.id).filter(Boolean);
@@ -619,11 +621,17 @@ export default function Settings() {
 
   const [store, setStore] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
   const [tnToken, setTnToken] = useState('');
   const [tnStoreIdInput, setTnStoreIdInput] = useState('');
   const [connectingTN, setConnectingTN] = useState(false);
+  const [showManualTN, setShowManualTN] = useState(false);
+  const [oauthStartingTN, setOauthStartingTN] = useState(false);
+  const [oauthStartingMeta, setOauthStartingMeta] = useState(false);
+  const [showManualMeta, setShowManualMeta] = useState(false);
+  const [oauthBanner, setOauthBanner] = useState(null);
   const [shopifyToken, setShopifyToken] = useState('');
   const [shopifyDomainInput, setShopifyDomainInput] = useState('');
   const [connectingShopify, setConnectingShopify] = useState(false);
@@ -640,6 +648,7 @@ export default function Settings() {
   const [comisiones, setComisiones] = useState([]);
 
   useEffect(() => {
+    setLoadError(null);
     api.get(`/api/stores/${storeId}`).then(({ data }) => {
       setStore(data);
       const connectedMetaIds = extractMetaAccountIds(data);
@@ -649,8 +658,64 @@ export default function Settings() {
       setFeePlataformaPct(data.feePlataformaPct || 0);
       setComisiones(data.comisionPagoConfig || []);
       setLoading(false);
-    }).catch(() => setLoading(false));
+    }).catch((err) => {
+      const msg = err?.response?.status === 401
+        ? 'Sesión expirada. Iniciá sesión nuevamente.'
+        : (err?.response?.data?.error || err?.message || 'No se pudo cargar la configuración.');
+      setLoadError(msg);
+      setLoading(false);
+    });
   }, [storeId]);
+
+  // Detectar resultado del callback OAuth en la URL y mostrar banner. Limpia los query params.
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tnOk = params.get('tn_connected') === 'true';
+    const metaOk = params.get('meta_connected') === 'true';
+    const err = params.get('error');
+    if (!tnOk && !metaOk && !err) return;
+
+    if (tnOk) setOauthBanner({ tone: 'success', text: 'TiendaNube conectada correctamente. Sincronizando datos...' });
+    else if (metaOk) setOauthBanner({ tone: 'success', text: 'Meta Ads conectada correctamente. Sincronizando datos...' });
+    else if (err === 'tn_oauth_failed') setOauthBanner({ tone: 'error', text: 'No se pudo conectar con TiendaNube. Probá de nuevo o usá el método manual.' });
+    else if (err === 'meta_oauth_failed') setOauthBanner({ tone: 'error', text: 'No se pudo conectar con Meta Ads. Probá de nuevo o usá el método manual.' });
+    else if (err) setOauthBanner({ tone: 'error', text: `Error: ${err}` });
+
+    // Limpiar los params para que el banner no reaparezca al recargar.
+    navigate(location.pathname, { replace: true });
+
+    // Refrescar el store si conectó.
+    if (tnOk || metaOk) {
+      api.get(`/api/stores/${storeId}`).then(({ data }) => setStore(data)).catch(() => {});
+    }
+  }, [location.search, location.pathname, navigate, storeId]);
+
+  // Inicia OAuth abriendo el authUrl en la misma tab; el callback vuelve a /settings.
+  const startTnOAuth = async () => {
+    setOauthStartingTN(true);
+    try {
+      const { data } = await api.get(`/api/tn/connect/${storeId}`);
+      if (data?.authUrl) window.location.href = data.authUrl;
+      else setOauthBanner({ tone: 'error', text: 'No se pudo iniciar OAuth con TiendaNube.' });
+    } catch (err) {
+      setOauthBanner({ tone: 'error', text: err?.response?.data?.error || 'Error iniciando OAuth con TiendaNube.' });
+    } finally {
+      setOauthStartingTN(false);
+    }
+  };
+
+  const startMetaOAuth = async () => {
+    setOauthStartingMeta(true);
+    try {
+      const { data } = await api.get(`/api/connect/${storeId}`);
+      if (data?.authUrl) window.location.href = data.authUrl;
+      else setOauthBanner({ tone: 'error', text: 'No se pudo iniciar OAuth con Meta.' });
+    } catch (err) {
+      setOauthBanner({ tone: 'error', text: err?.response?.data?.error || 'Error iniciando OAuth con Meta.' });
+    } finally {
+      setOauthStartingMeta(false);
+    }
+  };
 
   const handleSave = async () => {
     setSaving(true); setMessage(null);
@@ -703,6 +768,28 @@ export default function Settings() {
 
   if (loading) return <div className="text-center py-12 text-[13px] text-gray-600">Cargando settings...</div>;
 
+  if (loadError) {
+    return (
+      <div className="space-y-5 max-w-3xl">
+        <div>
+          <h1 className="page-title">Settings</h1>
+          <p className="page-subtitle">Configuración de integraciones, objetivos y costos.</p>
+        </div>
+        <div className="rounded-lg border border-red-500/20 bg-red-500/[0.08] p-4">
+          <p className="text-[13px] font-semibold text-red-300">No se pudo cargar la configuración</p>
+          <p className="text-[12px] text-red-200/80 mt-1">{loadError}</p>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="mt-3 text-[12px] font-semibold text-red-200 hover:text-white transition"
+          >
+            Reintentar
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-5 max-w-3xl">
       <div>
@@ -712,6 +799,13 @@ export default function Settings() {
 
       {/* Integrations */}
       <SectionCard title="Integraciones">
+        {oauthBanner && (
+          <div className={`mb-4 rounded-lg border p-3 ${oauthBanner.tone === 'success' ? 'border-emerald-500/20 bg-emerald-500/[0.08]' : 'border-red-500/20 bg-red-500/[0.08]'}`}>
+            <p className={`text-[12px] font-semibold ${oauthBanner.tone === 'success' ? 'text-emerald-300' : 'text-red-300'}`}>
+              {oauthBanner.text}
+            </p>
+          </div>
+        )}
         <div className="space-y-4">
           {/* TiendaNube */}
           <div>
@@ -737,39 +831,73 @@ export default function Settings() {
 
             {!store?.integrationStatus?.tiendanube?.connected && (
               <div className="mt-3 p-4 rounded-lg bg-white/[0.03] border border-white/[0.06] space-y-3">
-                <p className="text-[12px] text-gray-500">
-                  {usesCentralTnToken
-                    ? `Esta tienda usa token centralizado desde CRO (${CRO_CENTRAL_TN_STORES[tnStoreIdInput.trim()]}). Solo necesitás el Store ID.`
-                    : 'Pegá el Access Token y Store ID de TiendaNube.'}
-                </p>
-                <div>
-                  <label className="kpi-label mb-1 block">Access Token</label>
-                  <input type="text" value={tnToken} onChange={(e) => setTnToken(e.target.value)} placeholder={usesCentralTnToken ? 'Opcional para esta tienda' : 'ej: 1a2b3c4d...'} className="input-dark w-full font-mono" />
-                </div>
-                <div>
-                  <label className="kpi-label mb-1 block">Store ID (user_id)</label>
-                  <input type="text" value={tnStoreIdInput} onChange={(e) => setTnStoreIdInput(e.target.value)} placeholder="ej: 1234567" className="input-dark w-full font-mono" />
-                </div>
                 <button
-                  onClick={async () => {
-                    if (!tnStoreIdInput.trim() || (!tnToken.trim() && !usesCentralTnToken)) return;
-                    setConnectingTN(true); setMessage(null);
-                    try {
-                      const payload = { tnStoreId: tnStoreIdInput.trim() };
-                      if (tnToken.trim()) payload.tnAccessToken = tnToken.trim();
-                      const { data } = await api.post(`/api/stores/${storeId}/connect-tn-manual`, payload);
-                      setMessage(data.message);
-                      const { data: updated } = await api.get(`/api/stores/${storeId}`);
-                      setStore(updated);
-                    } catch (err) {
-                      setMessage(`Error: ${err.response?.data?.error || err.message}`);
-                    }
-                    setConnectingTN(false);
-                  }}
-                  disabled={connectingTN || !tnStoreIdInput.trim() || (!tnToken.trim() && !usesCentralTnToken)}
+                  onClick={startTnOAuth}
+                  disabled={oauthStartingTN}
                   className="btn-primary disabled:opacity-50"
                 >
-                  {connectingTN ? 'Conectando...' : 'Conectar y sincronizar'}
+                  {oauthStartingTN ? 'Abriendo TiendaNube...' : 'Conectar con TiendaNube'}
+                </button>
+                <p className="text-[11px] text-gray-500">
+                  Te lleva a TiendaNube, autorizás la app y volvés a esta página automáticamente.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setShowManualTN((v) => !v)}
+                  className="text-[11px] text-gray-500 hover:text-gray-300 transition underline-offset-2 hover:underline"
+                >
+                  {showManualTN ? '− Ocultar conexión manual con token' : '+ Conectar con token manual (avanzado)'}
+                </button>
+                {showManualTN && (
+                  <div className="space-y-3 pt-2 border-t border-white/[0.05]">
+                    <p className="text-[12px] text-gray-500">
+                      {usesCentralTnToken
+                        ? `Esta tienda usa token centralizado desde CRO (${CRO_CENTRAL_TN_STORES[tnStoreIdInput.trim()]}). Solo necesitás el Store ID.`
+                        : 'Pegá el Access Token y Store ID de TiendaNube.'}
+                    </p>
+                    <div>
+                      <label className="kpi-label mb-1 block">Access Token</label>
+                      <input type="text" value={tnToken} onChange={(e) => setTnToken(e.target.value)} placeholder={usesCentralTnToken ? 'Opcional para esta tienda' : 'ej: 1a2b3c4d...'} className="input-dark w-full font-mono" />
+                    </div>
+                    <div>
+                      <label className="kpi-label mb-1 block">Store ID (user_id)</label>
+                      <input type="text" value={tnStoreIdInput} onChange={(e) => setTnStoreIdInput(e.target.value)} placeholder="ej: 1234567" className="input-dark w-full font-mono" />
+                    </div>
+                    <button
+                      onClick={async () => {
+                        if (!tnStoreIdInput.trim() || (!tnToken.trim() && !usesCentralTnToken)) return;
+                        setConnectingTN(true); setMessage(null);
+                        try {
+                          const payload = { tnStoreId: tnStoreIdInput.trim() };
+                          if (tnToken.trim()) payload.tnAccessToken = tnToken.trim();
+                          const { data } = await api.post(`/api/stores/${storeId}/connect-tn-manual`, payload);
+                          setMessage(data.message);
+                          const { data: updated } = await api.get(`/api/stores/${storeId}`);
+                          setStore(updated);
+                        } catch (err) {
+                          setMessage(`Error: ${err.response?.data?.error || err.message}`);
+                        }
+                        setConnectingTN(false);
+                      }}
+                      disabled={connectingTN || !tnStoreIdInput.trim() || (!tnToken.trim() && !usesCentralTnToken)}
+                      className="btn-ghost disabled:opacity-50"
+                    >
+                      {connectingTN ? 'Conectando...' : 'Conectar con token'}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {store?.integrationStatus?.tiendanube?.connected && (
+              <div className="mt-2">
+                <button
+                  type="button"
+                  onClick={startTnOAuth}
+                  disabled={oauthStartingTN}
+                  className="text-[11px] text-gray-500 hover:text-gray-300 transition disabled:opacity-50"
+                >
+                  {oauthStartingTN ? 'Abriendo TiendaNube...' : '↻ Reconectar con TiendaNube'}
                 </button>
               </div>
             )}
@@ -859,11 +987,46 @@ export default function Settings() {
             </div>
 
             <div className="mt-3 p-4 rounded-lg bg-white/[0.03] border border-white/[0.06] space-y-3">
-              <p className="text-[12px] text-gray-500">
-                Pegá un long-lived access token de Meta, traé las cuentas publicitarias disponibles y elegí una o varias para sincronizar en esta tienda.
-              </p>
+              {!store?.integrationStatus?.metaAds?.connected && (
+                <>
+                  <button
+                    onClick={startMetaOAuth}
+                    disabled={oauthStartingMeta}
+                    className="btn-primary disabled:opacity-50"
+                  >
+                    {oauthStartingMeta ? 'Abriendo Meta...' : 'Conectar con Meta'}
+                  </button>
+                  <p className="text-[11px] text-gray-500">
+                    Te lleva a Facebook, autorizás el acceso a tu cuenta publicitaria y volvés acá.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setShowManualMeta((v) => !v)}
+                    className="text-[11px] text-gray-500 hover:text-gray-300 transition underline-offset-2 hover:underline"
+                  >
+                    {showManualMeta ? '− Ocultar conexión manual con token' : '+ Conectar con token manual (avanzado)'}
+                  </button>
+                </>
+              )}
 
-              {(!store?.integrationStatus?.metaAds?.connected || editingMetaAccounts) && (
+              {store?.integrationStatus?.metaAds?.connected && !editingMetaAccounts && (
+                <button
+                  type="button"
+                  onClick={startMetaOAuth}
+                  disabled={oauthStartingMeta}
+                  className="text-[11px] text-gray-500 hover:text-gray-300 transition disabled:opacity-50"
+                >
+                  {oauthStartingMeta ? 'Abriendo Meta...' : '↻ Reconectar con Meta'}
+                </button>
+              )}
+
+              {(showManualMeta || (!store?.integrationStatus?.metaAds?.connected && false) || editingMetaAccounts) && (
+                <p className="text-[12px] text-gray-500">
+                  Pegá un long-lived access token de Meta, traé las cuentas publicitarias disponibles y elegí una o varias para sincronizar en esta tienda.
+                </p>
+              )}
+
+              {((!store?.integrationStatus?.metaAds?.connected && showManualMeta) || editingMetaAccounts) && (
                 <>
                   <div>
                     <label className="kpi-label mb-1 block">Long-lived access token</label>

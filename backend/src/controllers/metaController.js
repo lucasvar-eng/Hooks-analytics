@@ -2,12 +2,14 @@ const mongoose = require('mongoose');
 const Store = require('../models/Store');
 const MetaCampaign = require('../models/MetaCampaign');
 const MetaDailyInsight = require('../models/MetaDailyInsight');
+const MetaProductInsight = require('../models/MetaProductInsight');
 const metaAPI = require('../services/metaAPI');
-const { syncMetaStructure, syncMetaInsights } = require('../services/syncMeta');
+const { syncMetaStructure, syncMetaInsights, syncMetaProductInsights } = require('../services/syncMeta');
 const { importMetaCSV, validateHeaders, getImportHistory } = require('../services/csvImportMeta');
 const { classifyCampaign, getThresholds } = require('../services/verdictEngine');
 const { meta: metaConfig } = require('../config/environment');
 const logger = require('../utils/logger');
+const { buildBusinessDateKeyMatch } = require('../utils/businessDate');
 
 function getConfiguredMetaAccounts(store) {
   const configured = Array.isArray(store?.metaAdAccounts) ? store.metaAdAccounts.filter((item) => item?.id) : [];
@@ -18,11 +20,7 @@ function getConfiguredMetaAccounts(store) {
 
 function buildDateMatch(from, to) {
   if (!from || !to) return null;
-  const start = new Date(from);
-  start.setUTCHours(0, 0, 0, 0);
-  const end = new Date(to);
-  end.setUTCHours(23, 59, 59, 999);
-  return { $gte: start, $lte: end };
+  return buildBusinessDateKeyMatch(from, to, true);
 }
 
 function buildRangeOptions(from, to) {
@@ -108,7 +106,7 @@ exports.connect = async (req, res, next) => {
     const store = await Store.findById(storeId);
     if (!store) return res.status(404).json({ error: 'Store not found' });
 
-    const redirectUri = metaConfig.callbackUrl || `${req.protocol}://${req.get('host')}/api/meta/callback`;
+    const redirectUri = metaConfig.callbackUrl || `${req.protocol}://${req.get('host')}/api/callback`;
     const scopes = 'ads_read,business_management';
 
     const authUrl =
@@ -134,7 +132,7 @@ exports.callback = async (req, res, next) => {
 
     if (!code) return res.redirect('/?error=meta_no_code');
 
-    const redirectUri = metaConfig.callbackUrl || `${req.protocol}://${req.get('host')}/api/meta/callback`;
+    const redirectUri = metaConfig.callbackUrl || `${req.protocol}://${req.get('host')}/api/callback`;
     const { accessToken, expiresIn } = await metaAPI.exchangeToken(code, redirectUri);
 
     // Get ad accounts to find the right one
@@ -168,10 +166,12 @@ exports.callback = async (req, res, next) => {
       logger.error(`Initial Meta sync failed: ${err.message}`);
     });
 
-    res.redirect(`/store/${storeId}?meta_connected=true`);
+    res.redirect(`/store/${storeId}/settings?meta_connected=true`);
   } catch (error) {
     logger.error(`Meta OAuth callback error: ${error.message}`);
-    res.redirect('/?error=meta_oauth_failed');
+    const storeId = req.query.state;
+    const target = storeId ? `/store/${storeId}/settings?error=meta_oauth_failed` : '/?error=meta_oauth_failed';
+    res.redirect(target);
   }
 };
 
@@ -386,6 +386,128 @@ exports.getImportHistory = async (req, res, next) => {
     const history = await getImportHistory(req.params.id);
     res.json(history);
   } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Get spend-per-product breakdown for a store.
+ * Aggregates MetaProductInsight rows in the date range.
+ * Query params:
+ *   from, to (YYYY-MM-DD)        — optional, defaults to last 30 days
+ *   sortBy (spend|impressions|clicks|name)  — default spend
+ *   limit (number, max 500)      — default 200
+ *   minSpend (number)            — filter, default 0
+ *   adId                         — optional, filter to a single ad
+ */
+exports.getProductInsights = async (req, res, next) => {
+  try {
+    const storeId = req.params.id;
+    if (!mongoose.Types.ObjectId.isValid(storeId)) {
+      return res.status(400).json({ error: 'invalid store id' });
+    }
+
+    const sortBy = ['spend', 'impressions', 'clicks', 'name'].includes(req.query.sortBy)
+      ? req.query.sortBy : 'spend';
+    const limit = Math.min(parseInt(req.query.limit || '200', 10) || 200, 500);
+    const minSpend = parseFloat(req.query.minSpend || '0') || 0;
+
+    const match = { storeId: new mongoose.Types.ObjectId(storeId) };
+    const dateMatch = buildDateMatch(req.query.from, req.query.to);
+    if (dateMatch) match.date = dateMatch;
+    if (req.query.adId) match.adId = String(req.query.adId);
+
+    const sortStage = sortBy === 'name'
+      ? { productName: 1 }
+      : { [sortBy === 'impressions' ? 'impressions' : sortBy === 'clicks' ? 'clicks' : 'spend']: -1 };
+
+    const pipeline = [
+      { $match: match },
+      {
+        $group: {
+          _id: { metaProductId: '$metaProductId', productName: '$productName' },
+          spend: { $sum: '$spend' },
+          impressions: { $sum: '$impressions' },
+          clicks: { $sum: '$clicks' },
+          linkClicks: { $sum: '$linkClicks' },
+          reach: { $max: '$reach' },
+          purchases: { $sum: '$purchases' },
+          purchaseValue: { $sum: '$purchaseValue' },
+          atc: { $sum: '$atc' },
+          tnProductId: { $first: '$tnProductId' },
+          adsCount: { $addToSet: '$adId' },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          metaProductId: '$_id.metaProductId',
+          productName: '$_id.productName',
+          spend: 1,
+          impressions: 1,
+          clicks: 1,
+          linkClicks: 1,
+          reach: 1,
+          purchases: 1,
+          purchaseValue: 1,
+          atc: 1,
+          tnProductId: 1,
+          adsCount: { $size: '$adsCount' },
+        },
+      },
+      { $match: { spend: { $gte: minSpend } } },
+      { $sort: sortStage },
+      { $limit: limit },
+    ];
+
+    const rows = await MetaProductInsight.aggregate(pipeline);
+
+    // Totals (independent of limit) — useful for the frontend top banner.
+    const totalsAgg = await MetaProductInsight.aggregate([
+      { $match: match },
+      {
+        $group: {
+          _id: null,
+          totalSpend: { $sum: '$spend' },
+          totalImpressions: { $sum: '$impressions' },
+          totalClicks: { $sum: '$clicks' },
+          productCount: { $addToSet: '$metaProductId' },
+        },
+      },
+      { $project: { _id: 0, totalSpend: 1, totalImpressions: 1, totalClicks: 1, productCount: { $size: '$productCount' } } },
+    ]);
+    const totals = totalsAgg[0] || { totalSpend: 0, totalImpressions: 0, totalClicks: 0, productCount: 0 };
+
+    res.json({ totals, rows, sortBy, limit, minSpend });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Manual trigger for product breakdown sync. Useful for the first backfill
+ * or to validate the sync end-to-end before relying on the cron.
+ * Body: { daysBack?: number }
+ */
+exports.syncProductInsights = async (req, res, next) => {
+  try {
+    const storeId = req.params.id;
+    if (!mongoose.Types.ObjectId.isValid(storeId)) {
+      return res.status(400).json({ error: 'invalid store id' });
+    }
+
+    const store = await Store.findById(storeId);
+    if (!store) return res.status(404).json({ error: 'store not found' });
+    if (!store.metaAccessToken) {
+      return res.status(400).json({ error: 'store does not have a Meta access token' });
+    }
+
+    const daysBack = Math.min(parseInt(req.body?.daysBack || '7', 10) || 7, 90);
+    await syncMetaProductInsights(store, daysBack);
+
+    res.json({ ok: true, daysBack });
+  } catch (error) {
+    logger.error(`Manual product insights sync failed: ${error.message}`);
     next(error);
   }
 };

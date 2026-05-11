@@ -12,7 +12,9 @@ const { syncShopifyOrders, syncShopifyProducts } = require('../services/syncShop
 const { analyze } = require('../services/aiService');
 const { DEFAULT_THRESHOLDS } = require('../services/verdictEngine');
 const { getEffectiveTarget } = require('../services/targetService');
+const { getCostCoverage } = require('../services/costCoverage');
 const { isCentralizedTiendanubeStore } = require('../utils/tiendanubeToken');
+const { buildBusinessDateKeyMatch, buildBusinessSourceDateMatch } = require('../utils/businessDate');
 
 function safeDelta(current, baseline, invert = false) {
   if (!baseline) return 0;
@@ -433,7 +435,18 @@ exports.getMetrics = async (req, res, next) => {
       },
     };
 
-    res.json({ current, previous, deltas, target, comparisons, health, sourceCoverage: current.sourceCoverage || {} });
+    const costCoverage = await getCostCoverage(id, from, to);
+
+    res.json({
+      current,
+      previous,
+      deltas,
+      target,
+      comparisons,
+      health,
+      sourceCoverage: current.sourceCoverage || {},
+      costCoverage,
+    });
   } catch (error) {
     next(error);
   }
@@ -445,8 +458,8 @@ exports.getOrders = async (req, res, next) => {
     const { page = 1, limit = 50, from, to } = req.query;
 
     const filter = { storeId: id };
-    if (from && to) {
-      filter.fechaCreacion = { $gte: new Date(from), $lte: new Date(to) };
+    if (from || to) {
+      filter.fechaCreacion = buildBusinessSourceDateMatch(from, to);
     }
 
     const orders = await Order.find(filter)
@@ -505,13 +518,7 @@ exports.getDailyMetrics = async (req, res, next) => {
 
     const filter = { storeId: id };
     if (from || to) {
-      filter.date = {};
-      if (from) filter.date.$gte = new Date(from);
-      if (to) {
-        const toDate = new Date(to);
-        toDate.setHours(23, 59, 59, 999);
-        filter.date.$lte = toDate;
-      }
+      filter.date = buildBusinessDateKeyMatch(from, to, true);
     }
 
     const daily = await DailyMetric.find(filter).sort({ date: 1 }).lean();

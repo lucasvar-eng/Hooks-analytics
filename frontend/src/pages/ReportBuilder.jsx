@@ -16,6 +16,9 @@ const SECTIONS = [
 export default function ReportBuilder() {
   const { storeId } = useParams();
   const { from, to } = useSelector((state) => state.date);
+  const store = useSelector((state) =>
+    state.stores.stores.find((s) => s._id === storeId)
+  );
 
   const [selected, setSelected] = useState(() =>
     Object.fromEntries(SECTIONS.map((s) => [s.id, true]))
@@ -67,12 +70,16 @@ export default function ReportBuilder() {
     if (!report) return;
     setSaving(true);
     setSavedMsg('');
+    const storeLabel = store?.nombre || store?.name || 'Reporte';
+    const titulo = `Reporte completo · ${storeLabel} · ${from || 'inicio'} a ${to || 'hoy'}`;
     try {
       await api.post(`/api/stores/${storeId}/reports`, {
-        content: report,
-        from,
-        to,
-        sections: selectedSections.map((s) => s.id),
+        titulo,
+        contenido: report,
+        tipo: 'report',
+        section: selectedSections.length === 1 ? selectedSections[0].id : 'all',
+        dateRange: { from, to },
+        generationMode: 'ai',
       });
       setSavedMsg('Reporte guardado correctamente.');
     } catch {

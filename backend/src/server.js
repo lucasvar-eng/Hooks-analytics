@@ -89,6 +89,16 @@ if (nodeEnv === 'production') {
 // Error handler (must be last)
 app.use(errorHandler);
 
+// Red de seguridad: errores async no atrapados se loguean en lugar de tumbar el proceso.
+// Muchos controllers no envuelven en try/catch — sin esto un validation error de Mongoose
+// crashea el server entero (visto al testear ReportBuilder Save con payload mal mapeado).
+process.on('unhandledRejection', (reason) => {
+  logger.error(`unhandledRejection: ${reason?.stack || reason?.message || reason}`);
+});
+process.on('uncaughtException', (err) => {
+  logger.error(`uncaughtException: ${err?.stack || err?.message || err}`);
+});
+
 app.listen(port, () => {
   logger.info(`Server running on port ${port} (${nodeEnv})`);
   startCronJobs();

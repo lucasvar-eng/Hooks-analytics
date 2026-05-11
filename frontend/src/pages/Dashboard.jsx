@@ -34,17 +34,19 @@ function HealthPill({ label, value }) {
   );
 }
 
-function ExecutiveSnapshot({ metrics, preset, from, to }) {
+function ExecutiveSnapshot({ metrics, preset, from, to, storeId }) {
   if (!metrics?.current) return null;
 
   const current = metrics.current;
   const previous = metrics.previous || {};
+  const deltas = metrics.deltas || {};
   const health = metrics.health || {};
+  const coverage = metrics.costCoverage || null;
   const cards = [
     {
       label: 'Ingresos',
       value: fmtMoney(current.revenue),
-      delta: current.revenueDelta,
+      delta: deltas.revenue,
       badge: 'Tienda',
       sourceKey: 'tiendanube',
       subLabel: 'Facturación del período',
@@ -52,7 +54,7 @@ function ExecutiveSnapshot({ metrics, preset, from, to }) {
     {
       label: 'Órdenes',
       value: Number(current.ordenesPositivas || 0).toLocaleString('es-AR'),
-      delta: current.ordersDelta,
+      delta: deltas.ordenesPositivas,
       badge: 'Tienda',
       sourceKey: 'tiendanube',
       subLabel: 'Ventas positivas',
@@ -60,31 +62,43 @@ function ExecutiveSnapshot({ metrics, preset, from, to }) {
     {
       label: 'Ad Spend',
       value: fmtMoney(current.adSpend),
-      delta: current.adSpendDelta,
+      delta: deltas.adSpend,
       badge: 'Meta',
       sourceKey: 'meta',
       subLabel: 'Inversión publicitaria',
+      invertDelta: true,
     },
     {
-      label: 'Ganancia',
-      value: fmtMoney(current.profit),
-      delta: current.profitDelta,
+      label: 'Ganancia neta',
+      value: fmtMoney(current.officialProfit ?? current.adjustedProfit ?? current.profit),
+      delta: deltas.officialProfit ?? deltas.adjustedProfit,
       badge: 'P&L',
       sourceKey: 'pnl',
-      subLabel: 'Profit oficial',
+      subLabel: 'Después de ads y fijos',
+      coverageAware: true,
     },
     {
-      label: 'Margen',
+      label: 'Margen neto',
+      value: fmtPct(current.officialProfitMargin ?? current.adjustedProfitMargin),
+      delta: deltas.officialProfitMargin ?? deltas.adjustedProfitMargin,
+      badge: 'P&L',
+      sourceKey: 'pnl',
+      subLabel: 'Sobre ingresos, después de ads',
+      coverageAware: true,
+    },
+    {
+      label: 'Margen bruto',
       value: fmtPct(current.profitMargin),
-      delta: current.profitMarginDelta,
+      delta: deltas.profitMargin,
       badge: 'P&L',
       sourceKey: 'pnl',
-      subLabel: 'Sobre ingresos',
+      subLabel: 'Sin ads ni fijos',
+      coverageAware: true,
     },
     {
       label: 'True ROAS',
       value: `${(current.trueRoas || 0).toFixed(2)}x`,
-      delta: current.trueRoasDelta,
+      delta: deltas.trueRoas,
       badge: 'Meta',
       sourceKey: 'meta',
       subLabel: 'Retorno total',
@@ -115,6 +129,8 @@ function ExecutiveSnapshot({ metrics, preset, from, to }) {
       sourceKey="tiendanube"
       periodLabel={getPeriodLabel(preset, from, to)}
       items={cards}
+      coverage={coverage}
+      storeId={storeId}
       rightContent={(
         <div className="flex flex-wrap gap-2">
           <HealthPill label="Acq." value={health.acquisition} />
@@ -216,6 +232,7 @@ export default function Dashboard() {
         pageKey="dashboardFixed"
         storeLayouts={store?.pageLayouts}
         initiallyEmpty
+        defaultPresetId="executive"
         blockContext={blockContext}
         presetTemplates={[
           {
@@ -236,7 +253,7 @@ export default function Dashboard() {
             id: 'executive-strip',
             label: 'KPIs principales',
             category: 'Analítica',
-            content: <ExecutiveSnapshot metrics={metrics} preset={preset} from={from} to={to} />,
+            content: <ExecutiveSnapshot metrics={metrics} preset={preset} from={from} to={to} storeId={storeId} />,
           },
           {
             id: 'detail-grid',

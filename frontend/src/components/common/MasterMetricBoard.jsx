@@ -1,3 +1,5 @@
+import MetricCompleteness from './MetricCompleteness';
+
 const PRESET_LABELS = {
   today: 'Hoy',
   yesterday: 'Ayer',
@@ -91,6 +93,8 @@ export function MasterMetricBoard({
   items,
   rightContent = null,
   columns = 'md:grid-cols-2 xl:grid-cols-4',
+  coverage = null,
+  storeId = null,
 }) {
   if (!Array.isArray(items) || items.length === 0) return null;
 
@@ -137,7 +141,12 @@ export function MasterMetricBoard({
             </div>
 
             <div className="mt-3">
-              <p className="master-metric-card__label">{item.label}</p>
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="master-metric-card__label">{item.label}</p>
+                {item.coverageAware && coverage?.isPreliminary && (
+                  <MetricCompleteness coverage={coverage} storeId={storeId} size="sm" />
+                )}
+              </div>
               {item.subLabel && (
                 <p className="master-metric-card__sub">{item.subLabel}</p>
               )}

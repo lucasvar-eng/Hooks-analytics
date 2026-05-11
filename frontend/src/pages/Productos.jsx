@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import api from '../services/api';
 import ClaudeActionBar from '../components/common/ClaudeActionBar';
+import MetricCompleteness from '../components/common/MetricCompleteness';
 
 function fmt(v) {
   if (v == null || isNaN(v)) return '—';
@@ -151,6 +152,7 @@ export default function Productos() {
   const { storeId } = useParams();
   const { from, to } = useSelector((s) => s.date);
   const store = useSelector((state) => state.stores.stores.find((item) => item._id === storeId));
+  const coverage = useSelector((state) => state.stores.metrics[storeId]?.costCoverage || null);
   const [data, setData] = useState({ products: [], total: 0 });
   const [overview, setOverview] = useState(null);
   const [commercial, setCommercial] = useState(null);
@@ -215,16 +217,21 @@ export default function Productos() {
       {overview?.summary && (
         <div className="grid grid-cols-2 xl:grid-cols-6 gap-3">
           {[
-            ['Stock valorizado', fmt(overview.summary.stockValue)],
-            ['Ingresos período', fmt(overview.summary.periodRevenue)],
-            ['Unidades vendidas', overview.summary.periodSales || 0],
-            ['Dead stock', overview.summary.deadStockCount || 0],
-            ['Bajo retorno', overview.summary.lowReturnCount || 0],
-            ['Sobrestock', overview.summary.overstockCount || 0],
-          ].map(([label, value]) => (
-            <div key={label} className="card p-4">
-              <p className="text-app-muted text-[10px] uppercase tracking-[0.18em]">{label}</p>
-              <p className="text-white text-lg font-semibold mt-2">{value}</p>
+            { label: 'Stock valorizado', value: fmt(overview.summary.stockValue), coverageAware: true },
+            { label: 'Ingresos período', value: fmt(overview.summary.periodRevenue) },
+            { label: 'Unidades vendidas', value: overview.summary.periodSales || 0 },
+            { label: 'Dead stock', value: overview.summary.deadStockCount || 0 },
+            { label: 'Bajo retorno', value: overview.summary.lowReturnCount || 0 },
+            { label: 'Sobrestock', value: overview.summary.overstockCount || 0 },
+          ].map((card) => (
+            <div key={card.label} className="card p-4">
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="text-app-muted text-[10px] uppercase tracking-[0.18em]">{card.label}</p>
+                {card.coverageAware && coverage?.isPreliminary && (
+                  <MetricCompleteness coverage={coverage} storeId={storeId} size="sm" />
+                )}
+              </div>
+              <p className="text-white text-lg font-semibold mt-2">{card.value}</p>
             </div>
           ))}
         </div>

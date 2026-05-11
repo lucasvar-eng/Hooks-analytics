@@ -106,16 +106,16 @@ function statusLabel(status) {
   }
 }
 
-function TiendaExecutiveStrip({ summary, devoluciones, ncrc, preset, from, to }) {
+function TiendaExecutiveStrip({ summary, devoluciones, ncrc, preset, from, to, coverage, storeId }) {
   if (!summary) return null;
 
   const cards = [
     { label: 'Ventas', value: Number(summary.totalOrdenes || 0).toLocaleString('es-AR'), badge: 'Tienda', sourceKey: 'tiendanube', subLabel: 'Órdenes del período' },
     { label: 'Facturación', value: fmt(summary.totalRevenue), badge: 'Tienda', sourceKey: 'tiendanube', subLabel: 'Ingresos brutos' },
-    { label: 'Ingresos netos', value: fmt(summary.totalNeto), badge: 'Tienda', sourceKey: 'tiendanube', subLabel: 'Revenue neto' },
+    { label: 'Ingresos netos', value: fmt(summary.totalNeto), badge: 'Tienda', sourceKey: 'tiendanube', subLabel: 'Revenue neto', coverageAware: true },
     { label: 'Liquidable', value: fmt(summary.totalLiquidable), badge: 'Cash', sourceKey: 'cash', subLabel: 'Monto a liquidar' },
     { label: 'AOV', value: fmt(summary.aov), badge: 'Tienda', sourceKey: 'tiendanube', subLabel: 'Ticket promedio' },
-    { label: 'AOV neto', value: fmt(summary.aovNeto), badge: 'Tienda', sourceKey: 'tiendanube', subLabel: 'Ticket neto' },
+    { label: 'AOV neto', value: fmt(summary.aovNeto), badge: 'Tienda', sourceKey: 'tiendanube', subLabel: 'Ticket neto', coverageAware: true },
     { label: 'NC %', value: pct(ncrc?.ncPct), badge: 'Clientes', sourceKey: 'clientes', subLabel: 'Nuevos clientes' },
     { label: 'Devoluciones', value: Number(devoluciones?.count || 0).toLocaleString('es-AR'), badge: 'Riesgo', sourceKey: 'cash', subLabel: 'Pedidos devueltos' },
   ];
@@ -128,6 +128,8 @@ function TiendaExecutiveStrip({ summary, devoluciones, ncrc, preset, from, to })
       sourceKey="tiendanube"
       periodLabel={getPeriodLabel(preset, from, to)}
       items={cards}
+      coverage={coverage}
+      storeId={storeId}
     />
   );
 }
@@ -584,6 +586,7 @@ export default function Tienda() {
   const { storeId } = useParams();
   const { from, to, preset } = useSelector((s) => s.date);
   const store = useSelector((state) => state.stores.stores.find((item) => item._id === storeId));
+  const coverage = useSelector((state) => state.stores.metrics[storeId]?.costCoverage || null);
   const [data, setData] = useState(null);
   const [audit, setAudit] = useState(null);
   const [syncStatus, setSyncStatus] = useState(null);
@@ -834,7 +837,7 @@ export default function Tienda() {
             id: 'tienda-kpis',
             label: 'KPIs principales',
             category: 'Analítica',
-            content: <TiendaExecutiveStrip summary={data?.summary} devoluciones={data?.devoluciones} ncrc={data?.ncrc} preset={preset} from={from} to={to} />,
+            content: <TiendaExecutiveStrip summary={data?.summary} devoluciones={data?.devoluciones} ncrc={data?.ncrc} preset={preset} from={from} to={to} coverage={coverage} storeId={storeId} />,
           },
           {
             id: 'tienda-quick-details',

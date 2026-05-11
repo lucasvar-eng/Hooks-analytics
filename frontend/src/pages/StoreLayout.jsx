@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, NavLink, Outlet, Link, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import { fetchStores, selectStore } from '../store/storeSlice';
+import { fetchStores, fetchStoreMetrics, selectStore } from '../store/storeSlice';
 import Header from '../components/common/Header';
 import InsightPanel from '../components/insights/InsightPanel';
 
@@ -132,6 +132,7 @@ export default function StoreLayout() {
   const store = useSelector((state) =>
     state.stores.stores.find((s) => s._id === storeId)
   );
+  const { from, to } = useSelector((state) => state.date);
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
@@ -159,6 +160,13 @@ export default function StoreLayout() {
     if (!storeId || store) return;
     dispatch(fetchStores());
   }, [dispatch, storeId, store]);
+
+  // Cargar métricas (incluye costCoverage) para que el badge "Preliminar"
+  // esté disponible en cualquier página interna sin pasar por Dashboard.
+  useEffect(() => {
+    if (!storeId || !from || !to) return;
+    dispatch(fetchStoreMetrics({ storeId, from, to }));
+  }, [dispatch, storeId, from, to]);
 
   const pathSegment = location.pathname.split('/').pop();
   const insightSection = SECTION_MAP[pathSegment] || 'dashboard';

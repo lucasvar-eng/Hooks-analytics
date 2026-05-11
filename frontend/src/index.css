@@ -392,4 +392,107 @@
   .widget-surface .table-dark thead th {
     color: var(--widget-muted) !important;
   }
+
+  /* Markdown rendering en tema oscuro (reportes, análisis AI) */
+  .markdown-body {
+    color: var(--text-primary);
+    line-height: 1.6;
+  }
+  .markdown-body h1 {
+    @apply text-[18px] font-bold mt-4 mb-2;
+    color: var(--text-primary);
+  }
+  .markdown-body h2 {
+    @apply text-[15px] font-bold mt-4 mb-2;
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border-subtle);
+    padding-bottom: 4px;
+  }
+  .markdown-body h3 {
+    @apply text-[13px] font-semibold mt-3 mb-1.5;
+    color: var(--text-primary);
+  }
+  .markdown-body h4 {
+    @apply text-[12px] font-semibold mt-2 mb-1;
+    color: var(--text-secondary);
+  }
+  .markdown-body p {
+    @apply mb-2;
+  }
+  .markdown-body ul,
+  .markdown-body ol {
+    @apply pl-5 mb-2 space-y-0.5;
+  }
+  .markdown-body ul {
+    list-style: disc;
+  }
+  .markdown-body ol {
+    list-style: decimal;
+  }
+  .markdown-body li {
+    color: var(--text-primary);
+  }
+  .markdown-body strong {
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+  .markdown-body em {
+    color: var(--text-secondary);
+    font-style: italic;
+  }
+  .markdown-body a {
+    color: var(--accent);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .markdown-body a:hover {
+    color: #60a5fa;
+  }
+  .markdown-body code {
+    @apply text-[11px] px-1 py-0.5 rounded;
+    background: rgba(255,255,255,0.06);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  .markdown-body pre {
+    @apply p-3 rounded-lg my-2 overflow-x-auto;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border-subtle);
+  }
+  .markdown-body pre code {
+    @apply p-0;
+    background: transparent;
+  }
+  .markdown-body blockquote {
+    @apply pl-3 my-2 italic;
+    border-left: 3px solid var(--accent);
+    color: var(--text-secondary);
+  }
+  .markdown-body hr {
+    @apply my-3;
+    border: none;
+    border-top: 1px solid var(--border-subtle);
+  }
+  .markdown-body table {
+    @apply w-full my-3 text-[12px];
+    border-collapse: collapse;
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .markdown-body thead {
+    background: rgba(255,255,255,0.04);
+  }
+  .markdown-body th {
+    @apply text-left font-semibold px-3 py-2 text-[10px] uppercase tracking-[0.14em];
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .markdown-body td {
+    @apply px-3 py-2;
+    border-top: 1px solid rgba(255,255,255,0.04);
+    font-variant-numeric: tabular-nums;
+  }
+  .markdown-body tbody tr:hover td {
+    background: rgba(255,255,255,0.02);
+  }
 }

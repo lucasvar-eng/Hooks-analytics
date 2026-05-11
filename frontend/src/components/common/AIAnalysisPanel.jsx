@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import api from '../../services/api';
+import { renderMarkdown } from '../../utils/markdown';
 
 export default function AIAnalysisPanel({ storeId, section, from, to }) {
   const [analysis, setAnalysis] = useState(null);
@@ -80,15 +81,8 @@ export default function AIAnalysisPanel({ storeId, section, from, to }) {
           </div>
 
           <div
-            dangerouslySetInnerHTML={{
-              __html: analysis.analysis
-                .replace(/\n/g, '<br>')
-                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                .replace(/\*(.*?)\*/g, '<em>$1</em>')
-                .replace(/^### (.*)/gm, '<h3>$1</h3>')
-                .replace(/^## (.*)/gm, '<h2>$1</h2>')
-                .replace(/^- (.*)/gm, '<li>$1</li>'),
-            }}
+            className="markdown-body"
+            dangerouslySetInnerHTML={{ __html: renderMarkdown(analysis.analysis) }}
           />
           <div className="flex items-center gap-3 mt-3 pt-3 border-t border-white/[0.06]">
             {analysis.tokensUsed && (

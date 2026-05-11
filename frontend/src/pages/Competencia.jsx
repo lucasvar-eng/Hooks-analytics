@@ -1,10 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import api from '../services/api';
+import AIAnalysisPanel from '../components/common/AIAnalysisPanel';
+import ClaudeActionBar from '../components/common/ClaudeActionBar';
+import { renderMarkdown } from '../utils/markdown';
 
 export default function Competencia() {
   const { storeId } = useParams();
   const [competitors, setCompetitors] = useState([]);
+  const [overview, setOverview] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
@@ -26,8 +30,12 @@ export default function Competencia() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const { data } = await api.get(`/api/stores/${storeId}/competitors`);
-      setCompetitors(data);
+      const [competitorsRes, overviewRes] = await Promise.all([
+        api.get(`/api/stores/${storeId}/competitors`),
+        api.get(`/api/stores/${storeId}/competitors/overview`),
+      ]);
+      setCompetitors(competitorsRes.data);
+      setOverview(overviewRes.data);
     } catch {}
     setLoading(false);
   }, [storeId]);
@@ -77,6 +85,9 @@ export default function Competencia() {
 
   if (loading) return <div className="text-center py-12 text-[13px] text-gray-600">Cargando competencia...</div>;
 
+  const summary = overview?.summary || {};
+  const gaps = overview?.gaps || {};
+
   const submitPayload = {
     ...form,
     angles: form.angles.split(',').map((item) => item.trim()).filter(Boolean),
@@ -97,6 +108,56 @@ export default function Competencia() {
         >
           {showForm ? 'Cancelar' : '+ Agregar competidor'}
         </button>
+      </div>
+
+      <ClaudeActionBar
+        mode="competencia"
+        storeId={storeId}
+      />
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {[
+          ['Competidores', summary.total || 0],
+          ['Analizados', summary.analyzed || 0],
+          ['Pendientes', summary.pendingAnalysis || 0],
+          ['Con URL', summary.withUrl || 0],
+          ['Ángulos únicos', summary.uniqueAngles || 0],
+          ['Territorios únicos', summary.uniqueTerritories || 0],
+          ['Sin ángulos', summary.missingAngles || 0],
+          ['Sin territorios', summary.missingTerritories || 0],
+        ].map(([label, value]) => (
+          <div key={label} className="card p-4">
+            <p className="text-app-muted text-[10px] uppercase tracking-[0.18em]">{label}</p>
+            <p className="text-white text-2xl font-semibold mt-2">{value}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-[1.2fr_0.8fr] gap-4">
+        <div className="card p-4">
+          <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-3">Pendientes competitivos</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
+              <p className="text-[10px] text-app-muted uppercase tracking-[0.16em] mb-2">Sin análisis</p>
+              <div className="space-y-1 text-[12px] text-app-secondary">
+                {(gaps.pendingAnalysis || []).length ? gaps.pendingAnalysis.map((item) => <p key={item}>{item}</p>) : <p>Al día.</p>}
+              </div>
+            </div>
+            <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
+              <p className="text-[10px] text-app-muted uppercase tracking-[0.16em] mb-2">Sin ángulos</p>
+              <div className="space-y-1 text-[12px] text-app-secondary">
+                {(gaps.missingAngles || []).length ? gaps.missingAngles.map((item) => <p key={item}>{item}</p>) : <p>Sin huecos.</p>}
+              </div>
+            </div>
+            <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
+              <p className="text-[10px] text-app-muted uppercase tracking-[0.16em] mb-2">Sin territorios</p>
+              <div className="space-y-1 text-[12px] text-app-secondary">
+                {(gaps.missingTerritories || []).length ? gaps.missingTerritories.map((item) => <p key={item}>{item}</p>) : <p>Sin huecos.</p>}
+              </div>
+            </div>
+          </div>
+        </div>
+        <AIAnalysisPanel storeId={storeId} section="competencia" />
       </div>
 
       {showForm && (
@@ -244,15 +305,8 @@ export default function Competencia() {
                     Análisis AI {c.lastAnalysis && `— ${new Date(c.lastAnalysis).toLocaleDateString('es-AR')}`}
                   </p>
                   <div
-                    dangerouslySetInnerHTML={{
-                      __html: c.analysisResult
-                        .replace(/\n/g, '<br>')
-                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                        .replace(/\*(.*?)\*/g, '<em>$1</em>')
-                        .replace(/^### (.*)/gm, '<h4 class="font-semibold mt-2">$1</h4>')
-                        .replace(/^## (.*)/gm, '<h3 class="font-bold mt-2">$1</h3>')
-                        .replace(/^- (.*)/gm, '<li>$1</li>'),
-                    }}
+                    className="markdown-body"
+                    dangerouslySetInnerHTML={{ __html: renderMarkdown(c.analysisResult) }}
                   />
                 </div>
               )}

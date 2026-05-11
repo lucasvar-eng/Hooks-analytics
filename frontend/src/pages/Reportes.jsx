@@ -1,15 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import api from '../services/api';
+import { renderMarkdown } from '../utils/markdown';
 
-function markdownToHtml(md) {
-  return md
-    .replace(/\n/g, '<br>')
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.*?)\*/g, '<em>$1</em>')
-    .replace(/^### (.*)/gm, '<h3>$1</h3>')
-    .replace(/^## (.*)/gm, '<h2>$1</h2>')
-    .replace(/^- (.*)/gm, '<li>$1</li>');
+function formatRatioDisplay(value) {
+  if (value == null) return '—';
+  if (typeof value === 'number' && Number.isFinite(value)) return `${value.toFixed(2)}x`;
+  const text = String(value).trim();
+  if (!text) return '—';
+  return text;
 }
 
 const TIPO_LABELS = {
@@ -24,19 +24,41 @@ const GENERATION_LABELS = {
   manual: 'Manual',
 };
 
+const REPORT_TEMPLATES = [
+  {
+    key: 'executive',
+    title: 'Reporte ejecutivo de tienda',
+    description: 'Foto rápida del negocio con facturación, ganancia, ROAS y riesgos del período.',
+  },
+  {
+    key: 'meta-performance',
+    title: 'Reporte de performance Meta',
+    description: 'Lectura de inversión, compras, ROAS, CPA y top campañas del período.',
+  },
+  {
+    key: 'creative-framework',
+    title: 'Reporte creativo y mensaje',
+    description: 'Pipeline creativo, gaps del framework y backlog inicial de próximos tests.',
+  },
+];
+
 export default function Reportes() {
   const { storeId } = useParams();
+  const { from, to } = useSelector((state) => state.date);
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [creatingTemplate, setCreatingTemplate] = useState(null);
 
   const fetchList = useCallback(async () => {
     setLoading(true);
     try {
       const { data } = await api.get(`/api/stores/${storeId}/reports`);
-      setReports(data);
-    } catch {}
+      setReports(Array.isArray(data) ? data : []);
+    } catch {
+      setReports([]);
+    }
     setLoading(false);
   }, [storeId]);
 
@@ -46,8 +68,10 @@ export default function Reportes() {
     setDetailLoading(true);
     try {
       const { data } = await api.get(`/api/stores/${storeId}/reports/${report._id}`);
-      setSelected(data);
-    } catch {}
+      setSelected(data || null);
+    } catch {
+      setSelected(null);
+    }
     setDetailLoading(false);
   };
 
@@ -57,6 +81,15 @@ export default function Reportes() {
       await api.delete(`/api/stores/${storeId}/reports/${id}`);
       fetchList();
     } catch {}
+  };
+
+  const handleCreateTemplate = async (templateKey) => {
+    setCreatingTemplate(templateKey);
+    try {
+      await api.post(`/api/stores/${storeId}/reports/templates/${templateKey}`, { from, to });
+      await fetchList();
+    } catch {}
+    setCreatingTemplate(null);
   };
 
   const handleExport = async (report, format = 'json') => {
@@ -155,7 +188,7 @@ export default function Reportes() {
               </div>
               <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
                 <p className="text-app-muted text-[10px] uppercase tracking-[0.18em]">ROAS</p>
-                <p className="text-white text-lg font-semibold mt-1">{(selected.snapshot.metrics.roas || 0).toFixed(2)}x</p>
+                <p className="text-white text-lg font-semibold mt-1">{formatRatioDisplay(selected.snapshot.metrics.roas)}</p>
               </div>
               <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
                 <p className="text-app-muted text-[10px] uppercase tracking-[0.18em]">Target ROAS</p>
@@ -165,8 +198,8 @@ export default function Reportes() {
           )}
 
           <div
-            className="text-[12px] leading-relaxed text-app-primary space-y-1"
-            dangerouslySetInnerHTML={{ __html: markdownToHtml(selected.contenido) }}
+            className="markdown-body text-[12px] leading-relaxed text-app-primary"
+            dangerouslySetInnerHTML={{ __html: renderMarkdown(selected.contenido) }}
           />
         </div>
       </div>
@@ -184,6 +217,25 @@ export default function Reportes() {
         <span className="text-[12px] text-app-secondary">
           {reports.length} {reports.length === 1 ? 'reporte' : 'reportes'}
         </span>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        {REPORT_TEMPLATES.map((template) => (
+          <div key={template.key} className="card p-4">
+            <p className="text-white font-semibold text-[14px]">{template.title}</p>
+            <p className="text-app-secondary text-[12px] mt-2 leading-relaxed">{template.description}</p>
+            <p className="text-app-muted text-[11px] mt-3">
+              Rango actual: {from || 'inicio'} a {to || 'hoy'}
+            </p>
+            <button
+              onClick={() => handleCreateTemplate(template.key)}
+              disabled={creatingTemplate === template.key}
+              className="btn-primary mt-4 w-full disabled:opacity-50"
+            >
+              {creatingTemplate === template.key ? 'Generando...' : 'Generar reporte'}
+            </button>
+          </div>
+        ))}
       </div>
 
       {reports.length === 0 ? (

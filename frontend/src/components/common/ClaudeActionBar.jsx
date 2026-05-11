@@ -166,6 +166,129 @@ No inventes conclusiones si la confianza del dato es media o baja.`,
     };
   }
 
+  if (mode === 'topic-map') {
+    return {
+      title: 'Claude + topic map',
+      subtitle: 'Preparado para revisar gaps del framework, consciencia y prioridades del mapa.',
+      resourceUri: buildResourceUri('ai-context', storeId, from, to) + `${from || to ? '&' : '?'}section=topic-map`,
+      readPrompt: `Usá el MCP "hooks-analytics" para revisar el Topic Map de "${label}".
+
+1. Ejecutá get_ai_context_snapshot con:
+   - store: "${label}"
+   - section: "topic-map"
+   - from: "${from || ''}"
+   - to: "${to || ''}"
+
+Con eso, devolveme:
+- cuál es el principal hueco del framework
+- qué topics están listos para scaling o testing
+- qué consciencia o territorio está flojo
+- 3 acciones concretas para ordenar el mapa`,
+      savePrompt: `Usá el MCP "hooks-analytics" para revisar el Topic Map de "${label}".
+
+1. Ejecutá get_ai_context_snapshot con:
+   - store: "${label}"
+   - section: "topic-map"
+   - from: "${from || ''}"
+   - to: "${to || ''}"
+2. Armá un análisis en Markdown con:
+   - ## Diagnóstico del framework
+   - ## Qué está sólido
+   - ## Huecos prioritarios
+   - ## Acciones
+3. Guardalo con save_analysis usando:
+   - store: "${label}"
+   - titulo: "Topic Map · ${label} · ${rangeLabel}"
+   - section: "topic-map"
+   - summary: una línea con el principal hallazgo
+   - qualityNote: una nota breve sobre calidad del dato
+   - confidence: valor entre 0 y 1
+   - contenido: el markdown final completo`,
+    };
+  }
+
+  if (mode === 'language-bank') {
+    return {
+      title: 'Claude + lenguaje',
+      subtitle: 'Sirve para detectar objeciones sin respuesta, hooks flojos y huecos de lenguaje comercial.',
+      resourceUri: buildResourceUri('ai-context', storeId, from, to) + `${from || to ? '&' : '?'}section=language-bank`,
+      readPrompt: `Usá el MCP "hooks-analytics" para revisar el Banco de Lenguaje de "${label}".
+
+1. Ejecutá get_ai_context_snapshot con:
+   - store: "${label}"
+   - section: "language-bank"
+   - from: "${from || ''}"
+   - to: "${to || ''}"
+
+Con eso, devolveme:
+- qué hooks o patrones de lenguaje están fuertes
+- qué objeciones siguen sin respuesta
+- qué avatar o consciencia está poco cubierto
+- 3 acciones concretas de copy`,
+      savePrompt: `Usá el MCP "hooks-analytics" para revisar el Banco de Lenguaje de "${label}".
+
+1. Ejecutá get_ai_context_snapshot con:
+   - store: "${label}"
+   - section: "language-bank"
+   - from: "${from || ''}"
+   - to: "${to || ''}"
+2. Armá un análisis en Markdown con:
+   - ## Diagnóstico de lenguaje
+   - ## Hooks y patrones fuertes
+   - ## Objeciones sin cubrir
+   - ## Acciones
+3. Guardalo con save_analysis usando:
+   - store: "${label}"
+   - titulo: "Language Bank · ${label} · ${rangeLabel}"
+   - section: "language-bank"
+   - summary: una línea con el principal hallazgo
+   - qualityNote: una nota breve sobre calidad del dato
+   - confidence: valor entre 0 y 1
+   - contenido: el markdown final completo`,
+    };
+  }
+
+  if (mode === 'competencia') {
+    return {
+      title: 'Claude + competencia',
+      subtitle: 'Úsalo para leer gaps de mensaje, territorios y oportunidades frente a competidores.',
+      resourceUri: buildResourceUri('ai-context', storeId, from, to) + `${from || to ? '&' : '?'}section=competencia`,
+      readPrompt: `Usá el MCP "hooks-analytics" para revisar la competencia de "${label}".
+
+1. Ejecutá get_ai_context_snapshot con:
+   - store: "${label}"
+   - section: "competencia"
+   - from: "${from || ''}"
+   - to: "${to || ''}"
+
+Con eso, devolveme:
+- qué ventaja o hueco competitivo ves hoy
+- qué mensajes de competencia están mejor trabajados
+- qué territorios o ángulos nos faltan
+- 3 acciones concretas`,
+      savePrompt: `Usá el MCP "hooks-analytics" para revisar la competencia de "${label}".
+
+1. Ejecutá get_ai_context_snapshot con:
+   - store: "${label}"
+   - section: "competencia"
+   - from: "${from || ''}"
+   - to: "${to || ''}"
+2. Armá un análisis en Markdown con:
+   - ## Diagnóstico competitivo
+   - ## Ventajas y gaps
+   - ## Oportunidades
+   - ## Acciones
+3. Guardalo con save_analysis usando:
+   - store: "${label}"
+   - titulo: "Competencia · ${label} · ${rangeLabel}"
+   - section: "competencia"
+   - summary: una línea con el principal hallazgo
+   - qualityNote: una nota breve sobre calidad del dato
+   - confidence: valor entre 0 y 1
+   - contenido: el markdown final completo`,
+    };
+  }
+
   if (mode === 'sync') {
     return {
       title: 'Claude + integridad',
@@ -271,8 +394,20 @@ async function copyText(text, onSuccess, onError) {
   }
 }
 
+const COLLAPSE_STORAGE_KEY = 'hooks-claude-actionbar-collapsed';
+
+function readCollapsedDefault() {
+  try {
+    const stored = localStorage.getItem(COLLAPSE_STORAGE_KEY);
+    return stored == null ? true : stored === '1';
+  } catch {
+    return true;
+  }
+}
+
 export default function ClaudeActionBar({ storeId, storeName, from, to, mode = 'dashboard' }) {
   const [message, setMessage] = useState(null);
+  const [collapsed, setCollapsed] = useState(readCollapsedDefault);
 
   const config = useMemo(
     () => buildSectionConfig(mode, { storeId, storeName, from, to }),
@@ -290,6 +425,36 @@ export default function ClaudeActionBar({ storeId, storeName, from, to, mode = '
     );
   };
 
+  const toggleCollapsed = () => {
+    setCollapsed((prev) => {
+      const next = !prev;
+      try { localStorage.setItem(COLLAPSE_STORAGE_KEY, next ? '1' : '0'); } catch {}
+      return next;
+    });
+  };
+
+  if (collapsed) {
+    return (
+      <button
+        type="button"
+        onClick={toggleCollapsed}
+        className="w-full flex items-center justify-between gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.04] transition px-4 py-2.5"
+      >
+        <div className="flex items-center gap-3 min-w-0">
+          <span className="text-app-muted text-[10px] uppercase tracking-[0.18em] shrink-0">Claude</span>
+          <span className="text-app-primary text-[13px] font-medium truncate">{config.title}</span>
+          <span className="text-app-secondary text-[11px] truncate hidden md:inline">— prompts y recursos MCP listos</span>
+        </div>
+        <span className="text-app-secondary text-[11px] flex items-center gap-1.5 shrink-0">
+          Mostrar
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </span>
+      </button>
+    );
+  }
+
   return (
     <div className="card p-4 space-y-3">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -298,7 +463,7 @@ export default function ClaudeActionBar({ storeId, storeName, from, to, mode = '
           <h3 className="text-white text-[16px] font-semibold mt-1">{config.title}</h3>
           <p className="text-app-secondary text-[12px] mt-2 max-w-3xl">{config.subtitle}</p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-start gap-2">
           <button
             type="button"
             onClick={() => handleCopy(config.readPrompt, 'Prompt copiado para usar con Claude.')}
@@ -319,6 +484,17 @@ export default function ClaudeActionBar({ storeId, storeName, from, to, mode = '
             className="btn-secondary"
           >
             Copiar recurso MCP
+          </button>
+          <button
+            type="button"
+            onClick={toggleCollapsed}
+            className="text-app-secondary text-[11px] hover:text-white transition flex items-center gap-1 px-2 py-1"
+            title="Ocultar"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+            </svg>
+            Ocultar
           </button>
         </div>
       </div>

@@ -1,144 +1,51 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchStoreMetrics } from '../store/storeSlice';
-import WidgetGrid from '../components/widgets/WidgetGrid';
-import PageBlockLayout from '../components/common/PageBlockLayout';
-import MasterMetricBoard, { getPeriodLabel } from '../components/common/MasterMetricBoard';
-import { createSharedPageBlocks } from '../components/common/pageBlockCatalog';
+import api from '../services/api';
+import SourceMetricsRow from '../components/resumen/SourceMetricsRow';
+import AttentionPanel from '../components/resumen/AttentionPanel';
+import HighlightCard from '../components/resumen/HighlightCard';
+import { META_METRICS, TN_METRICS, PNL_METRICS, DEFAULTS } from '../components/resumen/metricsCatalog';
+import {
+  deriveAlerts,
+  buildTopSellersRows,
+  buildCampaignsRows,
+  buildStockRows,
+} from '../components/resumen/deriveResumen';
+import AIAnalysisPanel from '../components/common/AIAnalysisPanel';
+import ClaudeActionBar from '../components/common/ClaudeActionBar';
 
-function fmtMoney(value) {
-  if (value == null || Number.isNaN(Number(value))) return '—';
-  return `$${Math.round(Number(value)).toLocaleString('es-AR')}`;
-}
-
-function fmtPct(value) {
-  if (value == null || Number.isNaN(Number(value))) return '—';
-  return `${Number(value).toFixed(1)}%`;
-}
+const PRELIMINAR_BADGE = (
+  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-[0.06em] bg-amber-500/12 text-amber-300 border border-amber-500/25">
+    ● Preliminar
+  </span>
+);
 
 function HealthPill({ label, value }) {
-  const tone =
-    value === 'critical'
-      ? 'bg-red-500/12 text-red-400 border-red-500/20'
-      : value === 'warning'
-        ? 'bg-amber-500/12 text-amber-400 border-amber-500/20'
-        : value === 'ok'
-          ? 'bg-emerald-500/12 text-emerald-400 border-emerald-500/20'
-          : 'bg-white/[0.03] text-app-secondary border-white/[0.06]';
-
+  const tone = value === 'critical' ? 'bg-red-500/12 text-red-300 border-red-500/20'
+    : value === 'warning' ? 'bg-amber-500/12 text-amber-300 border-amber-500/20'
+    : value === 'ok' ? 'bg-emerald-500/12 text-emerald-300 border-emerald-500/20'
+    : 'bg-white/[0.04] text-app-secondary border-white/[0.06]';
+  const dot = value === 'critical' ? 'bg-red-400'
+    : value === 'warning' ? 'bg-amber-400'
+    : value === 'ok' ? 'bg-emerald-400' : 'bg-gray-500';
   return (
-    <div className={`rounded-full border px-3 py-1.5 text-[11px] font-medium ${tone}`}>
-      {label}: {value || 'neutral'}
-    </div>
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold border ${tone}`}>
+      <span className={`w-1.5 h-1.5 rounded-full ${dot}`} />
+      {label} · {value || 'neutral'}
+    </span>
   );
 }
 
-function ExecutiveSnapshot({ metrics, preset, from, to, storeId }) {
-  if (!metrics?.current) return null;
-
-  const current = metrics.current;
-  const previous = metrics.previous || {};
-  const deltas = metrics.deltas || {};
-  const health = metrics.health || {};
-  const coverage = metrics.costCoverage || null;
-  // SubLabel solo se incluye cuando agrega contexto (define el cálculo o decodifica la sigla).
-  // No duplicar el label del KPI: "Ingresos / Facturación del período" es grasa visual.
-  const cards = [
-    {
-      label: 'Ingresos',
-      value: fmtMoney(current.revenue),
-      delta: deltas.revenue,
-      badge: 'Tienda',
-      sourceKey: 'tiendanube',
-    },
-    {
-      label: 'Órdenes',
-      value: Number(current.ordenesPositivas || 0).toLocaleString('es-AR'),
-      delta: deltas.ordenesPositivas,
-      badge: 'Tienda',
-      sourceKey: 'tiendanube',
-    },
-    {
-      label: 'Ad Spend',
-      value: fmtMoney(current.adSpend),
-      delta: deltas.adSpend,
-      badge: 'Meta',
-      sourceKey: 'meta',
-      invertDelta: true,
-    },
-    {
-      label: 'Ganancia neta',
-      value: fmtMoney(current.officialProfit ?? current.adjustedProfit ?? current.profit),
-      delta: deltas.officialProfit ?? deltas.adjustedProfit,
-      badge: 'P&L',
-      sourceKey: 'pnl',
-      subLabel: 'Después de ads y fijos',
-      coverageAware: true,
-    },
-    {
-      label: 'Margen neto',
-      value: fmtPct(current.officialProfitMargin ?? current.adjustedProfitMargin),
-      delta: deltas.officialProfitMargin ?? deltas.adjustedProfitMargin,
-      badge: 'P&L',
-      sourceKey: 'pnl',
-      subLabel: 'Sobre ingresos, después de ads',
-      coverageAware: true,
-    },
-    {
-      label: 'Margen bruto',
-      value: fmtPct(current.profitMargin),
-      delta: deltas.profitMargin,
-      badge: 'P&L',
-      sourceKey: 'pnl',
-      subLabel: 'Sin ads ni fijos',
-      coverageAware: true,
-    },
-    {
-      label: 'True ROAS',
-      value: `${(current.trueRoas || 0).toFixed(2)}x`,
-      delta: deltas.trueRoas,
-      badge: 'Meta',
-      sourceKey: 'meta',
-    },
-    {
-      label: 'AOV',
-      value: fmtMoney(current.aov),
-      delta: previous.aov ? ((current.aov - previous.aov) / Math.abs(previous.aov || 1)) * 100 : null,
-      badge: 'Tienda',
-      sourceKey: 'tiendanube',
-      subLabel: 'Ticket promedio',
-    },
-    {
-      label: 'CVR',
-      value: fmtPct(current.conversionRate),
-      delta: previous.conversionRate ? ((current.conversionRate - previous.conversionRate) / Math.abs(previous.conversionRate || 1)) * 100 : null,
-      badge: 'Funnel',
-      sourceKey: 'clientes',
-      subLabel: 'Tasa de conversión',
-    },
-  ];
-
-  return (
-    <MasterMetricBoard
-      title="Panorama ejecutivo"
-      subtitle="La lectura inicial del negocio debería entenderse en segundos: primero KPIs, después detalle."
-      sourceLabel="Hooks Analytics"
-      sourceKey="tiendanube"
-      periodLabel={getPeriodLabel(preset, from, to)}
-      items={cards}
-      coverage={coverage}
-      storeId={storeId}
-      rightContent={(
-        <div className="flex flex-wrap gap-2">
-          <HealthPill label="Acq." value={health.acquisition} />
-          <HealthPill label="Conv." value={health.conversion} />
-          <HealthPill label="Profit" value={health.profitability} />
-          <HealthPill label="Cash" value={health.liquidity} />
-        </div>
-      )}
-    />
-  );
+function periodLabel(preset, from, to) {
+  const labels = {
+    today: 'Hoy', yesterday: 'Ayer',
+    last7: 'Últimos 7 días', last30: 'Últimos 30 días',
+    thisMonth: 'Este mes', lastMonth: 'Mes pasado',
+  };
+  if (preset && labels[preset]) return labels[preset];
+  return from && to ? `${from} → ${to}` : 'Rango personalizado';
 }
 
 export default function Dashboard() {
@@ -149,68 +56,9 @@ export default function Dashboard() {
   const store = useSelector((state) =>
     state.stores.stores.find((s) => s._id === storeId)
   );
-  const sharedBlocks = createSharedPageBlocks('dashboard', {
-    storeId,
-    storeName: store?.nombre,
-    from,
-    to,
-    mode: 'dashboard',
-    section: 'dashboard',
-    analysisDescription: 'IA, prompts y análisis más largos quedan abajo para no invadir la lectura ejecutiva.',
-  });
-  const current = metrics?.current || {};
-  const previous = metrics?.previous || {};
-  const blockContext = useMemo(() => ({
-    kpiOptions: [
-      { id: 'revenue', label: 'Ingresos', value: current.revenue, format: 'money', sourceKey: 'tiendanube', badge: 'Tienda', description: 'Facturación del período' },
-      { id: 'orders', label: 'Órdenes', value: current.ordenesPositivas, format: 'number', sourceKey: 'tiendanube', badge: 'Tienda', description: 'Ventas positivas' },
-      { id: 'adspend', label: 'Ad Spend', value: current.adSpend, format: 'money', sourceKey: 'meta', badge: 'Meta', description: 'Inversión publicitaria' },
-      { id: 'profit', label: 'Ganancia', value: current.profit, format: 'money', sourceKey: 'pnl', badge: 'P&L', description: 'Profit oficial' },
-      { id: 'margin', label: 'Margen', value: current.profitMargin, format: 'percent', sourceKey: 'pnl', badge: 'P&L', description: 'Sobre ingresos' },
-      { id: 'true-roas', label: 'True ROAS', value: current.trueRoas, format: 'ratio', sourceKey: 'meta', badge: 'Meta', description: 'Retorno total' },
-      { id: 'aov', label: 'AOV', value: current.aov, format: 'money', sourceKey: 'tiendanube', badge: 'Tienda', description: 'Ticket promedio' },
-      { id: 'cvr', label: 'CVR', value: current.conversionRate, format: 'percent', sourceKey: 'clientes', badge: 'Funnel', description: 'Conversión de tienda' },
-    ],
-    comparisonOptions: [
-      { id: 'revenue-periods', label: 'Ingresos vs período anterior', currentLabel: 'Actual', currentValue: current.revenue, previousLabel: 'Anterior', previousValue: previous.revenue, format: 'money', description: 'Comparativa de ingresos entre período actual y anterior.' },
-      { id: 'orders-periods', label: 'Órdenes vs período anterior', currentLabel: 'Actual', currentValue: current.ordenesPositivas, previousLabel: 'Anterior', previousValue: previous.ordenesPositivas, format: 'number', description: 'Comparativa de ventas positivas.' },
-      { id: 'profit-periods', label: 'Ganancia vs período anterior', currentLabel: 'Actual', currentValue: current.profit, previousLabel: 'Anterior', previousValue: previous.profit, format: 'money', description: 'Comparativa de profit oficial.' },
-      { id: 'roas-periods', label: 'True ROAS vs período anterior', currentLabel: 'Actual', currentValue: current.trueRoas, previousLabel: 'Anterior', previousValue: previous.trueRoas, format: 'ratio', description: 'Comparativa de retorno total.' },
-    ],
-    tableOptions: [
-      {
-        id: 'executive-table',
-        label: 'Tabla de KPIs ejecutivos',
-        description: 'Resumen simple de los principales KPI del período.',
-        columns: [
-          { key: 'metric', label: 'Métrica' },
-          { key: 'value', label: 'Valor' },
-          { key: 'prev', label: 'Anterior' },
-        ],
-        rows: [
-          { id: 'r1', metric: 'Ingresos', value: fmtMoney(current.revenue), prev: fmtMoney(previous.revenue) },
-          { id: 'r2', metric: 'Órdenes', value: Number(current.ordenesPositivas || 0).toLocaleString('es-AR'), prev: Number(previous.ordenesPositivas || 0).toLocaleString('es-AR') },
-          { id: 'r3', metric: 'Ad Spend', value: fmtMoney(current.adSpend), prev: fmtMoney(previous.adSpend) },
-          { id: 'r4', metric: 'Ganancia', value: fmtMoney(current.profit), prev: fmtMoney(previous.profit) },
-          { id: 'r5', metric: 'True ROAS', value: `${Number(current.trueRoas || 0).toFixed(2)}x`, prev: `${Number(previous.trueRoas || 0).toFixed(2)}x` },
-        ],
-      },
-    ],
-    chartOptions: [],
-    donutOptions: [
-      {
-        id: 'business-mix',
-        label: 'Mix ejecutivo',
-        description: 'Relación simple entre ingresos, inversión y ganancia.',
-        segments: [
-          { label: 'Ingresos', value: current.revenue, format: 'money', color: '#60a5fa' },
-          { label: 'Ad Spend', value: current.adSpend, format: 'money', color: '#f472b6' },
-          { label: 'Ganancia', value: current.profit, format: 'money', color: '#34d399' },
-        ],
-      },
-    ],
-    heatmapOptions: [],
-  }), [current, previous]);
+
+  const [productOverview, setProductOverview] = useState(null);
+  const [campaigns, setCampaigns] = useState([]);
 
   useEffect(() => {
     if (storeId && from && to) {
@@ -218,67 +66,128 @@ export default function Dashboard() {
     }
   }, [dispatch, storeId, from, to]);
 
+  useEffect(() => {
+    if (!storeId || !from || !to) return;
+    let cancelled = false;
+    api.get(`/api/stores/${storeId}/products/overview?from=${from}&to=${to}`)
+      .then(({ data }) => { if (!cancelled) setProductOverview(data); })
+      .catch(() => {});
+    api.get(`/api/stores/${storeId}/meta/campaigns?from=${from}&to=${to}`)
+      .then(({ data }) => { if (!cancelled) setCampaigns(Array.isArray(data) ? data : (data?.campaigns || [])); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [storeId, from, to]);
+
+  const current = metrics?.current || {};
+  const deltas = metrics?.deltas || {};
+  const coverage = metrics?.costCoverage || null;
+  const target = metrics?.target || null;
+  const health = metrics?.health || {};
+  const periodLbl = periodLabel(preset, from, to);
+
+  const alerts = deriveAlerts({ metrics, productOverview, campaigns, storeId });
+  const topSellersRows = buildTopSellersRows(productOverview);
+  const campaignRows = buildCampaignsRows(campaigns);
+  const stockRows = buildStockRows(productOverview);
+
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="page-title">Resumen</h1>
-        <p className="page-subtitle">Lectura rápida del negocio con los KPIs que más importan primero.</p>
+      <div className="flex items-start justify-between gap-6 flex-wrap">
+        <div>
+          <h1 className="page-title">Resumen</h1>
+          <p className="page-subtitle">Status del negocio · {store?.nombre || 'Tienda'} · {periodLbl}</p>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <HealthPill label="Acq" value={health.acquisition} />
+          <HealthPill label="Conv" value={health.conversion} />
+          <HealthPill label="Profit" value={health.profitability} />
+          <HealthPill label="Cash" value={health.liquidity} />
+        </div>
       </div>
 
-      <PageBlockLayout
+      <SourceMetricsRow
+        sourceKey="meta"
+        title="Meta Ads"
+        subtitle={`${(store?.metaAdAccounts?.length || 0) > 0 ? `${store.metaAdAccounts.length} ${store.metaAdAccounts.length === 1 ? 'cuenta' : 'cuentas'}` : 'Cuenta principal'} · Sincronizado`}
+        periodLabel={periodLbl}
+        availableMetrics={META_METRICS}
+        data={current}
+        deltas={deltas}
+        target={target}
+        coverage={coverage}
         storeId={storeId}
-        pageKey="dashboardFixed"
-        storeLayouts={store?.pageLayouts}
-        initiallyEmpty
-        defaultPresetId="executive"
-        blockContext={blockContext}
-        presetTemplates={[
-          {
-            id: 'executive',
-            label: 'Resumen ejecutivo',
-            helper: 'KPIs + insight + análisis',
-            blockIds: ['executive-strip', 'dashboard-insight', 'dashboard-analysis'],
-          },
-          {
-            id: 'performance',
-            label: 'Performance + detalle',
-            helper: 'KPIs + grilla de widgets',
-            blockIds: ['executive-strip', 'detail-grid'],
-          },
-        ]}
-        blocks={[
-          {
-            id: 'executive-strip',
-            label: 'KPIs principales',
-            category: 'Analítica',
-            content: <ExecutiveSnapshot metrics={metrics} preset={preset} from={from} to={to} storeId={storeId} />,
-          },
-          {
-            id: 'detail-grid',
-            label: 'Detalle del período',
-            category: 'Detalle',
-            content: (
-              <div className="space-y-3">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-app-muted text-[11px] uppercase tracking-[0.18em]">Detalle del período</p>
-                    <p className="text-app-secondary text-[12px] mt-1">Bajá a tendencias, comparaciones y tablas solo después de mirar los KPI principales.</p>
-                  </div>
-                </div>
-                <WidgetGrid
-                  storeId={storeId}
-                  pageId="dashboard"
-                  metrics={metrics}
-                  objetivos={store?.objetivos}
-                  from={from}
-                  to={to}
-                />
-              </div>
-            ),
-          },
-          ...sharedBlocks,
-        ]}
+        storageKey={`hooks-resumen-meta-${storeId}`}
+        defaultSelected={DEFAULTS.meta}
+        maxSelected={6}
       />
+
+      <SourceMetricsRow
+        sourceKey="tn"
+        title="Tienda Nube"
+        subtitle={store?.tnStoreId ? `Store ${store.tnStoreId}` : 'E-commerce'}
+        periodLabel={periodLbl}
+        availableMetrics={TN_METRICS}
+        data={current}
+        deltas={deltas}
+        target={target}
+        coverage={coverage}
+        storeId={storeId}
+        storageKey={`hooks-resumen-tn-${storeId}`}
+        defaultSelected={DEFAULTS.tn}
+        maxSelected={6}
+      />
+
+      <SourceMetricsRow
+        sourceKey="pnl"
+        title="P&L"
+        subtitle={coverage?.coveragePct != null ? `Cobertura costos ${coverage.coveragePct}%` : 'Profit & loss calculado'}
+        periodLabel={periodLbl}
+        availableMetrics={PNL_METRICS}
+        data={current}
+        deltas={deltas}
+        target={target}
+        storeId={storeId}
+        storageKey={`hooks-resumen-pnl-${storeId}`}
+        defaultSelected={DEFAULTS.pnl}
+        maxSelected={6}
+        rightBadge={coverage?.isPreliminary ? PRELIMINAR_BADGE : null}
+      />
+
+      <AttentionPanel alerts={alerts} openFirst={false} storeId={storeId} />
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <HighlightCard
+          title="Top productos del período"
+          linkTo={`/store/${storeId}/productos`}
+          rows={topSellersRows}
+          emptyText="Sin ventas en el período."
+        />
+        <HighlightCard
+          title="Campañas — mejores y peores"
+          linkTo={`/store/${storeId}/meta-ads`}
+          linkLabel="Meta Ads"
+          rows={campaignRows}
+          emptyText="Sin campañas activas."
+        />
+        <HighlightCard
+          title="Stock crítico"
+          linkTo={`/store/${storeId}/productos`}
+          linkLabel="Productos"
+          rows={stockRows}
+          emptyText="Sin productos con stock crítico."
+        />
+      </div>
+
+      <div className="space-y-3">
+        <ClaudeActionBar
+          storeId={storeId}
+          storeName={store?.nombre}
+          from={from}
+          to={to}
+          mode="dashboard"
+        />
+        <AIAnalysisPanel storeId={storeId} section="dashboard" from={from} to={to} />
+      </div>
     </div>
   );
 }

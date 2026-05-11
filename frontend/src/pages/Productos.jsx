@@ -217,7 +217,13 @@ export default function Productos() {
       {overview?.summary && (
         <div className="grid grid-cols-2 xl:grid-cols-6 gap-3">
           {[
-            { label: 'Stock valorizado', value: fmt(overview.summary.stockValue), coverageAware: true },
+            {
+              label: 'Stock valorizado',
+              // Si no hay costos cargados, valorizado da $0 que es engañoso.
+              // Mostrar "Sin datos" para que el usuario sepa que falta cargar costos.
+              value: (overview.summary.stockValue || 0) > 0 ? fmt(overview.summary.stockValue) : 'Sin datos',
+              coverageAware: true,
+            },
             { label: 'Ingresos período', value: fmt(overview.summary.periodRevenue) },
             { label: 'Unidades vendidas', value: overview.summary.periodSales || 0 },
             { label: 'Dead stock', value: overview.summary.deadStockCount || 0 },

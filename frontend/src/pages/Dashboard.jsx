@@ -42,6 +42,8 @@ function ExecutiveSnapshot({ metrics, preset, from, to, storeId }) {
   const deltas = metrics.deltas || {};
   const health = metrics.health || {};
   const coverage = metrics.costCoverage || null;
+  // SubLabel solo se incluye cuando agrega contexto (define el cálculo o decodifica la sigla).
+  // No duplicar el label del KPI: "Ingresos / Facturación del período" es grasa visual.
   const cards = [
     {
       label: 'Ingresos',
@@ -49,7 +51,6 @@ function ExecutiveSnapshot({ metrics, preset, from, to, storeId }) {
       delta: deltas.revenue,
       badge: 'Tienda',
       sourceKey: 'tiendanube',
-      subLabel: 'Facturación del período',
     },
     {
       label: 'Órdenes',
@@ -57,7 +58,6 @@ function ExecutiveSnapshot({ metrics, preset, from, to, storeId }) {
       delta: deltas.ordenesPositivas,
       badge: 'Tienda',
       sourceKey: 'tiendanube',
-      subLabel: 'Ventas positivas',
     },
     {
       label: 'Ad Spend',
@@ -65,7 +65,6 @@ function ExecutiveSnapshot({ metrics, preset, from, to, storeId }) {
       delta: deltas.adSpend,
       badge: 'Meta',
       sourceKey: 'meta',
-      subLabel: 'Inversión publicitaria',
       invertDelta: true,
     },
     {
@@ -101,7 +100,6 @@ function ExecutiveSnapshot({ metrics, preset, from, to, storeId }) {
       delta: deltas.trueRoas,
       badge: 'Meta',
       sourceKey: 'meta',
-      subLabel: 'Retorno total',
     },
     {
       label: 'AOV',
@@ -117,7 +115,7 @@ function ExecutiveSnapshot({ metrics, preset, from, to, storeId }) {
       delta: previous.conversionRate ? ((current.conversionRate - previous.conversionRate) / Math.abs(previous.conversionRate || 1)) * 100 : null,
       badge: 'Funnel',
       sourceKey: 'clientes',
-      subLabel: 'Conversión de tienda',
+      subLabel: 'Tasa de conversión',
     },
   ];
 

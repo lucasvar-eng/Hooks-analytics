@@ -139,9 +139,9 @@ export default function Cashflow() {
         <p className="page-subtitle">Liquidaciones, comisiones y proyección de cobros.</p>
       </div>
 
-      {/* Summary cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <SummaryCard label="Bruto total" value={summary?.totalBruto} />
+      {/* Summary cards. Bruto total y Total liquidable son la misma métrica en este flujo
+          (lo que TN/MP va a liquidar = revenue bruto), por eso se muestra una sola card. */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <SummaryCard label="Total liquidable" value={summary?.totalLiquidable} color="text-blue-400" />
         <SummaryCard label="Recibido" value={summary?.recibido} sub={`${summary?.entriesRecibidas || 0} cuotas`} color="text-emerald-400" />
         <SummaryCard label="Pendiente" value={summary?.pendiente} sub={`${summary?.entriesPendientes || 0} cuotas`} color="text-amber-400" />

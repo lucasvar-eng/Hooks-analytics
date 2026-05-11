@@ -95,12 +95,14 @@ function CohortTableView({ cohorts }) {
 }
 
 function CustomerTable({ customers }) {
+  // LTV y Total gastado son la misma métrica hoy (no hay churn ni proyección futura
+  // en el cálculo). Si en el futuro LTV se calcula distinto, volver a separar.
   return (
     <div className="overflow-x-auto">
       <table className="w-full table-dark">
         <thead>
           <tr>
-            {['Cliente', 'Email', 'Órdenes', 'Total gastado', 'LTV', 'Segmento', 'Recencia (días)', 'Primera compra'].map((h) => (
+            {['Cliente', 'Email', 'Órdenes', 'LTV', 'Segmento', 'Recencia (días)', 'Primera compra'].map((h) => (
               <th key={h} className="text-left whitespace-nowrap">{h}</th>
             ))}
           </tr>
@@ -111,8 +113,7 @@ function CustomerTable({ customers }) {
               <td className="font-medium text-white">{c.name || '—'}</td>
               <td className="text-[11px]">{c.email}</td>
               <td>{c.totalOrders}</td>
-              <td>{fmt(c.totalSpent)}</td>
-              <td className="font-semibold text-white">{fmt(c.ltv)}</td>
+              <td className="font-semibold text-white">{fmt(c.ltv ?? c.totalSpent)}</td>
               <td>
                 <span className={SEGMENT_STYLES[c.rfmSegment] || 'badge-gray'}>
                   {SEGMENT_LABELS[c.rfmSegment] || c.rfmSegment || '—'}

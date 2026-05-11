@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import api from '../services/api';
 import PageBlockLayout from '../components/common/PageBlockLayout';
@@ -106,18 +106,18 @@ function statusLabel(status) {
   }
 }
 
-function TiendaExecutiveStrip({ summary, devoluciones, ncrc, preset, from, to, coverage, storeId }) {
+function TiendaExecutiveStrip({ summary, preset, from, to, coverage, storeId }) {
   if (!summary) return null;
 
+  // 6 KPIs hero. NC % y Devoluciones quedan en los KPIs secundarios (StoreQuickDetails)
+  // para evitar duplicación con el hero.
   const cards = [
-    { label: 'Ventas', value: Number(summary.totalOrdenes || 0).toLocaleString('es-AR'), badge: 'Tienda', sourceKey: 'tiendanube', subLabel: 'Órdenes del período' },
-    { label: 'Facturación', value: fmt(summary.totalRevenue), badge: 'Tienda', sourceKey: 'tiendanube', subLabel: 'Ingresos brutos' },
-    { label: 'Ingresos netos', value: fmt(summary.totalNeto), badge: 'Tienda', sourceKey: 'tiendanube', subLabel: 'Revenue neto', coverageAware: true },
-    { label: 'Liquidable', value: fmt(summary.totalLiquidable), badge: 'Cash', sourceKey: 'cash', subLabel: 'Monto a liquidar' },
-    { label: 'AOV', value: fmt(summary.aov), badge: 'Tienda', sourceKey: 'tiendanube', subLabel: 'Ticket promedio' },
-    { label: 'AOV neto', value: fmt(summary.aovNeto), badge: 'Tienda', sourceKey: 'tiendanube', subLabel: 'Ticket neto', coverageAware: true },
-    { label: 'NC %', value: pct(ncrc?.ncPct), badge: 'Clientes', sourceKey: 'clientes', subLabel: 'Nuevos clientes' },
-    { label: 'Devoluciones', value: Number(devoluciones?.count || 0).toLocaleString('es-AR'), badge: 'Riesgo', sourceKey: 'cash', subLabel: 'Pedidos devueltos' },
+    { label: 'Ventas', value: Number(summary.totalOrdenes || 0).toLocaleString('es-AR'), badge: 'Tienda', sourceKey: 'tiendanube' },
+    { label: 'Facturación', value: fmt(summary.totalRevenue), badge: 'Tienda', sourceKey: 'tiendanube' },
+    { label: 'Ingresos netos', value: fmt(summary.totalNeto), badge: 'Tienda', sourceKey: 'tiendanube', coverageAware: true },
+    { label: 'Liquidable', value: fmt(summary.totalLiquidable), badge: 'Cash', sourceKey: 'cash' },
+    { label: 'AOV', value: fmt(summary.aov), badge: 'Tienda', sourceKey: 'tiendanube' },
+    { label: 'AOV neto', value: fmt(summary.aovNeto), badge: 'Tienda', sourceKey: 'tiendanube', coverageAware: true },
   ];
 
   return (
@@ -259,7 +259,6 @@ function TopCustomersTable({ data }) {
 
   return (
     <div>
-      <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-3">Top 10 clientes del período</p>
       <table className="w-full table-dark">
         <thead>
           <tr>
@@ -575,11 +574,8 @@ function SyncStatusView({ syncStatus }) {
 const TABS = [
   { key: 'resumen', label: 'Resumen' },
   { key: 'medios', label: 'Medios de Pago' },
-  { key: 'ncrc', label: 'NC / RC' },
   { key: 'diario', label: 'Detalle Diario' },
-  { key: 'top', label: 'Top Clientes' },
-  { key: 'sync', label: 'Sync y Fuentes' },
-  { key: 'audit', label: 'Integridad de Datos' },
+  { key: 'diagnostico', label: 'Diagnóstico' },
 ];
 
 export default function Tienda() {
@@ -837,7 +833,7 @@ export default function Tienda() {
             id: 'tienda-kpis',
             label: 'KPIs principales',
             category: 'Analítica',
-            content: <TiendaExecutiveStrip summary={data?.summary} devoluciones={data?.devoluciones} ncrc={data?.ncrc} preset={preset} from={from} to={to} coverage={coverage} storeId={storeId} />,
+            content: <TiendaExecutiveStrip summary={data?.summary} preset={preset} from={from} to={to} coverage={coverage} storeId={storeId} />,
           },
           {
             id: 'tienda-quick-details',
@@ -869,75 +865,82 @@ export default function Tienda() {
 
                 <div className="card">
                   {tab === 'resumen' && (
-                    <div className="p-1 space-y-4">
+                    <div className="p-1 space-y-5">
                       <div>
-                        <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Resumen operativo</p>
-                        <p className="text-app-secondary text-[12px]">Este bloque deja a mano los KPI secundarios; el detalle más complejo queda en las demás pestañas.</p>
+                        <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-3">Clientes nuevos vs recurrentes</p>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                          {[
+                            { label: 'NC órdenes', value: data?.ncrc?.nc?.ordenes || 0, raw: true },
+                            { label: 'RC órdenes', value: data?.ncrc?.rc?.ordenes || 0, raw: true },
+                            { label: 'NC ingresos', value: data?.ncrc?.nc?.revenue, color: 'text-blue-300' },
+                            { label: 'RC ingresos', value: data?.ncrc?.rc?.revenue, color: 'text-emerald-300' },
+                          ].map((c) => (
+                            <div key={c.label} className="bg-white/[0.03] rounded-lg p-3 border border-white/[0.05]">
+                              <p className="kpi-label">{c.label}</p>
+                              <p className={`text-[18px] font-bold mt-1 ${c.color || 'text-white'}`}>
+                                {c.raw ? Number(c.value || 0).toLocaleString('es-AR') : fmt(c.value)}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
                       </div>
 
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        {[
-                          { label: 'NC órdenes', value: data?.ncrc?.nc?.ordenes || 0, raw: true },
-                          { label: 'RC órdenes', value: data?.ncrc?.rc?.ordenes || 0, raw: true },
-                          { label: 'NC ingresos', value: data?.ncrc?.nc?.revenue, color: 'text-blue-300' },
-                          { label: 'RC ingresos', value: data?.ncrc?.rc?.revenue, color: 'text-emerald-300' },
-                        ].map((c) => (
-                          <div key={c.label} className="bg-white/[0.03] rounded-lg p-3 border border-white/[0.05]">
-                            <p className="kpi-label">{c.label}</p>
-                            <p className={`text-[18px] font-bold mt-1 ${c.color || 'text-white'}`}>
-                              {c.raw ? Number(c.value || 0).toLocaleString('es-AR') : fmt(c.value)}
-                            </p>
-                          </div>
-                        ))}
+                      <div>
+                        <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-3">Desglose de costos</p>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                          {[
+                            { label: 'COGS', value: data?.summary?.totalCostoProductos },
+                            { label: 'Comisión Pago', value: data?.summary?.totalComisionPago },
+                            { label: 'Comisión Cuotas', value: data?.summary?.totalComisionCuotas },
+                            { label: 'Impuestos IBB', value: data?.summary?.totalIBB },
+                            { label: 'Fee Plataforma', value: data?.summary?.totalFeePlataforma },
+                            { label: 'Costo Envío', value: data?.summary?.totalCostoEnvio },
+                          ].map((c) => (
+                            <div key={c.label} className="bg-white/[0.03] rounded-lg p-3 border border-white/[0.05]">
+                              <p className="kpi-label">{c.label}</p>
+                              <p className="text-[18px] font-bold text-red-400 mt-1">{fmt(c.value)}</p>
+                            </div>
+                          ))}
+                        </div>
                       </div>
 
-                      <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-3">Desglose de costos</p>
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                        {[
-                          { label: 'COGS', value: data?.summary?.totalCostoProductos },
-                          { label: 'Comisión Pago', value: data?.summary?.totalComisionPago },
-                          { label: 'Comisión Cuotas', value: data?.summary?.totalComisionCuotas },
-                          { label: 'Impuestos IBB', value: data?.summary?.totalIBB },
-                          { label: 'Fee Plataforma', value: data?.summary?.totalFeePlataforma },
-                          { label: 'Costo Envío', value: data?.summary?.totalCostoEnvio },
-                        ].map((c) => (
-                          <div key={c.label} className="bg-white/[0.03] rounded-lg p-3 border border-white/[0.05]">
-                            <p className="kpi-label">{c.label}</p>
-                            <p className="text-[18px] font-bold text-red-400 mt-1">{fmt(c.value)}</p>
+                      {data?.topCustomers?.length > 0 && (
+                        <div>
+                          <div className="flex items-center justify-between mb-3">
+                            <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Top clientes del período</p>
+                            <Link to={`/store/${storeId}/clientes`} className="text-[11px] text-blue-400 hover:text-blue-300 transition">
+                              Ver todos →
+                            </Link>
                           </div>
-                        ))}
-                      </div>
+                          <TopCustomersTable data={data.topCustomers.slice(0, 5)} />
+                        </div>
+                      )}
                     </div>
                   )}
 
                   {tab === 'medios' && <MedioPagoTable data={data?.byMedioPago} />}
 
-                  {tab === 'ncrc' && (
-                    <div className="p-1">
-                      <NCRCCards ncrc={data?.ncrc} />
-                    </div>
-                  )}
-
                   {tab === 'diario' && <DailyOrdersTable data={data?.dailyOrders} />}
 
-                  {tab === 'top' && (
-                    <div className="p-1">
-                      <TopCustomersTable data={data?.topCustomers} />
+                  {tab === 'diagnostico' && (
+                    <div className="p-1 space-y-5">
+                      <div>
+                        <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-3">Sync y fuentes</p>
+                        <SyncStatusView syncStatus={syncStatus} />
+                      </div>
+                      <div className="border-t border-white/[0.05] pt-5">
+                        <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-3">Integridad de datos</p>
+                        <AuditView
+                          audit={audit}
+                          onReconcile={reconcile}
+                          onRebuildHistory={rebuildHistory}
+                          reconciling={reconciling}
+                          rebuilding={rebuilding}
+                          reconcileResult={reconcileResult}
+                          rebuildResult={rebuildResult}
+                        />
+                      </div>
                     </div>
-                  )}
-
-                  {tab === 'sync' && <SyncStatusView syncStatus={syncStatus} />}
-
-                  {tab === 'audit' && (
-                    <AuditView
-                      audit={audit}
-                      onReconcile={reconcile}
-                      onRebuildHistory={rebuildHistory}
-                      reconciling={reconciling}
-                      rebuilding={rebuilding}
-                      reconcileResult={reconcileResult}
-                      rebuildResult={rebuildResult}
-                    />
                   )}
                 </div>
               </div>

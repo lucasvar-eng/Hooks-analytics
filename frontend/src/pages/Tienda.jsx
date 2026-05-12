@@ -3,8 +3,10 @@ import { useParams, Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import api from '../services/api';
 import PageBlockLayout from '../components/common/PageBlockLayout';
-import MasterMetricBoard, { getPeriodLabel } from '../components/common/MasterMetricBoard';
+import { getPeriodLabel } from '../components/common/MasterMetricBoard';
 import { createSharedPageBlocks } from '../components/common/pageBlockCatalog';
+import SourceMetricsRow from '../components/resumen/SourceMetricsRow';
+import { TIENDA_METRICS, TIENDA_DEFAULTS } from '../components/tienda/tiendaMetricsCatalog';
 
 function fmt(v) {
   if (v == null || isNaN(v)) return '—';
@@ -106,54 +108,18 @@ function statusLabel(status) {
   }
 }
 
-function TiendaExecutiveStrip({ summary, preset, from, to, coverage, storeId }) {
+// Combina los distintos endpoints (summary + ncrc + devoluciones) en un único
+// objeto plano que las funciones del catalog pueden consumir.
+function buildTiendaData(summary, ncrc, devoluciones) {
   if (!summary) return null;
-
-  // 6 KPIs hero. NC % y Devoluciones quedan en los KPIs secundarios (StoreQuickDetails)
-  // para evitar duplicación con el hero.
-  const cards = [
-    { label: 'Ventas', value: Number(summary.totalOrdenes || 0).toLocaleString('es-AR'), badge: 'Tienda', sourceKey: 'tiendanube' },
-    { label: 'Facturación', value: fmt(summary.totalRevenue), badge: 'Tienda', sourceKey: 'tiendanube' },
-    { label: 'Ingresos netos', value: fmt(summary.totalNeto), badge: 'Tienda', sourceKey: 'tiendanube', coverageAware: true },
-    { label: 'Liquidable', value: fmt(summary.totalLiquidable), badge: 'Cash', sourceKey: 'cash' },
-    { label: 'AOV', value: fmt(summary.aov), badge: 'Tienda', sourceKey: 'tiendanube' },
-    { label: 'AOV neto', value: fmt(summary.aovNeto), badge: 'Tienda', sourceKey: 'tiendanube', coverageAware: true },
-  ];
-
-  return (
-    <MasterMetricBoard
-      title="Lectura comercial de la tienda"
-      subtitle="Primero volumen, monetización y calidad de venta. Después bajamos a medios de pago, clientes y conciliación."
-      sourceLabel="Tienda Nube"
-      sourceKey="tiendanube"
-      periodLabel={getPeriodLabel(preset, from, to)}
-      items={cards}
-      coverage={coverage}
-      storeId={storeId}
-    />
-  );
-}
-
-function StoreQuickDetails({ summary, devoluciones, ncrc }) {
-  if (!summary) return null;
-
-  const cards = [
-    ['Cuotas promedio', summary.avgCuotas?.toFixed(1) || '—'],
-    ['Devoluciones', Number(devoluciones?.count || 0).toLocaleString('es-AR')],
-    ['Total devuelto', fmt(devoluciones?.total)],
-    ['NC %', pct(ncrc?.ncPct)],
-  ];
-
-  return (
-    <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
-      {cards.map(([label, value]) => (
-        <div key={label} className="card p-4">
-          <p className="text-app-muted text-[10px] uppercase tracking-[0.18em]">{label}</p>
-          <p className="text-white text-[20px] font-bold mt-2 leading-none">{value}</p>
-        </div>
-      ))}
-    </div>
-  );
+  return {
+    ...summary,
+    ncPct: ncrc?.ncPct,
+    ncOrdenes: ncrc?.nc?.ordenes,
+    rcOrdenes: ncrc?.rc?.ordenes,
+    devolucionesCount: devoluciones?.count,
+    devolucionesTotal: devoluciones?.total,
+  };
 }
 
 function MedioPagoTable({ data }) {
@@ -818,8 +784,8 @@ export default function Tienda() {
           {
             id: 'commercial',
             label: 'Tienda comercial',
-            helper: 'KPIs + detalles rápidos + tabs',
-            blockIds: ['tienda-kpis', 'tienda-quick-details', 'tienda-tabs'],
+            helper: 'KPIs + tabs operativos',
+            blockIds: ['tienda-kpis', 'tienda-tabs'],
           },
           {
             id: 'audit',
@@ -833,13 +799,21 @@ export default function Tienda() {
             id: 'tienda-kpis',
             label: 'KPIs principales',
             category: 'Analítica',
-            content: <TiendaExecutiveStrip summary={data?.summary} preset={preset} from={from} to={to} coverage={coverage} storeId={storeId} />,
-          },
-          {
-            id: 'tienda-quick-details',
-            label: 'Detalles rápidos',
-            category: 'Analítica',
-            content: <StoreQuickDetails summary={data?.summary} devoluciones={data?.devoluciones} ncrc={data?.ncrc} />,
+            content: (
+              <SourceMetricsRow
+                sourceKey="tn"
+                title="Tienda Nube"
+                subtitle="Lectura comercial · volumen, monetización y calidad de venta"
+                periodLabel={getPeriodLabel(preset, from, to)}
+                availableMetrics={TIENDA_METRICS}
+                data={buildTiendaData(data?.summary, data?.ncrc, data?.devoluciones)}
+                deltas={null}
+                coverage={coverage}
+                storeId={storeId}
+                storageKey={`hooks-tienda-${storeId}`}
+                defaultSelected={TIENDA_DEFAULTS}
+              />
+            ),
           },
           {
             id: 'tienda-tabs',

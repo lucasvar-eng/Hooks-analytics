@@ -145,9 +145,9 @@ export default function AdCompareModal({ ads = [], onClose, onAnalyze }) {
             {onAnalyze && (
               <button
                 onClick={() => onAnalyze(ads.map((a) => a.metaId))}
-                className="bg-purple-500/15 text-purple-200 border border-purple-500/30 px-3.5 py-2 rounded-md text-[12px] font-semibold hover:bg-purple-500/25"
+                className="bg-purple-500/12 text-purple-200 border border-purple-500/25 px-3.5 py-2 rounded-md text-[12px] font-semibold hover:bg-purple-500/20"
               >
-                ★ Analizar mensaje IA
+                Ver lectura del mensaje
               </button>
             )}
             <button

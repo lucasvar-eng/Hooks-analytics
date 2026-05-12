@@ -1,12 +1,12 @@
 /**
- * Tabla de performance por ángulo de comunicación. Cada fila es un ángulo
- * detectado por Claude (transformación, social proof, etc.) con:
- *   - Cantidad de ads clasificados en él
- *   - Spend / revenue agregado
- *   - ROAS y CTR promedio del grupo
- *   - Recomendación basada en el ROAS
+ * Tabla comparativa por ángulo de comunicación. Cada fila es un ángulo
+ * (transformación, social proof, etc.) con métricas agregadas del grupo.
  *
- * Le da al usuario el insight clave: qué línea editorial funciona.
+ * No emite recomendaciones (Escalar/Pausar/etc.) — eso requiere criterios
+ * de tienda + ventana mínima de muestreo + objetivo de campaña. Por ahora
+ * sólo muestra los números crudos para que el usuario los lea con su
+ * propio criterio. Ver docs/research/analisis-creativos-pendiente.md
+ * para la definición del modelo de evaluación.
  */
 
 const ANGLE_EMOJI = {
@@ -49,22 +49,6 @@ function fmtMultiple(v, digits = 2) {
   return `${Number(v).toFixed(digits)}x`;
 }
 
-function recommendation(roas, ads, spend) {
-  if (!spend || spend <= 0) return { label: 'Sin actividad', tone: 'muted' };
-  if (ads < 2) return { label: 'Muy poca data', tone: 'muted' };
-  if (roas >= 3) return { label: 'Escalar', tone: 'good' };
-  if (roas >= 1.5) return { label: 'Mantener', tone: 'warn' };
-  if (roas > 0) return { label: 'Optimizar copy', tone: 'warn' };
-  return { label: 'Pausar masivo', tone: 'bad' };
-}
-
-const TONE_BG = {
-  good: 'bg-emerald-500/15 text-emerald-300',
-  warn: 'bg-amber-500/15 text-amber-300',
-  bad: 'bg-red-500/15 text-red-300',
-  muted: 'bg-white/[0.06] text-app-secondary',
-};
-
 function roasTone(v) {
   if (v == null || v === 0) return null;
   if (v >= 2.5) return '#6ee7b7';
@@ -72,37 +56,23 @@ function roasTone(v) {
   return '#fca5a5';
 }
 
-export default function AnglePerformanceTable({ data, onAnalyzeAll, analyzeProgress }) {
+export default function AnglePerformanceTable({ data }) {
   const angles = data?.angles || [];
   const totalAnalyzed = data?.totalAnalyzed || 0;
 
   if (angles.length === 0) {
     return (
       <div className="card p-6">
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          <div>
-            <h3 className="text-white text-[15px] font-semibold">Análisis IA por ángulo</h3>
-            <p className="text-app-secondary text-[12px] mt-1">
-              Claude clasifica cada ad por su propuesta de valor (urgencia, social proof, descuento, etc.)
-              para detectar qué línea editorial te funciona mejor.
-            </p>
-          </div>
-          {onAnalyzeAll && (
-            <button
-              onClick={onAnalyzeAll}
-              disabled={analyzeProgress?.running}
-              className="bg-purple-500/15 text-purple-200 border border-purple-500/30 px-4 py-2 rounded-md text-[12px] font-semibold hover:bg-purple-500/25 disabled:opacity-50"
-            >
-              {analyzeProgress?.running ? `Analizando... (${analyzeProgress.done}/${analyzeProgress.total})` : '★ Analizar ads con copy'}
-            </button>
-          )}
-        </div>
+        <h3 className="text-white text-[15px] font-semibold">Performance por ángulo de comunicación</h3>
+        <p className="text-app-secondary text-[12px] mt-1">
+          Cuando haya anuncios clasificados por ángulo, los vas a ver agrupados acá con su performance comparativa.
+        </p>
         <div className="mt-6 p-8 rounded-lg border border-dashed border-white/[0.08] text-center">
-          <p className="text-[28px] mb-2">★</p>
           <p className="text-white text-[14px] font-medium">Todavía no hay anuncios analizados</p>
           <p className="text-app-secondary text-[12px] mt-2 max-w-md mx-auto leading-relaxed">
-            Tocá "Analizar ads con copy" para que Claude clasifique cada anuncio por ángulo.
-            Después vas a poder ver acá qué línea editorial te rinde más.
+            El análisis de ángulos se carga manualmente desde la base por ahora. El criterio de
+            evaluación se está definiendo por tienda — ver
+            <code className="text-blue-300 mx-1 text-[11px]">docs/research/analisis-creativos-pendiente.md</code>.
           </p>
         </div>
       </div>
@@ -110,54 +80,17 @@ export default function AnglePerformanceTable({ data, onAnalyzeAll, analyzeProgr
   }
 
   const totalSpend = angles.reduce((s, a) => s + Number(a.spend || 0), 0);
-  const totalRevenue = angles.reduce((s, a) => s + Number(a.revenue || 0), 0);
-
-  // Insight clave: comparar el mejor ángulo con el peor (con spend significativo)
-  const withSpend = angles.filter((a) => a.spend > 0);
-  const sortedByRoas = [...withSpend].sort((a, b) => b.roas - a.roas);
-  const winner = sortedByRoas[0];
-  const loser = sortedByRoas[sortedByRoas.length - 1];
-  const showInsight = winner && loser && winner.angle !== loser.angle && winner.roas > loser.roas * 1.5;
 
   return (
-    <div className="card p-5 space-y-5">
+    <div className="card p-5 space-y-4">
       {/* Header */}
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h3 className="text-white text-[15px] font-semibold">Performance por ángulo de comunicación</h3>
-          <p className="text-app-secondary text-[12px] mt-1">
-            {totalAnalyzed} anuncios analizados · {angles.length} ángulos detectados · ordenado por ROAS
-          </p>
-        </div>
-        {onAnalyzeAll && (
-          <button
-            onClick={onAnalyzeAll}
-            disabled={analyzeProgress?.running}
-            className="bg-purple-500/15 text-purple-200 border border-purple-500/30 px-3.5 py-2 rounded-md text-[12px] font-semibold hover:bg-purple-500/25 disabled:opacity-50"
-          >
-            {analyzeProgress?.running ? `Analizando... (${analyzeProgress.done}/${analyzeProgress.total})` : '★ Analizar más ads'}
-          </button>
-        )}
+      <div>
+        <h3 className="text-white text-[15px] font-semibold">Performance por ángulo de comunicación</h3>
+        <p className="text-app-secondary text-[12px] mt-1">
+          {totalAnalyzed} anuncios clasificados · {angles.length} ángulos detectados · ordenado por ROAS.
+          Vista comparativa sin recomendaciones — los criterios de evaluación se ajustan por tienda.
+        </p>
       </div>
-
-      {/* Insight clave */}
-      {showInsight && (
-        <div
-          className="p-4 rounded-lg border border-emerald-500/25"
-          style={{ background: 'linear-gradient(90deg, rgba(16,185,129,0.10), rgba(59,130,246,0.04))' }}
-        >
-          <p className="inline-flex items-center gap-2 px-2 py-0.5 bg-emerald-500/20 text-emerald-300 rounded text-[10px] font-bold uppercase tracking-[0.14em]">
-            ★ Insight clave
-          </p>
-          <p className="text-white text-[14px] leading-relaxed mt-2">
-            Tus ads de <mark className="bg-amber-400/20 text-amber-200 px-1 rounded font-semibold">{winner.label}</mark> tienen ROAS promedio{' '}
-            <mark className="bg-amber-400/20 text-amber-200 px-1 rounded font-semibold">{fmtMultiple(winner.roas)}</mark>, mientras que los de{' '}
-            <mark className="bg-amber-400/20 text-amber-200 px-1 rounded font-semibold">{loser.label}</mark> apenas llegan a{' '}
-            <mark className="bg-amber-400/20 text-amber-200 px-1 rounded font-semibold">{fmtMultiple(loser.roas)}</mark>.
-            {loser.spend > 0 && ` Reasignar ${fmtMoneyShort(loser.spend)} del peor ángulo al ganador podría facturar ~${fmtMoneyShort(loser.spend * (winner.roas - loser.roas))} más.`}
-          </p>
-        </div>
-      )}
 
       {/* Tabla */}
       <div className="overflow-x-auto">
@@ -169,13 +102,11 @@ export default function AnglePerformanceTable({ data, onAnalyzeAll, analyzeProgr
               <th className="text-center font-semibold pb-3 px-3">Spend</th>
               <th className="text-center font-semibold pb-3 px-3">Revenue</th>
               <th className="text-center font-semibold pb-3 px-3">ROAS prom.</th>
-              <th className="text-center font-semibold pb-3 px-3">CTR prom.</th>
-              <th className="text-center font-semibold pb-3 pl-3">Recomendación</th>
+              <th className="text-center font-semibold pb-3 pl-3">CTR prom.</th>
             </tr>
           </thead>
           <tbody>
             {angles.map((a) => {
-              const rec = recommendation(a.roas, a.ads, a.spend);
               const tone = roasTone(a.roas);
               const sharePct = totalSpend > 0 ? (a.spend / totalSpend) * 100 : 0;
               return (
@@ -216,12 +147,7 @@ export default function AnglePerformanceTable({ data, onAnalyzeAll, analyzeProgr
                       </div>
                     </div>
                   </td>
-                  <td className="py-3.5 px-3 text-center text-app-secondary tabular-nums">{fmtPct(a.ctr)}</td>
-                  <td className="py-3.5 pl-3 text-center">
-                    <span className={`inline-flex items-center px-2.5 py-1 rounded text-[10.5px] font-semibold ${TONE_BG[rec.tone]}`}>
-                      {rec.label}
-                    </span>
-                  </td>
+                  <td className="py-3.5 pl-3 text-center text-app-secondary tabular-nums">{fmtPct(a.ctr)}</td>
                 </tr>
               );
             })}

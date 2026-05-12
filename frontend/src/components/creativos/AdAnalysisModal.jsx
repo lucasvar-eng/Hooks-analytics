@@ -32,7 +32,7 @@ function fmtMultiple(v, digits = 2) {
   return `${Number(v).toFixed(digits)}x`;
 }
 
-export default function AdAnalysisModal({ ads = [], analyses = {}, onClose, onAnalyze, analyzing = false, error = null }) {
+export default function AdAnalysisModal({ ads = [], analyses = {}, onClose }) {
   useEffect(() => {
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = ''; };
@@ -44,11 +44,6 @@ export default function AdAnalysisModal({ ads = [], analyses = {}, onClose, onAn
   }, [onClose]);
 
   if (!ads || ads.length === 0) return null;
-
-  const adsWithCopy = ads.filter((a) => a.creativeBody || a.creativeTitle);
-  const missingAnalysisIds = adsWithCopy
-    .filter((a) => !analyses[a.metaId])
-    .map((a) => a.metaId);
 
   return (
     <div
@@ -63,40 +58,23 @@ export default function AdAnalysisModal({ ads = [], analyses = {}, onClose, onAn
         {/* Header */}
         <div className="sticky top-0 z-10 flex items-center justify-between gap-3 px-6 py-4 border-b border-white/[0.06] bg-[#0f0f12]">
           <div>
-            <p className="text-app-muted text-[11px] uppercase tracking-[0.18em]">★ Análisis IA del mensaje</p>
+            <p className="text-app-muted text-[11px] uppercase tracking-[0.18em]">Lectura del mensaje</p>
             <h2 className="text-white text-[18px] font-semibold mt-1">
-              {ads.length === 1 ? 'Detalle del anuncio' : `${ads.length} anuncios analizados`}
+              {ads.length === 1 ? 'Detalle del anuncio' : `${ads.length} anuncios`}
             </h2>
           </div>
-          <div className="flex items-center gap-2">
-            {missingAnalysisIds.length > 0 && onAnalyze && (
-              <button
-                onClick={() => onAnalyze(missingAnalysisIds)}
-                disabled={analyzing}
-                className="bg-purple-500/15 text-purple-200 border border-purple-500/30 px-3.5 py-2 rounded-md text-[12px] font-semibold hover:bg-purple-500/25 disabled:opacity-50"
-              >
-                {analyzing ? 'Analizando...' : `Analizar ${missingAnalysisIds.length} faltantes`}
-              </button>
-            )}
-            <button
-              onClick={onClose}
-              className="bg-transparent text-app-secondary border border-white/[0.12] px-3 py-2 rounded-md text-[12px] hover:text-white"
-            >
-              Cerrar (Esc)
-            </button>
-          </div>
+          <button
+            onClick={onClose}
+            className="bg-transparent text-app-secondary border border-white/[0.12] px-3 py-2 rounded-md text-[12px] hover:text-white"
+          >
+            Cerrar (Esc)
+          </button>
         </div>
-
-        {error && (
-          <div className="px-6 py-3 bg-red-500/10 border-b border-red-500/20 text-red-300 text-[12.5px]">
-            {error}
-          </div>
-        )}
 
         {/* Lista de ads */}
         <div className="divide-y divide-white/[0.05]">
           {ads.map((ad) => (
-            <AdAnalysisRow key={ad.metaId} ad={ad} analysis={analyses[ad.metaId]} analyzing={analyzing} />
+            <AdAnalysisRow key={ad.metaId} ad={ad} analysis={analyses[ad.metaId]} />
           ))}
         </div>
       </div>
@@ -104,7 +82,7 @@ export default function AdAnalysisModal({ ads = [], analyses = {}, onClose, onAn
   );
 }
 
-function AdAnalysisRow({ ad, analysis, analyzing }) {
+function AdAnalysisRow({ ad, analysis }) {
   const m = ad.metrics || {};
   const hasCopy = ad.creativeBody || ad.creativeTitle;
 
@@ -173,21 +151,24 @@ function AdAnalysisRow({ ad, analysis, analyzing }) {
                     <span className="text-white">{analysis.valueProposition}</span>
                   </p>
                 )}
-                {/* Rationale */}
+                {/* Lectura del mensaje */}
                 {analysis.rationale && (
                   <div
                     className="mt-4 p-4 rounded-lg border-l-[3px] border-purple-500"
                     style={{ background: 'linear-gradient(90deg, rgba(168,85,247,0.10), transparent)' }}
                   >
-                    <p className="text-[10px] uppercase tracking-[0.14em] font-bold text-purple-300">★ IA · por qué funciona o no</p>
+                    <p className="text-[10px] uppercase tracking-[0.14em] font-bold text-purple-300">Lectura del mensaje</p>
                     <p className="text-[12.5px] text-white leading-relaxed mt-2">{analysis.rationale}</p>
+                    <p className="text-[10.5px] text-app-muted mt-2 italic">
+                      Descriptivo del copy, no prescriptivo. Las decisiones de pausar/escalar requieren ventana mínima de muestreo y criterio por tienda — ver docs/research/analisis-creativos-pendiente.md.
+                    </p>
                   </div>
                 )}
               </>
             ) : (
               <div className="mt-4 p-4 rounded-lg border border-dashed border-white/[0.1] text-center">
                 <p className="text-app-muted text-[12px]">
-                  {analyzing ? 'Claude analizando...' : 'Este ad todavía no fue analizado. Tocá "Analizar faltantes" arriba.'}
+                  Este ad todavía no tiene clasificación cargada.
                 </p>
               </div>
             )}

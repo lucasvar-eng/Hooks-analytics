@@ -160,7 +160,7 @@ export default function AdGallery({
             {selectedIds.length} {selectedIds.length === 1 ? 'anuncio' : 'anuncios'} seleccionado{selectedIds.length === 1 ? '' : 's'}
           </span>
           <span className="text-app-secondary text-[11.5px]">
-            {selectedIds.length >= 2 ? 'Listo para comparar lado a lado o analizar mensajes' : 'Sumá al menos 2 para comparar'}
+            {selectedIds.length >= 2 ? 'Listo para comparar lado a lado o ver la lectura del mensaje' : 'Sumá al menos 2 para comparar'}
           </span>
           <div className="ml-auto flex gap-2">
             <button
@@ -174,7 +174,7 @@ export default function AdGallery({
                 onClick={() => onAnalyze(selectedIds)}
                 className="bg-transparent text-app-secondary border border-white/[0.12] px-3 py-1.5 rounded-md text-[12px] hover:text-white"
               >
-                Analizar mensaje
+                Ver lectura
               </button>
             )}
             {onCompare && (

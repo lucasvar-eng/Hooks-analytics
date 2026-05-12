@@ -29,8 +29,6 @@ export default function Creativos() {
   const [analysisIds, setAnalysisIds] = useState([]);
   const [analyses, setAnalyses] = useState({});
   const [anglesData, setAnglesData] = useState({ angles: [], totalAnalyzed: 0 });
-  const [analyzing, setAnalyzing] = useState(false);
-  const [analyzeError, setAnalyzeError] = useState(null);
 
   const fetchAds = useCallback(async () => {
     setLoading(true);
@@ -93,47 +91,10 @@ export default function Creativos() {
       .slice(0, 4);
   }, [compareOpen, selectedIds, ads]);
 
-  const runAnalysis = useCallback(async (metaIds) => {
-    if (!metaIds || metaIds.length === 0) return;
-    setAnalyzing(true);
-    setAnalyzeError(null);
-    try {
-      const { data } = await api.post(`/api/stores/${storeId}/creativos/analyze`, { metaIds });
-      setAnalyses((curr) => ({ ...curr, ...data.analyses }));
-      // refresh de la tabla de ángulos para incluir los nuevos
-      fetchAngles();
-      if (data.stats?.failed > 0) {
-        setAnalyzeError(`${data.stats.failed} ads fallaron — revisá créditos de Anthropic en Settings.`);
-      }
-    } catch (err) {
-      const msg = err?.response?.data?.error || err?.message || 'Error al llamar a la IA';
-      setAnalyzeError(msg);
-    } finally {
-      setAnalyzing(false);
-    }
-  }, [storeId, fetchAngles]);
-
   const handleAnalyze = (ids) => {
     if (!ids || ids.length === 0) return;
     setAnalysisIds(ids);
     setAnalysisOpen(true);
-    setAnalyzeError(null);
-    // Si alguno no tiene análisis cacheado, dispararlo automáticamente
-    const missing = ids.filter((id) => !analyses[id]);
-    if (missing.length > 0) runAnalysis(missing);
-  };
-
-  const handleAnalyzeAll = () => {
-    // Solo analizar ads con copy y no analizados todavía
-    const targets = ads
-      .filter((a) => (a.creativeBody || a.creativeTitle) && !analyses[a.metaId])
-      .slice(0, 30) // batch limit razonable
-      .map((a) => a.metaId);
-    if (targets.length === 0) {
-      setAnalyzeError('No hay ads con copy pendientes de analizar.');
-      return;
-    }
-    runAnalysis(targets);
   };
 
   const analysisAds = useMemo(() => {
@@ -180,11 +141,7 @@ export default function Creativos() {
         onAnalyze={handleAnalyze}
       />
 
-      <AnglePerformanceTable
-        data={anglesData}
-        onAnalyzeAll={handleAnalyzeAll}
-        analyzeProgress={analyzing ? { running: true, done: 0, total: '?' } : null}
-      />
+      <AnglePerformanceTable data={anglesData} />
 
       <div className="card p-5 space-y-4">
         <div>
@@ -210,9 +167,6 @@ export default function Creativos() {
           ads={analysisAds}
           analyses={analyses}
           onClose={() => setAnalysisOpen(false)}
-          onAnalyze={runAnalysis}
-          analyzing={analyzing}
-          error={analyzeError}
         />
       )}
     </div>

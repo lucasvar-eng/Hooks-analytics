@@ -32,6 +32,25 @@ function fmtDelta(pct, options = {}) {
   };
 }
 
+/**
+ * Devuelve 'good' | 'warn' | 'bad' | null basado en thresholds simples.
+ * Convención: thresholds.good (mínimo para verde), thresholds.bad (máximo para rojo).
+ * Si invert es true, alto = malo (ej. CPA, Ad Spend).
+ */
+function toneFor(value, thresholds) {
+  if (value == null || isNaN(value) || !thresholds) return null;
+  const { good, bad, invert } = thresholds;
+  const v = Number(value);
+  if (invert) {
+    if (good != null && v <= good) return 'good';
+    if (bad != null && v >= bad) return 'bad';
+    return null;
+  }
+  if (good != null && v >= good) return 'good';
+  if (bad != null && v <= bad) return 'bad';
+  return null;
+}
+
 export const META_METRICS = [
   { key: 'adSpend', defaultLabel: 'Ad Spend',
     getValue: (d) => fmtMoney(d?.adSpend),
@@ -41,7 +60,8 @@ export const META_METRICS = [
     getDelta: (_, dx) => fmtDelta(dx?.metaPurchaseValue || dx?.revenue) },
   { key: 'roas', defaultLabel: 'ROAS',
     getValue: (d) => fmtMultiple(d?.roas),
-    getDelta: (_, dx) => fmtDelta(dx?.roas) },
+    getDelta: (_, dx) => fmtDelta(dx?.roas),
+    getTone: (d) => toneFor(d?.roas, { good: 2.5, bad: 1.5 }) },
   { key: 'cpa', defaultLabel: 'CPA',
     getValue: (d) => fmtMoney(d?.cpa),
     getDelta: (_, dx) => fmtDelta(dx?.cpa, { invert: true }) },
@@ -50,7 +70,8 @@ export const META_METRICS = [
     getDelta: (_, dx) => fmtDelta(dx?.metaPurchases) },
   { key: 'ctr', defaultLabel: 'CTR',
     getValue: (d) => fmtPct(d?.ctr, 2),
-    getDelta: (_, dx) => fmtDelta(dx?.ctr) },
+    getDelta: (_, dx) => fmtDelta(dx?.ctr),
+    getTone: (d) => toneFor(d?.ctr, { good: 1.5, bad: 0.5 }) },
   { key: 'cpc', defaultLabel: 'CPC',
     getValue: (d) => fmtMoney(d?.cpc),
     getDelta: (_, dx) => fmtDelta(dx?.cpc, { invert: true }) },
@@ -86,10 +107,12 @@ export const TN_METRICS = [
     getDelta: (_, dx) => fmtDelta(dx?.aovNeto), coverageAware: true },
   { key: 'cvr', defaultLabel: 'CVR',
     getValue: (d) => fmtPct(d?.conversionRate, 2),
-    getDelta: (_, dx) => fmtDelta(dx?.conversionRate) },
+    getDelta: (_, dx) => fmtDelta(dx?.conversionRate),
+    getTone: (d) => toneFor(d?.conversionRate, { good: 1.0, bad: 0.3 }) },
   { key: 'ncPct', defaultLabel: '% NC',
     getValue: (d) => fmtPct(d?.ncPct, 1),
-    getSub: () => 'Clientes nuevos' },
+    getSub: () => 'Clientes nuevos',
+    getTone: (d) => toneFor(d?.ncPct, { good: 50, bad: 90, invert: true }) },
   { key: 'netRevenue', defaultLabel: 'Revenue neto',
     getValue: (d) => fmtMoney(d?.netRevenue),
     getDelta: (_, dx) => fmtDelta(dx?.netRevenue),
@@ -106,6 +129,7 @@ export const PNL_METRICS = [
     getValue: (d) => fmtPct(d?.officialProfitMargin ?? d?.adjustedProfitMargin, 2),
     getDelta: (_, dx) => fmtDelta(dx?.officialProfitMargin ?? dx?.adjustedProfitMargin),
     getSub: () => 'Sobre ingresos',
+    getTone: (d) => toneFor(d?.officialProfitMargin ?? d?.adjustedProfitMargin, { good: 30, bad: 10 }),
     coverageAware: true },
   { key: 'profitMarginBruto', defaultLabel: 'Margen bruto',
     getValue: (d) => fmtPct(d?.profitMargin, 2),
@@ -115,7 +139,8 @@ export const PNL_METRICS = [
   { key: 'trueRoasPnl', defaultLabel: 'True ROAS',
     getValue: (d) => fmtMultiple(d?.officialTrueRoas ?? d?.trueRoas),
     getDelta: (_, dx) => fmtDelta(dx?.officialTrueRoas ?? dx?.trueRoas),
-    getSub: () => 'Profit / Ad Spend' },
+    getSub: () => 'Profit / Ad Spend',
+    getTone: (d) => toneFor(d?.officialTrueRoas ?? d?.trueRoas, { good: 2, bad: 1 }) },
   { key: 'breakevenRoas', defaultLabel: 'Breakeven ROAS',
     getValue: (d, target) => fmtMultiple(target?.breakeven?.roasBreakeven),
     getSub: () => 'A partir de eso, ganás' },

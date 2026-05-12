@@ -2,6 +2,14 @@
 export default {
   content: ['./index.html', './src/**/*.{js,jsx}'],
   darkMode: 'class',
+  // Clases construidas dinámicamente vía template literal (className={`...--${tone}`})
+  // no son detectadas por el extractor del scanner. Hay que listarlas o usar regex.
+  safelist: [
+    {
+      // Cualquier BEM modifier de los componentes del Resumen.
+      pattern: /^resumen-(kpi|kpi__delta|alert-icon|highlight__rank|highlight__value|source-row__brand-icon)(--[a-z-]+)?$/,
+    },
+  ],
   theme: {
     extend: {
       fontFamily: {

@@ -410,21 +410,12 @@
   .resumen-source-row__brand {
     @apply flex items-center gap-2.5;
   }
-  .resumen-source-row__brand-icon {
-    @apply w-7 h-7 rounded-lg flex items-center justify-center font-extrabold text-[14px] text-white shrink-0;
-  }
-  .resumen-source-row__brand-icon--meta {
-    background: linear-gradient(135deg, #1877F2 0%, #0866FF 100%);
-  }
-  .resumen-source-row__brand-icon--tn {
-    background: linear-gradient(135deg, #FF6B35 0%, #FF8559 100%);
-  }
-  .resumen-source-row__brand-icon--pnl {
-    background: linear-gradient(135deg, #16a34a 0%, #22c55e 100%);
+  .resumen-source-row__brand-logo {
+    @apply flex items-center justify-center shrink-0;
   }
   .resumen-source-row__brand-name {
-    @apply text-[12px] font-bold uppercase;
-    letter-spacing: 0.05em;
+    @apply text-[13px] font-bold;
+    letter-spacing: 0.02em;
     color: var(--text-primary);
   }
   .resumen-source-row__brand-sub {
@@ -455,29 +446,58 @@
     background: var(--border-subtle);
   }
   .resumen-kpi {
-    @apply flex flex-col gap-1.5 px-5 py-4;
+    @apply flex flex-col gap-2 px-5 py-4 transition;
     background: var(--bg-card);
   }
   .resumen-kpi__label {
-    @apply text-[10px] font-bold uppercase;
-    letter-spacing: 0.16em;
-    color: var(--text-muted);
+    /* más grande, blanco, menos tracking — lectura más natural */
+    @apply text-[13px] font-semibold;
+    letter-spacing: 0.01em;
+    color: var(--text-primary);
   }
   .resumen-kpi__value {
-    @apply text-[22px] font-extrabold leading-tight;
+    @apply text-[24px] font-extrabold leading-tight;
     letter-spacing: -0.02em;
     color: var(--text-primary);
     font-variant-numeric: tabular-nums;
   }
+  /* Delta como chip con fondo color tenue (no solo texto suelto) */
   .resumen-kpi__delta {
-    @apply text-[11px] font-semibold mt-0.5;
+    @apply inline-flex items-center text-[11px] font-bold px-2 py-1 rounded-md self-start;
+    letter-spacing: 0.01em;
   }
-  .resumen-kpi__delta--up { color: #34d399; }
-  .resumen-kpi__delta--down { color: #f87171; }
-  .resumen-kpi__delta--neutral { color: var(--text-muted); }
+  .resumen-kpi__delta--up {
+    background: rgba(34,197,94,0.14);
+    color: #4ade80;
+    border: 1px solid rgba(34,197,94,0.22);
+  }
+  .resumen-kpi__delta--down {
+    background: rgba(239,68,68,0.14);
+    color: #fca5a5;
+    border: 1px solid rgba(239,68,68,0.22);
+  }
+  .resumen-kpi__delta--neutral {
+    background: rgba(255,255,255,0.04);
+    color: var(--text-muted);
+    border: 1px solid var(--border-subtle);
+  }
   .resumen-kpi__sub {
     @apply text-[11px];
     color: var(--text-muted);
+  }
+
+  /* Tone-aware KPI background — condicional según thresholds del catalog */
+  .resumen-kpi--tone-good {
+    background: linear-gradient(135deg, rgba(34,197,94,0.08) 0%, rgba(34,197,94,0.02) 100%);
+    box-shadow: inset 3px 0 0 0 #22c55e;
+  }
+  .resumen-kpi--tone-warn {
+    background: linear-gradient(135deg, rgba(245,158,11,0.08) 0%, rgba(245,158,11,0.02) 100%);
+    box-shadow: inset 3px 0 0 0 #f59e0b;
+  }
+  .resumen-kpi--tone-bad {
+    background: linear-gradient(135deg, rgba(239,68,68,0.08) 0%, rgba(239,68,68,0.02) 100%);
+    box-shadow: inset 3px 0 0 0 #ef4444;
   }
 
   /* Metrics picker inline */

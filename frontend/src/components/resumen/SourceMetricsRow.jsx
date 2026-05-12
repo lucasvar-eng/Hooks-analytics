@@ -1,5 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
 import MetricCompleteness from '../common/MetricCompleteness';
+import { MetaLogo, TiendanubeLogo, PnlLogo } from './SourceLogos';
+
+const LOGO_BY_SOURCE = {
+  meta: MetaLogo,
+  tn: TiendanubeLogo,
+  pnl: PnlLogo,
+};
 
 /**
  * Fila de KPIs agrupados por fuente (Meta, Tienda Nube, P&L).
@@ -108,8 +115,11 @@ export default function SourceMetricsRow({
     <div className="resumen-source-row">
       <div className="resumen-source-row__header">
         <div className="resumen-source-row__brand">
-          <span className={`resumen-source-row__brand-icon resumen-source-row__brand-icon--${sourceKey}`}>
-            {sourceKey === 'meta' ? 'M' : sourceKey === 'tn' ? 'TN' : '$'}
+          <span className="resumen-source-row__brand-logo">
+            {(() => {
+              const Logo = LOGO_BY_SOURCE[sourceKey];
+              return Logo ? <Logo size={28} /> : null;
+            })()}
           </span>
           <div>
             <div className="resumen-source-row__brand-name">{title}</div>
@@ -212,9 +222,10 @@ export default function SourceMetricsRow({
           const value = m.getValue ? m.getValue(data, target) : '—';
           const delta = m.getDelta ? m.getDelta(data, deltas, target) : null;
           const sub = m.getSub ? m.getSub(data, target) : null;
+          const tone = m.getTone ? m.getTone(data, target) : null;
           const label = customNames[m.key] || m.defaultLabel;
           return (
-            <div key={m.key} className="resumen-kpi">
+            <div key={m.key} className={`resumen-kpi ${tone ? `resumen-kpi--tone-${tone}` : ''}`}>
               <div className="flex items-center gap-1.5 flex-wrap">
                 <span className="resumen-kpi__label">{label}</span>
                 {m.coverageAware && coverage?.isPreliminary && (
@@ -222,10 +233,10 @@ export default function SourceMetricsRow({
                 )}
               </div>
               <div className="resumen-kpi__value">{value}</div>
-              {delta && (
-                <div className={`resumen-kpi__delta resumen-kpi__delta--${delta.tone || 'neutral'}`}>
+              {delta && delta.text !== '—' && (
+                <span className={`resumen-kpi__delta resumen-kpi__delta--${delta.tone || 'neutral'}`}>
                   {delta.text}
-                </div>
+                </span>
               )}
               {sub && <div className="resumen-kpi__sub">{sub}</div>}
             </div>

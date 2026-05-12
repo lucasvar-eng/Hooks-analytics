@@ -8,6 +8,7 @@ import TopInsightBar from '../components/insights/TopInsightBar';
 import { getPeriodLabel } from '../components/common/MasterMetricBoard';
 import SourceMetricsRow from '../components/resumen/SourceMetricsRow';
 import AdGallery from '../components/creativos/AdGallery';
+import AdCompareModal from '../components/creativos/AdCompareModal';
 import {
   CREATIVOS_METRICS,
   CREATIVOS_DEFAULTS,
@@ -21,6 +22,7 @@ export default function Creativos() {
   const [ads, setAds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState([]);
+  const [compareOpen, setCompareOpen] = useState(false);
 
   const fetchAds = useCallback(async () => {
     setLoading(true);
@@ -48,10 +50,17 @@ export default function Creativos() {
   };
 
   const handleCompare = (ids) => {
-    // Capa 2: navegará al comparador. Por ahora solo console.log
-    console.log('Compare ads:', ids);
-    alert(`Capa 2 (Comparador) próximamente · ${ids.length} ads seleccionados`);
+    if (!ids || ids.length < 2) return;
+    setCompareOpen(true);
   };
+
+  const compareAds = useMemo(() => {
+    if (!compareOpen) return [];
+    return selectedIds
+      .map((id) => ads.find((a) => a.metaId === id))
+      .filter(Boolean)
+      .slice(0, 4);
+  }, [compareOpen, selectedIds, ads]);
 
   const handleAnalyze = (ids) => {
     // Capa 3: análisis IA
@@ -106,6 +115,14 @@ export default function Creativos() {
         <ClaudeActionBar storeId={storeId} storeName={store?.nombre} from={from} to={to} mode="creativos" />
         <AIAnalysisPanel storeId={storeId} section="creativos" from={from} to={to} />
       </div>
+
+      {compareOpen && compareAds.length >= 2 && (
+        <AdCompareModal
+          ads={compareAds}
+          onClose={() => setCompareOpen(false)}
+          onAnalyze={handleAnalyze}
+        />
+      )}
     </div>
   );
 }

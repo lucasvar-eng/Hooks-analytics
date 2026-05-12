@@ -70,18 +70,18 @@ function ctrTone(v) {
 }
 
 const COLUMNS = [
-  { key: 'status', label: 'Estado', align: 'left', width: 'w-[110px]' },
+  { key: 'status', label: 'Estado', align: 'left', width: 'w-[100px]' },
   { key: 'nombre', label: 'Campaña', align: 'left', width: 'w-auto' },
-  { key: 'spend', label: 'Gasto', align: 'right', width: 'w-[110px]' },
-  { key: 'spendShare', label: '% spend', align: 'right', width: 'w-[80px]' },
-  { key: 'revenue', label: 'Revenue ads', align: 'right', width: 'w-[120px]' },
-  { key: 'roas', label: 'ROAS', align: 'right', width: 'w-[80px]' },
-  { key: 'purchases', label: 'Compras', align: 'right', width: 'w-[80px]' },
-  { key: 'cpa', label: 'CPA', align: 'right', width: 'w-[100px]' },
-  { key: 'cpc', label: 'CPC', align: 'right', width: 'w-[80px]' },
-  { key: 'ctr', label: 'CTR', align: 'right', width: 'w-[80px]' },
-  { key: 'reach', label: 'Alcance', align: 'right', width: 'w-[100px]' },
-  { key: 'verdict', label: 'Veredicto', align: 'left', width: 'w-[110px]' },
+  { key: 'spend', label: 'Gasto', align: 'center', width: 'w-[120px]' },
+  { key: 'spendShare', label: '% spend', align: 'center', width: 'w-[120px]' },
+  { key: 'revenue', label: 'Revenue ads', align: 'center', width: 'w-[130px]' },
+  { key: 'roas', label: 'ROAS', align: 'center', width: 'w-[90px]' },
+  { key: 'purchases', label: 'Compras', align: 'center', width: 'w-[90px]' },
+  { key: 'cpa', label: 'CPA', align: 'center', width: 'w-[110px]' },
+  { key: 'cpc', label: 'CPC', align: 'center', width: 'w-[90px]' },
+  { key: 'ctr', label: 'CTR', align: 'center', width: 'w-[90px]' },
+  { key: 'reach', label: 'Alcance', align: 'center', width: 'w-[110px]' },
+  { key: 'verdict', label: 'Veredicto', align: 'center', width: 'w-[110px]' },
 ];
 
 export default function CampaignsTableRich({ campaigns = [] }) {
@@ -263,10 +263,14 @@ export default function CampaignsTableRich({ campaigns = [] }) {
             <tr className="text-[10px] uppercase tracking-[0.14em] text-app-muted border-b border-white/[0.06]">
               {COLUMNS.map((col) => {
                 const active = sortBy === col.key;
+                const alignCls =
+                  col.align === 'center' ? 'text-center' :
+                  col.align === 'right' ? 'text-right' :
+                  'text-left';
                 return (
                   <th
                     key={col.key}
-                    className={`${col.width} pb-3 pt-1 font-semibold cursor-pointer select-none hover:text-white transition ${col.align === 'right' ? 'text-right' : 'text-left'} ${active ? 'text-white' : ''}`}
+                    className={`${col.width} ${alignCls} px-4 pb-3 pt-1 font-semibold cursor-pointer select-none hover:text-white transition ${active ? 'text-white' : ''}`}
                     onClick={() => toggleSort(col.key)}
                   >
                     <span className="inline-flex items-center gap-1">
@@ -294,14 +298,14 @@ export default function CampaignsTableRich({ campaigns = [] }) {
                 return (
                   <tr key={c.metaId} className="border-b border-white/[0.03] hover:bg-white/[0.015] transition">
                     {/* Estado */}
-                    <td className="py-2.5 pr-2">
+                    <td className="py-3 px-4">
                       <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10.5px] font-medium ${status.bg} ${status.text}`}>
                         <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: status.dot }} />
                         {status.label}
                       </span>
                     </td>
                     {/* Campaña */}
-                    <td className="py-2.5 pr-3">
+                    <td className="py-3 px-4">
                       <p className="text-white font-medium leading-tight truncate max-w-[420px]" title={c.nombre}>{c.nombre}</p>
                       <p className="text-app-muted text-[10.5px] mt-0.5 leading-tight">
                         <span>{c.objective || 'sin objetivo'}</span>
@@ -310,52 +314,52 @@ export default function CampaignsTableRich({ campaigns = [] }) {
                       </p>
                     </td>
                     {/* Spend */}
-                    <td className="py-2.5 pr-3 text-right">
+                    <td className="py-3 px-4 text-center">
                       <p className="text-white tabular-nums">{c._spend > 0 ? fmtMoney(c._spend) : <span className="text-app-muted">—</span>}</p>
                     </td>
                     {/* % Spend con minibar */}
-                    <td className="py-2.5 pr-3 text-right">
+                    <td className="py-3 px-4">
                       {c._spend > 0 ? (
-                        <div className="flex items-center justify-end gap-2">
+                        <div className="flex items-center justify-center gap-2">
                           <div className="w-12 h-1 rounded-full bg-white/[0.05] overflow-hidden">
                             <div className="h-full bg-blue-400/70 rounded-full" style={{ width: `${Math.min(c._spendShare, 100)}%` }} />
                           </div>
-                          <span className="text-app-secondary tabular-nums text-[11.5px] w-10">{c._spendShare.toFixed(1)}%</span>
+                          <span className="text-app-secondary tabular-nums text-[11.5px] w-10 text-right">{c._spendShare.toFixed(1)}%</span>
                         </div>
-                      ) : <span className="text-app-muted">—</span>}
+                      ) : <p className="text-app-muted text-center">—</p>}
                     </td>
                     {/* Revenue */}
-                    <td className="py-2.5 pr-3 text-right">
+                    <td className="py-3 px-4 text-center">
                       <p className="text-emerald-300 tabular-nums">{c._revenue > 0 ? fmtMoney(c._revenue) : <span className="text-app-muted">—</span>}</p>
                     </td>
                     {/* ROAS */}
-                    <td className="py-2.5 pr-3 text-right">
+                    <td className="py-3 px-4 text-center">
                       <p className={`tabular-nums font-semibold ${roasTone(c._roas)}`}>
                         {c._spend > 0 ? fmtMultiple(c._roas) : <span className="text-app-muted font-normal">—</span>}
                       </p>
                     </td>
                     {/* Compras */}
-                    <td className="py-2.5 pr-3 text-right">
+                    <td className="py-3 px-4 text-center">
                       <p className="text-white tabular-nums">{c._purchases > 0 ? fmtNum(c._purchases) : <span className="text-app-muted">—</span>}</p>
                     </td>
                     {/* CPA */}
-                    <td className="py-2.5 pr-3 text-right">
+                    <td className="py-3 px-4 text-center">
                       <p className="text-app-secondary tabular-nums">{c._purchases > 0 ? fmtMoney(c._cpa) : <span className="text-app-muted">—</span>}</p>
                     </td>
                     {/* CPC */}
-                    <td className="py-2.5 pr-3 text-right">
+                    <td className="py-3 px-4 text-center">
                       <p className="text-app-secondary tabular-nums">{c._cpc > 0 ? fmtMoney(c._cpc) : <span className="text-app-muted">—</span>}</p>
                     </td>
                     {/* CTR */}
-                    <td className="py-2.5 pr-3 text-right">
+                    <td className="py-3 px-4 text-center">
                       <p className={`tabular-nums ${ctrTone(c._ctr)}`}>{c._impressions > 0 ? fmtPct(c._ctr) : <span className="text-app-muted">—</span>}</p>
                     </td>
                     {/* Alcance */}
-                    <td className="py-2.5 pr-3 text-right">
+                    <td className="py-3 px-4 text-center">
                       <p className="text-app-secondary tabular-nums">{c._reach > 0 ? fmtNum(c._reach) : <span className="text-app-muted">—</span>}</p>
                     </td>
                     {/* Veredicto */}
-                    <td className="py-2.5 pr-2">
+                    <td className="py-3 px-4 text-center">
                       {verdict ? (
                         <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10.5px] font-semibold ${verdict.bg} ${verdict.text}`}>
                           {verdict.label}

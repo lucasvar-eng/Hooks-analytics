@@ -12,5 +12,8 @@ router.get('/stores/:id/creativos/framework-overview', auth, creativeController.
 router.get('/stores/:id/creativos/pipeline', auth, creativeController.getCreativePipeline);
 router.get('/stores/:id/creativos/master-sheet', auth, creativeController.getCreativeMasterSheet);
 router.post('/stores/:id/creativos/master-sheet/sync', auth, creativeController.syncCreativeMasterSheet);
+router.post('/stores/:id/creativos/analyze', auth, creativeController.analyzeAds);
+router.get('/stores/:id/creativos/angles', auth, creativeController.getAngles);
+router.get('/stores/:id/creativos/analyses', auth, creativeController.getAllAnalyses);
 
 module.exports = router;

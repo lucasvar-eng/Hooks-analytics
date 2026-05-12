@@ -1,21 +1,17 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import api from '../services/api';
 import { getPeriodLabel } from '../components/common/MasterMetricBoard';
 import SourceMetricsRow from '../components/resumen/SourceMetricsRow';
 import { TIENDA_METRICS, TIENDA_DEFAULTS } from '../components/tienda/tiendaMetricsCatalog';
 import DailySalesRevenueChart from '../components/tienda/DailySalesRevenueChart';
+import DailySalesTable from '../components/tienda/DailySalesTable';
 import PaymentMethodsChart from '../components/tienda/PaymentMethodsChart';
 import ChannelChart from '../components/tienda/ChannelChart';
 import AIAnalysisPanel from '../components/common/AIAnalysisPanel';
 import ClaudeActionBar from '../components/common/ClaudeActionBar';
 import TopInsightBar from '../components/insights/TopInsightBar';
-
-function fmt(v) {
-  if (v == null || isNaN(v)) return '—';
-  return `$${Number(v).toLocaleString('es-AR', { maximumFractionDigits: 0 })}`;
-}
 
 function buildTiendaData(summary, ncrc, devoluciones) {
   if (!summary) return null;
@@ -27,43 +23,6 @@ function buildTiendaData(summary, ncrc, devoluciones) {
     devolucionesCount: devoluciones?.count,
     devolucionesTotal: devoluciones?.total,
   };
-}
-
-function TopCustomersTable({ data, storeId }) {
-  if (!data || data.length === 0) return null;
-
-  return (
-    <div className="card p-5">
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h3 className="text-white text-[15px] font-semibold">Top clientes del período</h3>
-          <p className="text-app-secondary text-[12px] mt-1">Quiénes empujaron más facturación</p>
-        </div>
-        <Link to={`/store/${storeId}/clientes`} className="text-[12px] text-blue-400 hover:text-blue-300 transition">
-          Ver todos →
-        </Link>
-      </div>
-      <table className="w-full table-dark">
-        <thead>
-          <tr>
-            {['Cliente', 'Email', 'Órdenes', 'Revenue'].map((h) => (
-              <th key={h} className="text-left">{h}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {data.slice(0, 5).map((c, i) => (
-            <tr key={i}>
-              <td className="font-medium text-white">{c.name || '—'}</td>
-              <td className="text-[11px]">{c._id}</td>
-              <td>{c.ordenes}</td>
-              <td className="font-semibold text-white tabular-nums">{fmt(c.revenue)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
 }
 
 export default function Tienda() {
@@ -117,7 +76,7 @@ export default function Tienda() {
         <ChannelChart data={data?.byCanal} />
       </div>
 
-      <TopCustomersTable data={data?.topCustomers} storeId={storeId} />
+      <DailySalesTable data={data?.dailyOrders} />
 
       <div className="card p-5 space-y-4">
         <div>

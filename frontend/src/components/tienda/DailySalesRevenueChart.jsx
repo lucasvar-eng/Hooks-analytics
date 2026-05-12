@@ -89,6 +89,9 @@ export default function DailySalesRevenueChart({ data = [] }) {
   const maxRevenue = niceMax(Math.max(...revenues, 1));
   const maxOrders = Math.max(...orders, 1);
 
+  // Mostrar valores siempre si hay pocos días (legibles); en períodos largos solo en hover
+  const showValuesAlways = series.length <= 14;
+
   // Geometría — chart bien grande
   const width = 1200;
   const height = 460;
@@ -228,27 +231,19 @@ export default function DailySalesRevenueChart({ data = [] }) {
             );
           })}
 
-          {/* Línea de promedio */}
+          {/* Línea de promedio (sin etiqueta interna; vive en la legenda) */}
           {avgRevenue > 0 && (
-            <g>
-              <line
-                x1={padLeft}
-                y1={avgY}
-                x2={width - padRight}
-                y2={avgY}
-                stroke="#f59e0b"
-                strokeWidth="1"
-                strokeDasharray="2 4"
-                opacity={mounted ? 0.5 : 0}
-                style={{ transition: 'opacity 700ms ease 600ms' }}
-              />
-              <g opacity={mounted ? 1 : 0} style={{ transition: 'opacity 500ms ease 800ms' }}>
-                <rect x={padLeft + 6} y={avgY - 16} width={108} height={18} rx="3" fill="#0f0f12" stroke="#f59e0b" strokeOpacity="0.35" />
-                <text x={padLeft + 12} y={avgY - 3} fill="#fbbf24" fontSize="10.5" fontWeight="600" className="tabular-nums">
-                  Prom · {fmtMoneyShort(avgRevenue)}
-                </text>
-              </g>
-            </g>
+            <line
+              x1={padLeft}
+              y1={avgY}
+              x2={width - padRight}
+              y2={avgY}
+              stroke="#f59e0b"
+              strokeWidth="1"
+              strokeDasharray="3 5"
+              opacity={mounted ? 0.45 : 0}
+              style={{ transition: 'opacity 700ms ease 600ms' }}
+            />
           )}
 
           {/* Área debajo de la línea de órdenes */}
@@ -307,6 +302,28 @@ export default function DailySalesRevenueChart({ data = [] }) {
                     opacity={hovered || isBest ? 1 : 0.7}
                   />
                 )}
+                {/* Valor revenue siempre visible (si caben) o en hover */}
+                {mounted && value > 0 && (showValuesAlways || hovered) && (
+                  <text
+                    x={x + barWidth / 2}
+                    y={isBest ? y - 28 : y - 8}
+                    fill={hovered ? '#fff' : isBest ? '#a7f3d0' : '#dbeafe'}
+                    fontSize="11"
+                    fontWeight="600"
+                    textAnchor="middle"
+                    className="tabular-nums"
+                    style={{
+                      paintOrder: 'stroke',
+                      stroke: '#0a0a0a',
+                      strokeWidth: '3px',
+                      strokeLinejoin: 'round',
+                      opacity: showValuesAlways ? 0.92 : 1,
+                      transition: 'opacity 400ms ease 800ms',
+                    }}
+                  >
+                    {fmtMoneyShort(value)}
+                  </text>
+                )}
                 {/* Tag mejor día (solo el icono, discreto) */}
                 {isBest && mounted && (
                   <g opacity={mounted ? 1 : 0} style={{ transition: 'opacity 500ms ease 1000ms' }}>
@@ -334,6 +351,7 @@ export default function DailySalesRevenueChart({ data = [] }) {
               />
               {linePoints.map(([x, y], i) => {
                 const hovered = hoverIdx === i;
+                const orderCount = Number(series[i]?.ordenes || 0);
                 return (
                   <g key={`dot-${i}`}>
                     {hovered && <circle cx={x} cy={y} r={10} fill="#fbbf24" opacity="0.18" />}
@@ -346,6 +364,28 @@ export default function DailySalesRevenueChart({ data = [] }) {
                       strokeWidth="2"
                       style={{ transition: 'r 200ms ease' }}
                     />
+                    {/* Número de órdenes al lado del dot */}
+                    {orderCount > 0 && (showValuesAlways || hovered) && (
+                      <text
+                        x={x + 9}
+                        y={y - 8}
+                        fill={hovered ? '#fde68a' : '#fbbf24'}
+                        fontSize="11"
+                        fontWeight="700"
+                        textAnchor="start"
+                        className="tabular-nums"
+                        style={{
+                          paintOrder: 'stroke',
+                          stroke: '#0a0a0a',
+                          strokeWidth: '3.5px',
+                          strokeLinejoin: 'round',
+                          opacity: showValuesAlways ? 0.95 : 1,
+                          transition: 'opacity 400ms ease 700ms',
+                        }}
+                      >
+                        {orderCount}
+                      </text>
+                    )}
                   </g>
                 );
               })}
@@ -489,7 +529,7 @@ export default function DailySalesRevenueChart({ data = [] }) {
         </span>
         <span className="flex items-center gap-1.5">
           <span className="inline-block w-4 h-[1px] bg-amber-500" style={{ borderTop: '1px dashed' }} />
-          Promedio · {avgOrders.toFixed(1)} órdenes/día
+          Promedio · {fmtMoneyShort(avgRevenue)} · {avgOrders.toFixed(1)} órdenes/día
         </span>
         <span className="flex items-center gap-1.5">
           <span className="inline-flex items-center justify-center w-4 h-4 rounded-full border border-emerald-400 text-emerald-400 text-[9px] font-bold">★</span>

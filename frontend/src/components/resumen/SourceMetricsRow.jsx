@@ -45,18 +45,23 @@ export default function SourceMetricsRow({
   const [editOpen, setEditOpen] = useState(false);
   const [selected, setSelected] = useState(() => loadSelected(storageKey, defaultSelected));
   const [customNames, setCustomNames] = useState(() => loadCustomNames(storageKey));
+  const [customThresholds, setCustomThresholds] = useState(() => loadThresholds(storageKey));
   const [draftSelected, setDraftSelected] = useState(selected);
   const [draftCustomNames, setDraftCustomNames] = useState(customNames);
+  const [draftThresholds, setDraftThresholds] = useState(customThresholds);
   const [renamingKey, setRenamingKey] = useState(null);
   const [renamingValue, setRenamingValue] = useState('');
+  const [thresholdsForKey, setThresholdsForKey] = useState(null);
 
   useEffect(() => {
     if (editOpen) {
       setDraftSelected(selected);
       setDraftCustomNames(customNames);
+      setDraftThresholds(customThresholds);
       setRenamingKey(null);
+      setThresholdsForKey(null);
     }
-  }, [editOpen, selected, customNames]);
+  }, [editOpen, selected, customNames, customThresholds]);
 
   const metricsByKey = useMemo(() => {
     const map = new Map();
@@ -104,9 +109,30 @@ export default function SourceMetricsRow({
   const saveEdit = () => {
     setSelected(draftSelected);
     setCustomNames(draftCustomNames);
+    setCustomThresholds(draftThresholds);
     saveSelected(storageKey, draftSelected);
     saveCustomNames(storageKey, draftCustomNames);
+    saveThresholds(storageKey, draftThresholds);
     setEditOpen(false);
+  };
+
+  const updateThreshold = (key, field, value) => {
+    setDraftThresholds((prev) => {
+      const next = { ...prev };
+      const current = next[key] || {};
+      const numValue = value === '' ? null : Number(value);
+      if (numValue == null) {
+        const { [field]: _, ...rest } = current;
+        if (Object.keys(rest).filter((k) => k !== 'invert').length === 0) {
+          delete next[key];
+        } else {
+          next[key] = rest;
+        }
+      } else {
+        next[key] = { ...current, [field]: numValue };
+      }
+      return next;
+    });
   };
 
   const customCount = Object.keys(customNames).length;
@@ -181,25 +207,100 @@ export default function SourceMetricsRow({
                     </span>
                   )}
                   {isSelected && !isRenaming && (
-                    <button
-                      type="button"
-                      className="resumen-metrics-picker__pencil"
-                      onClick={(e) => { e.stopPropagation(); startRename(m.key); }}
-                      title="Renombrar"
-                    >
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 4H4v16h16v-7M18.5 2.5a2.121 2.121 0 113 3L12 15l-4 1 1-4 9.5-9.5z" />
-                      </svg>
-                    </button>
+                    <div className="resumen-metrics-picker__actions">
+                      {m.getTone && (
+                        <button
+                          type="button"
+                          className="resumen-metrics-picker__threshold-btn"
+                          onClick={(e) => { e.stopPropagation(); setThresholdsForKey(thresholdsForKey === m.key ? null : m.key); }}
+                          title="Configurar umbrales de color"
+                        >
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 17l6-6 4 4 7-8M21 14v6m-3-3h6" />
+                          </svg>
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        className="resumen-metrics-picker__pencil"
+                        onClick={(e) => { e.stopPropagation(); startRename(m.key); }}
+                        title="Renombrar"
+                      >
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 4H4v16h16v-7M18.5 2.5a2.121 2.121 0 113 3L12 15l-4 1 1-4 9.5-9.5z" />
+                        </svg>
+                      </button>
+                    </div>
                   )}
                 </div>
               );
             })}
           </div>
+          {thresholdsForKey && (() => {
+            const m = metricsByKey.get(thresholdsForKey);
+            if (!m) return null;
+            const t = draftThresholds[thresholdsForKey] || {};
+            const label = draftCustomNames[thresholdsForKey] || m.defaultLabel;
+            return (
+              <div className="resumen-threshold-editor">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-app-secondary">
+                    Umbrales de color · {label}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setThresholdsForKey(null)}
+                    className="text-[11px] text-gray-500 hover:text-gray-300"
+                  >
+                    Cerrar
+                  </button>
+                </div>
+                <p className="text-[11px] text-app-secondary mb-3">
+                  Definí cuándo la métrica se ve <span className="text-emerald-300">verde</span> (objetivo cumplido)
+                  o <span className="text-red-300">roja</span> (alerta). Activá invertir si <em>bajar</em> es mejor (ej. CPA).
+                </p>
+                <div className="grid grid-cols-2 gap-3 mb-3">
+                  <label className="block">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 block mb-1">Verde a partir de</span>
+                    <input
+                      type="number"
+                      step="any"
+                      value={t.good ?? ''}
+                      onChange={(e) => updateThreshold(thresholdsForKey, 'good', e.target.value)}
+                      placeholder="—"
+                      className="w-full bg-white/[0.04] border border-white/[0.08] rounded-md px-3 py-2 text-[13px] text-app-primary tabular-nums focus:outline-none focus:border-emerald-500/40"
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-red-400 block mb-1">Rojo a partir de</span>
+                    <input
+                      type="number"
+                      step="any"
+                      value={t.bad ?? ''}
+                      onChange={(e) => updateThreshold(thresholdsForKey, 'bad', e.target.value)}
+                      placeholder="—"
+                      className="w-full bg-white/[0.04] border border-white/[0.08] rounded-md px-3 py-2 text-[13px] text-app-primary tabular-nums focus:outline-none focus:border-red-500/40"
+                    />
+                  </label>
+                </div>
+                <label className="flex items-center gap-2 text-[12px] text-app-secondary">
+                  <input
+                    type="checkbox"
+                    checked={!!t.invert}
+                    onChange={(e) => updateThreshold(thresholdsForKey, 'invert', e.target.checked ? 1 : null)}
+                    className="accent-blue-500"
+                  />
+                  Invertir: valores bajos son mejores (ej. CPA, % NC)
+                </label>
+              </div>
+            );
+          })()}
+
           <div className="resumen-metrics-picker__footer">
             <span className="resumen-metrics-picker__counter">
               {draftSelected.length} de {maxSelected} seleccionadas
               {Object.keys(draftCustomNames).length > 0 && ` · ${Object.keys(draftCustomNames).length} con nombre custom`}
+              {Object.keys(draftThresholds).length > 0 && ` · ${Object.keys(draftThresholds).length} con umbrales custom`}
             </span>
             <div className="flex gap-2">
               <button type="button" onClick={cancelEdit} className="text-[11px] text-gray-500 hover:text-gray-300 px-2">
@@ -222,7 +323,11 @@ export default function SourceMetricsRow({
           const value = m.getValue ? m.getValue(data, target) : '—';
           const delta = m.getDelta ? m.getDelta(data, deltas, target) : null;
           const sub = m.getSub ? m.getSub(data, target) : null;
-          const tone = m.getTone ? m.getTone(data, target) : null;
+          // Si el usuario configuró thresholds custom para esta métrica, usarlos.
+          // Sino, caer en el getTone del catalog (thresholds default).
+          const tone = customThresholds[m.key]
+            ? applyCustomThreshold(m, data, target, customThresholds[m.key])
+            : m.getTone ? m.getTone(data, target) : null;
           const label = customNames[m.key] || m.defaultLabel;
           return (
             <div key={m.key} className={`resumen-kpi ${tone ? `resumen-kpi--tone-${tone}` : ''}`}>
@@ -277,4 +382,69 @@ function loadCustomNames(storageKey) {
 function saveCustomNames(storageKey, value) {
   if (!storageKey) return;
   try { localStorage.setItem(`${storageKey}:names`, JSON.stringify(value)); } catch {}
+}
+
+function loadThresholds(storageKey) {
+  if (!storageKey) return {};
+  try {
+    const raw = localStorage.getItem(`${storageKey}:thresholds`);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveThresholds(storageKey, value) {
+  if (!storageKey) return;
+  try { localStorage.setItem(`${storageKey}:thresholds`, JSON.stringify(value)); } catch {}
+}
+
+/**
+ * Aplica umbrales custom a la métrica. Necesita extraer el valor crudo
+ * (no formateado) — todo getValue del catalog devuelve string formateado,
+ * así que reutilizamos los raw fields de data según la métrica.
+ */
+function applyCustomThreshold(metric, data, target, thresholds) {
+  if (!thresholds || !data) return null;
+  const raw = extractRawValue(metric, data, target);
+  if (raw == null || isNaN(raw)) return null;
+  const { good, bad, invert } = thresholds;
+  const v = Number(raw);
+  if (invert) {
+    if (good != null && v <= good) return 'good';
+    if (bad != null && v >= bad) return 'bad';
+    return null;
+  }
+  if (good != null && v >= good) return 'good';
+  if (bad != null && v <= bad) return 'bad';
+  return null;
+}
+
+// Mapea metric.key → field crudo en data para el threshold custom.
+// Si la métrica no está acá, el threshold custom no aplica (caen al getTone del catalog).
+const RAW_FIELD_BY_KEY = {
+  adSpend: (d) => d?.adSpend,
+  metaRevenue: (d) => d?.metaPurchaseValue || d?.revenue,
+  roas: (d) => d?.roas,
+  cpa: (d) => d?.cpa,
+  metaPurchases: (d) => d?.metaPurchases,
+  ctr: (d) => d?.ctr,
+  cpc: (d) => d?.cpc,
+  cpm: (d) => d?.cpm,
+  revenue: (d) => d?.revenue,
+  ordenes: (d) => d?.ordenesPositivas || d?.ordenes,
+  aov: (d) => d?.aov,
+  aovNeto: (d) => d?.aovNeto,
+  cvr: (d) => d?.conversionRate,
+  ncPct: (d) => d?.ncPct,
+  netRevenue: (d) => d?.netRevenue,
+  profit: (d) => d?.officialProfit ?? d?.adjustedProfit,
+  profitMarginNeto: (d) => d?.officialProfitMargin ?? d?.adjustedProfitMargin,
+  profitMarginBruto: (d) => d?.profitMargin,
+  trueRoasPnl: (d) => d?.officialTrueRoas ?? d?.trueRoas,
+};
+
+function extractRawValue(metric, data, target) {
+  const extractor = RAW_FIELD_BY_KEY[metric.key];
+  return extractor ? extractor(data) : null;
 }

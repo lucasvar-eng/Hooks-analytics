@@ -544,12 +544,21 @@
     background: var(--accent);
     color: white;
   }
-  .resumen-metrics-picker__pencil {
-    @apply ml-auto shrink-0 transition;
+  .resumen-metrics-picker__actions {
+    @apply ml-auto shrink-0 flex items-center gap-1.5;
+  }
+  .resumen-metrics-picker__pencil,
+  .resumen-metrics-picker__threshold-btn {
+    @apply shrink-0 transition p-0.5 rounded;
     color: var(--text-muted);
   }
-  .resumen-metrics-picker__pencil:hover {
-    color: var(--accent);
+  .resumen-metrics-picker__pencil:hover { color: var(--accent); }
+  .resumen-metrics-picker__threshold-btn:hover { color: #fbbf24; background: rgba(245,158,11,0.10); }
+
+  .resumen-threshold-editor {
+    @apply mt-3 px-3 py-3 rounded-lg;
+    background: rgba(255,255,255,0.025);
+    border: 1px solid var(--border-subtle);
   }
   .resumen-metrics-picker__renamed-tag {
     @apply text-[9px] ml-1;

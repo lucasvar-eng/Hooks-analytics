@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import MetricCompleteness from '../common/MetricCompleteness';
 import { MetaLogo, TiendanubeLogo, PnlLogo } from './SourceLogos';
 
@@ -53,14 +53,20 @@ export default function SourceMetricsRow({
   const [renamingValue, setRenamingValue] = useState('');
   const [thresholdsForKey, setThresholdsForKey] = useState(null);
 
+  // Solo reinicializar drafts en el flanco de subida (cerrado → abierto).
+  // Si dependiéramos de selected/customNames/customThresholds, persistir
+  // thresholds en vivo dispararía este efecto y cerraría el editor de umbrales
+  // en cada keystroke.
+  const wasOpenRef = useRef(false);
   useEffect(() => {
-    if (editOpen) {
+    if (editOpen && !wasOpenRef.current) {
       setDraftSelected(selected);
       setDraftCustomNames(customNames);
       setDraftThresholds(customThresholds);
       setRenamingKey(null);
       setThresholdsForKey(null);
     }
+    wasOpenRef.current = editOpen;
   }, [editOpen, selected, customNames, customThresholds]);
 
   const metricsByKey = useMemo(() => {
@@ -116,22 +122,42 @@ export default function SourceMetricsRow({
     setEditOpen(false);
   };
 
+  // Los thresholds se persisten en vivo: cada cambio actualiza tanto el draft
+  // como el state real + localStorage. Distinto a la selección/nombres que
+  // requieren confirmación con "Guardar" porque cambian el layout visible.
   const updateThreshold = (key, field, value) => {
-    setDraftThresholds((prev) => {
+    const apply = (prev) => {
       const next = { ...prev };
-      const current = next[key] || {};
-      const numValue = value === '' ? null : Number(value);
-      if (numValue == null) {
-        const { [field]: _, ...rest } = current;
-        if (Object.keys(rest).filter((k) => k !== 'invert').length === 0) {
-          delete next[key];
-        } else {
-          next[key] = rest;
-        }
+      const current = { ...(next[key] || {}) };
+      let nextValue;
+      if (field === 'invert') {
+        nextValue = value ? true : null;
       } else {
-        next[key] = { ...current, [field]: numValue };
+        if (value === '' || value == null) {
+          nextValue = null;
+        } else {
+          const n = Number(value);
+          nextValue = Number.isFinite(n) ? n : null;
+        }
+      }
+      if (nextValue == null) {
+        delete current[field];
+      } else {
+        current[field] = nextValue;
+      }
+      const hasMeaningful = current.good != null || current.bad != null;
+      if (!hasMeaningful) {
+        delete next[key];
+      } else {
+        next[key] = current;
       }
       return next;
+    };
+    setDraftThresholds(apply);
+    setCustomThresholds((prev) => {
+      const updated = apply(prev);
+      saveThresholds(storageKey, updated);
+      return updated;
     });
   };
 
@@ -258,6 +284,7 @@ export default function SourceMetricsRow({
                 <p className="text-[11px] text-app-secondary mb-3">
                   Definí cuándo la métrica se ve <span className="text-emerald-300">verde</span> (objetivo cumplido)
                   o <span className="text-red-300">roja</span> (alerta). Activá invertir si <em>bajar</em> es mejor (ej. CPA).
+                  <span className="ml-1 text-emerald-400/70">Los cambios se aplican al instante.</span>
                 </p>
                 <div className="grid grid-cols-2 gap-3 mb-3">
                   <label className="block">
@@ -287,7 +314,7 @@ export default function SourceMetricsRow({
                   <input
                     type="checkbox"
                     checked={!!t.invert}
-                    onChange={(e) => updateThreshold(thresholdsForKey, 'invert', e.target.checked ? 1 : null)}
+                    onChange={(e) => updateThreshold(thresholdsForKey, 'invert', e.target.checked)}
                     className="accent-blue-500"
                   />
                   Invertir: valores bajos son mejores (ej. CPA, % NC)

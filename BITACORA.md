@@ -5,6 +5,127 @@ La bitácora se ordena de **arriba hacia abajo** por orden cronológico inverso 
 
 ---
 
+## 2026-05-12 — Tienda + Meta Ads + Creativos + Cashflow (rediseño operativo de 4 pantallas)
+
+**Branch**: `codex/universal-dashboard-builder` (continúa)
+**Tienda usada para validar**: Límite Deportes (`69cadede3936709190d773b8`)
+**Stack**: backend Node/Express/MongoDB Atlas · frontend React 18 + Vite + Tailwind
+
+### Trabajo hecho — 14 commits pusheados a la branch
+
+| Hash | Tier | Resumen |
+|---|---|---|
+| `3c187a2` | T0 | fix: editor de umbrales del Resumen — los cambios no se persistían y el "Cerrar" del header descartaba silenciosamente |
+| `385ba40` | T1 | feat(tienda): aplicar SourceMetricsRow del Resumen + reducir contenedores (logo TN único, sin "TIENDA" repetido) |
+| `258ac4b` | T2 | feat(tienda): rediseño comercial — sacar Constructor de hoja, tabs internos, NC vs RC redundante. Layout plano con DailySalesRevenueChart, PaymentMethodsChart (donut), ChannelChart |
+| `214bd6c` | T3 | feat(tienda): rediseño del chart de ventas y facturación por día — más alto, gradientes, glow, mejor día con ★, tooltip prolijo |
+| `7dfc930` | T4 | feat(tienda): valores siempre visibles en chart + tabla DailySalesTable (reemplaza top clientes) |
+| `d983aca` | T5 | feat(tienda): expandir filas del detalle diario con top productos vendidos por día + medio de pago top (agregaciones backend nuevas en getTiendaBreakdown) |
+| `160523e` | T6 | feat(meta-ads): rediseño completo + embudo de adquisición + chart spend/revenue. Endpoint `/meta/overview` nuevo con totals + funnel + daily |
+| `f3c00a7` | T7 | feat(meta-ads): embudo con forma real (cono, sin impresiones) + tabla de campañas filtrable (search, status pills, sort) |
+| `3893b59` | T8 | style(meta-ads): centrar columnas numéricas + más padding en CampaignsTableRich |
+| `142f212` | T9 | feat(creativos): Capa 1 — galería de anuncios con thumbnails reales + filtros + selección múltiple |
+| `966e400` | T10 | feat(creativos): Capa 2 — modal comparador side-by-side con highlight automático del ganador por métrica |
+| `a86775b` | T11 | feat(creativos): Capa 3 — análisis IA por ángulo (modelo AdAnalysis, servicio adAnalysisService con Claude Haiku, tabla agrupada por ángulo, modal con rationale) |
+| `c6592e0` | T12 | refactor(creativos): sacar recomendaciones automáticas y llamadas a API desde UI (eran señales falsas — no consideraban madurez de muestra). Doc nuevo `docs/research/analisis-creativos-pendiente.md` |
+| `fab4ec5` | T13 | feat(cashflow): rediseño completo + carga manual + cash gap detector (modelos CashflowManualEntry y BankAccountBalance, servicio manualCashflow, 3 componentes UI) |
+
+### Detalle por tier
+
+**T0 — Fix umbrales del Resumen** (`3c187a2`)
+Tres bugs en `SourceMetricsRow.jsx`:
+1. El "Guardar" del picker estaba lejos del editor de umbrales y el "Cerrar" del header descartaba sin guardar (botón engañoso).
+2. Checkbox "Invertir": al desmarcar quedaba `invert: 0` en vez de eliminarse.
+3. `useEffect` con `customThresholds` en deps cerraba el editor en cada keystroke.
+Fix: thresholds se persisten EN VIVO al tipear (cada cambio actualiza `customThresholds` + localStorage). El Guardar global solo aplica a selección de métricas y nombres custom. `useRef` para detectar el flanco cerrado→abierto sin retrigger.
+
+**T1-T5 — Pantalla Tienda completa**
+Aplicar el patrón Resumen v4 + agregar valor accionable:
+- T1: reemplazar 6 KPI cards "TIENDA" repetidas por una `SourceMetricsRow` con logo TN único.
+- T2: sacar header "Tienda" + Constructor de hoja + tabs internos. Layout plano: KPIs → DailySalesRevenueChart → PaymentMethodsChart (donut) + ChannelChart en grid → tabla diaria.
+- T3-T4: chart con valores siempre visibles ($728k encima de cada barra, número de órdenes al lado de cada dot), eje Y con grid, línea ámbar con glow real, mejor día con ★, hover con tooltip detallado.
+- T5: agregaciones backend nuevas (`dailyTopProducts`, `dailyTopGateway`) → fila expandible de la tabla diaria muestra top 6 productos vendidos ese día + medio de pago dominante. **Esto es el diferencial vs cualquier otra herramienta** — el usuario sabe QUÉ se vendió cada día, no solo cuánto.
+
+**T6-T8 — Pantalla Meta Ads completa**
+- T6: `aggregateInsightMap` extendido con `atc`, `checkouts`, `linkClicks` (faltaban). Endpoint nuevo `GET /meta/overview` con totals + funnel + daily array. Frontend: `metaMetricsCatalog` con 14 métricas y tones (ROAS, CTR), `MetaFunnel` y `MetaSpendRevenueChart`.
+- T7: embudo sin "Impresiones" (no es acción del usuario). Barras CENTRADAS horizontalmente con conector trapezoidal SVG → forma real de cono. Tabla `CampaignsTableRich` con search, pills filtro de status, sort por columna, % spend con minibarra, tones por valor.
+- T8: padding `p-4` en cada celda + alineación centrada de columnas numéricas.
+
+**T9-T12 — Pantalla Creativos (3 capas + cleanup)**
+- T9 Capa 1: `creativosMetricsCatalog` con 10 métricas a nivel ad. `AdGalleryCard` con thumbnail real (4:5), tier badge, métricas overlay, ⚠ SANGRANDO automático. `AdGallery` con search/filtros/sort/selección.
+- T10 Capa 2: `AdCompareModal` overlay para 2-4 ads con thumbnail + copy completo (headline + body) + métricas en grid + ★ del ganador en cada métrica + bandera "GANADOR EN N DE M MÉTRICAS".
+- T11 Capa 3: modelo `AdAnalysis` (cache por ad con angle, hook, tone, cta, target, rationale). Servicio `adAnalysisService` con Claude Haiku 4.5. 3 endpoints: `POST /analyze` (batch), `GET /angles` (perf por ángulo), `GET /analyses` (hidratar state). UI: `AnglePerformanceTable` agrupada + `AdAnalysisModal` con tags coloridos + rationale. **Problema descubierto**: cuenta Anthropic sin créditos → sembré 11 análisis manuales en MongoDB para validar la UI.
+- T12 cleanup: feedback del usuario — recomendaciones automáticas (Pausar/Escalar) eran señales falsas porque no consideraban madurez de muestra ni criterios por tienda. **Saqué**: columna Recomendación, insight clave automático con proyecciones, botones que disparan API a Claude. **Quedó**: vista comparativa neutra de métricas + lectura del mensaje descriptiva. Doc `docs/research/analisis-creativos-pendiente.md` con las 5 preguntas a resolver antes de re-introducir recomendaciones.
+
+**T13 — Cashflow completo (Opción A)**
+Cashflow ahora es módulo financiero completo, no solo "lo que liquida TN". 3 secciones:
+1. **UnifiedProjectionChart**: barras verde/rojo (ingresos/egresos por día) + línea ámbar de saldo acumulado proyectado partiendo de las cuentas líquidas. Marcador HOY y CASH GAP. Selector 14d/30d/60d/90d/180d. Tooltip con desglose.
+2. **BankBalancesPanel**: 3 tiles (Líquido / Por cobrar / Por pagar). Lista editable de cuentas con CRUD modal.
+3. **ManualMovementsTable**: tabla CRUD con filtros (tipo, categoría, estado), modal con form completo, recurrencia opcional (sueldos mensuales se generan a 12 meses).
+
+Backend nuevo:
+- Modelo `CashflowManualEntry` con taxonomía cerrada (14 categorías: mercaderia, sueldos, impuestos, ventas-local, mayorista-b2b, etc.).
+- Modelo `BankAccountBalance` con 7 tipos de cuenta.
+- Servicio `manualCashflow.js` con CRUD + `getUnifiedProjection` que combina TN + manuales día por día.
+- Movimientos previstos vencidos se proyectan al día actual (deuda pendiente).
+- 7 endpoints nuevos.
+
+**Validación end-to-end con datos reales**: cargué Banco Galicia CC $5M + egreso "Pago Salomon $30M" → cash gap detector se activó automáticamente con banner rojo "Tu saldo proyectado entra en rojo el 12/05 con déficit de −$24.469.962".
+
+### Decisión importante: análisis de creativos quedó pendiente de modelo
+
+El sistema de recomendaciones automáticas (Pausar/Escalar/etc.) inferidas solo del ROAS de un grupo era débil — no consideraba ventana de muestreo ni criterios por tienda. **Sacamos toda esa capa de la UI** hasta tener un modelo de evaluación robusto. Ver `docs/research/analisis-creativos-pendiente.md` para las preguntas a resolver. La clasificación por ángulo se mantiene visible (es factual).
+
+---
+
+## Pendientes / Backlog (actualizado 2026-05-12)
+
+### Crítico (data integrity)
+- [ ] `target.breakeven.roasBreakeven` no llega al frontend en `metrics.target` (Breakeven ROAS muestra `—`).
+- [ ] Cuenta Anthropic sin créditos → endpoint `POST /creativos/analyze` falla con 400. Cargar saldo o setear `ANTHROPIC_API_KEY` en `.env` para que el batch de análisis funcione.
+
+### Pantallas que faltan (las 3 grandes pendientes)
+- [ ] **Costos**: aplicar el patrón. Hoy tiene CostsWizard pero la página entera necesita el tratamiento de Tienda/Meta/Cashflow.
+- [ ] **Productos**: dead stock (1742 detectados con definición laxa), KPIs con tones, filtros por tipo de problema, lista accionable.
+- [ ] **Clientes**: segmentos RFM con CTA específico por segmento.
+
+### Análisis de creativos profundo (cuando retomemos)
+Ver `docs/research/analisis-creativos-pendiente.md`. Las 5 preguntas a definir:
+- Ventana mínima de muestreo (cuánto tiempo / spend antes de evaluar)
+- Diferenciación por tienda (thresholds desde `targetService`)
+- Diferenciación por objetivo de campaña (sales vs traffic vs engagement)
+- Construcción iterativa por cliente (ML que aprenda del histórico)
+- Manejo de ángulos infrarrepresentados (¿pausar o dar más chance?)
+
+### Sync nuevo / pixel
+- [ ] **Hooks Pixel propio** para funnel real (visitas → carrito → checkout → compra). API pública de TN no expone visitas/carritos abandonados. Es el unlock para tener funnel a nivel tienda como hoy lo tenemos a nivel ad de Meta.
+- [ ] **Carritos abandonados** vía endpoint TN `/orders/abandoned-checkouts` (1-2h, doable sin pixel).
+- [ ] **Medios de envío** como dimensión: agregar `metodoEnvio` al modelo `Order` + sync de TN.
+- [ ] **Visitas únicas** por GA4 si Hooks Pixel se posterga.
+
+### Bugs conocidos / polish
+- [ ] **Timezone en input dates** del cashflow modal: el form usa `new Date().toISOString().slice(0,10)` para default, que en horario tarde (después de 21h ART) puede mostrar un día +1. Fix: parsear local con `new Date(y, m-1, d)`.
+- [ ] **Pills de salud del Resumen** (Acq/Conv/Profit/Cash) clickeables → drilldown a la sección que las disparó.
+- [ ] **Date range picker** integrado al header más sutil.
+- [ ] **Definición de Dead Stock / Sobrestock** más estricta (toca backend).
+- [ ] **Componente unificado `MetricCard`** para reemplazar las 8 implementaciones distintas.
+
+### Persistencia backend (Fase 2 del Resumen)
+- [ ] Modelo `MetricsConfig` por store + endpoint REST para persistir selección de métricas, nombres custom y thresholds (hoy todo en localStorage).
+- [ ] Reglas de alertas computadas en backend (`deriveResumen.jsx` → endpoint `/api/stores/:id/resumen/alerts`).
+- [ ] Endpoint consolidado `/api/stores/:id/resumen` (metrics + costCoverage + alerts + highlights en un round trip).
+
+### Funcionalidad — contexto del negocio estructurado
+- [ ] Brand book PDF + parsed (tono, paleta, dont's, target).
+- [ ] Estrategia activa de la tienda ("2x1 hasta 15/06").
+- [ ] Posicionamiento (tier, multimarca vs single brand).
+- [ ] Competidores (3-5 con URLs).
+
+### Tailwind / safelist
+- [ ] Si se agregan más componentes con BEM modifiers dinámicos, ampliar el regex de `safelist` en `tailwind.config.js`.
+
+---
+
 ## 2026-05-11 — Sesión completa de mejoras estructurales + Resumen v4
 
 **Branch**: `codex/universal-dashboard-builder`

@@ -590,12 +590,13 @@ exports.getOverview = async (req, res, next) => {
       ctr: t.impressions > 0 ? ((t.clicks || 0) / t.impressions) * 100 : 0,
     };
 
-    // Funnel ordenado descendente — cada paso con conversión vs el anterior
+    // Funnel ordenado descendente — sólo pasos con acción real del usuario
+    // (impresiones es exposición, no acción → queda fuera del funnel pero sigue
+    // disponible en totals para CTR y métricas técnicas)
     const linkClicks = totals.linkClicks || totals.clicks || 0;
     const funnel = [
-      { key: 'impressions', label: 'Impresiones', value: totals.impressions, parent: null },
-      { key: 'reach', label: 'Alcance', value: totals.reach, parent: 'impressions' },
-      { key: 'clicks', label: 'Clicks al link', value: linkClicks, parent: 'impressions' },
+      { key: 'reach', label: 'Alcance', value: totals.reach, parent: null },
+      { key: 'clicks', label: 'Clicks al link', value: linkClicks, parent: 'reach' },
       { key: 'atc', label: 'Add to cart', value: totals.atc, parent: 'clicks' },
       { key: 'checkouts', label: 'Checkout iniciado', value: totals.checkouts, parent: 'atc' },
       { key: 'purchases', label: 'Compras', value: totals.purchases, parent: 'checkouts' },
@@ -604,8 +605,9 @@ exports.getOverview = async (req, res, next) => {
       const conversionPct = parent && parent.value > 0
         ? (step.value / parent.value) * 100
         : null;
-      const sharePct = totals.impressions > 0 && idx > 0
-        ? (step.value / totals.impressions) * 100
+      const topValue = arr[0]?.value || 0;
+      const sharePct = topValue > 0 && idx > 0
+        ? (step.value / topValue) * 100
         : null;
       return { ...step, conversionPct, sharePct };
     });

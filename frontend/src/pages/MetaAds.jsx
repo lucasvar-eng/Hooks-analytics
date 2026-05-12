@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import api from '../services/api';
-import CampaignTable from '../components/meta/CampaignTable';
+import CampaignsTableRich from '../components/meta/CampaignsTableRich';
 import CSVImportMeta from '../components/meta/CSVImportMeta';
 import { getPeriodLabel } from '../components/common/MasterMetricBoard';
 import SourceMetricsRow from '../components/resumen/SourceMetricsRow';
@@ -86,22 +86,7 @@ export default function MetaAds() {
 
       <MetaSpendRevenueChart data={overview?.daily} />
 
-      {campaigns.length > 0 && (
-        <div className="card p-5">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-white text-[15px] font-semibold">Resultados por campaña</h3>
-              <p className="text-app-secondary text-[12px] mt-1">
-                Click en una fila para ver adsets y anuncios. Veredicto basado en thresholds del store.
-              </p>
-            </div>
-            <span className="text-app-muted text-[11px] uppercase tracking-[0.16em]">
-              {campaigns.filter((c) => c.status === 'ACTIVE').length} activas · {campaigns.length} total
-            </span>
-          </div>
-          <CampaignTable campaigns={campaigns} storeId={storeId} from={from} to={to} />
-        </div>
-      )}
+      {campaigns.length > 0 && <CampaignsTableRich campaigns={campaigns} />}
 
       {/* CSV import como bloque colapsable al fondo (operativo, no diario) */}
       <div className="card p-5">

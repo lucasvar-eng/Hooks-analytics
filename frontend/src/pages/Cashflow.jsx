@@ -3,130 +3,77 @@ import { useParams } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import api from '../services/api';
 import AIAnalysisPanel from '../components/common/AIAnalysisPanel';
-
-function fmt(v) {
-  if (v == null || isNaN(v)) return '—';
-  return `$${Number(v).toLocaleString('es-AR', { maximumFractionDigits: 0 })}`;
-}
-
-function SummaryCard({ label, value, sub, color = 'text-white' }) {
-  return (
-    <div className="card p-4">
-      <p className="kpi-label">{label}</p>
-      <p className={`text-[20px] font-bold mt-1.5 tabular-nums leading-none ${color}`}>{fmt(value)}</p>
-      {sub && <p className="text-[11px] text-gray-600 mt-1">{sub}</p>}
-    </div>
-  );
-}
-
-function ForecastTable({ forecast }) {
-  if (!forecast || forecast.length === 0) {
-    return <p className="text-[13px] text-gray-600 py-8 text-center">No hay pagos proyectados para las próximas semanas.</p>;
-  }
-
-  const weeks = {};
-  for (const entry of forecast) {
-    const key = `${entry._id.year}-W${entry._id.semana}`;
-    if (!weeks[key]) weeks[key] = { pendiente: 0, recibido: 0, count: 0 };
-    weeks[key][entry._id.estado] = entry.total;
-    weeks[key].count += entry.count;
-  }
-
-  return (
-    <div className="overflow-x-auto">
-      <table className="w-full table-dark">
-        <thead>
-          <tr>
-            <th className="text-left">Semana</th>
-            <th className="text-right">Pendiente</th>
-            <th className="text-right">Recibido</th>
-            <th className="text-right">Total</th>
-            <th className="text-right">Cuotas</th>
-          </tr>
-        </thead>
-        <tbody>
-          {Object.entries(weeks).map(([week, data]) => (
-            <tr key={week}>
-              <td className="font-medium text-white">{week}</td>
-              <td className="text-right text-amber-400">{fmt(data.pendiente)}</td>
-              <td className="text-right text-emerald-400">{fmt(data.recibido)}</td>
-              <td className="text-right font-semibold text-white tabular-nums">{fmt(data.pendiente + data.recibido)}</td>
-              <td className="text-right text-gray-500">{data.count}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-function DailyTable({ daily }) {
-  if (!daily || daily.length === 0) {
-    return <p className="text-[13px] text-gray-600 py-8 text-center">Sin datos de cashflow para este período.</p>;
-  }
-
-  return (
-    <div className="overflow-x-auto">
-      <table className="w-full table-dark">
-        <thead>
-          <tr>
-            <th className="text-left">Fecha</th>
-            <th className="text-right">Bruto</th>
-            <th className="text-right">Comisiones</th>
-            <th className="text-right">Liquidable</th>
-            <th className="text-right">Recibido</th>
-            <th className="text-right">Pendiente</th>
-          </tr>
-        </thead>
-        <tbody>
-          {daily.map((d) => (
-            <tr key={d._id}>
-              <td className="font-medium text-white">{d._id}</td>
-              <td className="text-right tabular-nums">{fmt(d.bruto)}</td>
-              <td className="text-right text-red-400 tabular-nums">{fmt(d.comisiones)}</td>
-              <td className="text-right text-blue-400 tabular-nums">{fmt(d.liquidable)}</td>
-              <td className="text-right text-emerald-400 tabular-nums">{fmt(d.recibido)}</td>
-              <td className="text-right text-amber-400 tabular-nums">{fmt(d.pendiente)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
+import ClaudeActionBar from '../components/common/ClaudeActionBar';
+import TopInsightBar from '../components/insights/TopInsightBar';
+import UnifiedProjectionChart from '../components/cashflow/UnifiedProjectionChart';
+import BankBalancesPanel from '../components/cashflow/BankBalancesPanel';
+import ManualMovementsTable from '../components/cashflow/ManualMovementsTable';
 
 export default function Cashflow() {
   const { storeId } = useParams();
   const { from, to } = useSelector((s) => s.date);
-  const [summary, setSummary] = useState(null);
-  const [forecast, setForecast] = useState([]);
-  const [daily, setDaily] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState('forecast');
+  const store = useSelector((state) => state.stores.stores.find((item) => item._id === storeId));
 
-  const fetchData = useCallback(async () => {
+  const [accounts, setAccounts] = useState([]);
+  const [entries, setEntries] = useState([]);
+  const [projection, setProjection] = useState(null);
+  const [categories, setCategories] = useState(null);
+  const [days, setDays] = useState(60);
+  const [loading, setLoading] = useState(true);
+
+  const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
-      const params = {};
-      if (from) params.from = from;
-      if (to) params.to = to;
-      const [summaryRes, forecastRes, dailyRes] = await Promise.all([
-        api.get(`/api/stores/${storeId}/cashflow/summary`, { params }),
-        api.get(`/api/stores/${storeId}/cashflow/forecast`, { params: { weeks: 4 } }),
-        api.get(`/api/stores/${storeId}/cashflow/daily`, { params }),
+      const [accRes, entRes, projRes, catRes] = await Promise.all([
+        api.get(`/api/stores/${storeId}/cashflow/accounts`),
+        api.get(`/api/stores/${storeId}/cashflow/manual`),
+        api.get(`/api/stores/${storeId}/cashflow/projection`, { params: { days } }),
+        api.get(`/api/stores/${storeId}/cashflow/categories`),
       ]);
-      setSummary(summaryRes.data);
-      setForecast(forecastRes.data);
-      setDaily(dailyRes.data);
+      setAccounts(accRes.data || []);
+      setEntries(entRes.data || []);
+      setProjection(projRes.data || null);
+      setCategories(catRes.data || null);
     } catch {
-      setSummary(null);
-      setForecast([]);
-      setDaily([]);
+      setAccounts([]); setEntries([]); setProjection(null);
     }
     setLoading(false);
-  }, [storeId, from, to]);
+  }, [storeId, days]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => { fetchAll(); }, [fetchAll]);
+
+  const refreshProjection = useCallback(async () => {
+    try {
+      const { data } = await api.get(`/api/stores/${storeId}/cashflow/projection`, { params: { days } });
+      setProjection(data);
+    } catch {}
+  }, [storeId, days]);
+
+  const handleAccountUpsert = async (payload) => {
+    await api.post(`/api/stores/${storeId}/cashflow/accounts`, payload);
+    const { data } = await api.get(`/api/stores/${storeId}/cashflow/accounts`);
+    setAccounts(data || []);
+    refreshProjection();
+  };
+
+  const handleAccountArchive = async (id) => {
+    await api.delete(`/api/stores/${storeId}/cashflow/accounts/${id}`);
+    setAccounts((curr) => curr.filter((a) => a._id !== id));
+    refreshProjection();
+  };
+
+  const handleEntryUpsert = async (payload) => {
+    await api.post(`/api/stores/${storeId}/cashflow/manual`, payload);
+    const { data } = await api.get(`/api/stores/${storeId}/cashflow/manual`);
+    setEntries(data || []);
+    refreshProjection();
+  };
+
+  const handleEntryDelete = async (id) => {
+    await api.delete(`/api/stores/${storeId}/cashflow/manual/${id}`);
+    setEntries((curr) => curr.filter((e) => e._id !== id));
+    refreshProjection();
+  };
 
   if (loading) {
     return <div className="text-center py-12 text-[13px] text-gray-600">Cargando cashflow...</div>;
@@ -134,75 +81,37 @@ export default function Cashflow() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="page-title">Cashflow</h1>
-        <p className="page-subtitle">Liquidaciones, comisiones y proyección de cobros.</p>
-      </div>
+      <TopInsightBar storeId={storeId} />
 
-      {/* Summary cards. Bruto total y Total liquidable son la misma métrica en este flujo
-          (lo que TN/MP va a liquidar = revenue bruto), por eso se muestra una sola card. */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <SummaryCard label="Total liquidable" value={summary?.totalLiquidable} color="text-blue-400" />
-        <SummaryCard label="Recibido" value={summary?.recibido} sub={`${summary?.entriesRecibidas || 0} cuotas`} color="text-emerald-400" />
-        <SummaryCard label="Pendiente" value={summary?.pendiente} sub={`${summary?.entriesPendientes || 0} cuotas`} color="text-amber-400" />
-      </div>
+      {/* 1. Forecast unificado con cash gap detector */}
+      <UnifiedProjectionChart data={projection} onChangeDays={setDays} />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <SummaryCard
-          label="Costos fijos prorrateados"
-          value={summary?.fixedCosts}
-          color="text-red-400"
-          sub="Descontados sobre el período filtrado"
-        />
-        <SummaryCard
-          label="Neto después de fijos"
-          value={summary?.netAfterFixed}
-          color={(summary?.netAfterFixed || 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}
-          sub="Liquidable menos estructura fija"
-        />
-      </div>
+      {/* 2. Saldos bancarios del momento */}
+      <BankBalancesPanel
+        accounts={accounts}
+        categories={categories}
+        onUpsert={handleAccountUpsert}
+        onArchive={handleAccountArchive}
+      />
 
-      {/* Comisiones card */}
-      <div className="card p-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="kpi-label">Total comisiones</p>
-            <p className="text-[20px] font-bold tabular-nums text-red-400 mt-1.5 leading-none">{fmt(summary?.totalComisiones)}</p>
-          </div>
-          <div className="text-right">
-            <p className="kpi-label">% sobre ventas</p>
-            <p className="text-[20px] font-bold tabular-nums text-white mt-1.5 leading-none">
-              {summary?.totalBruto ? ((summary.totalComisiones / summary.totalBruto) * 100).toFixed(1) : 0}%
-            </p>
-          </div>
+      {/* 3. Movimientos manuales (ingresos no-TN + egresos) */}
+      <ManualMovementsTable
+        entries={entries}
+        categories={categories}
+        onUpsert={handleEntryUpsert}
+        onDelete={handleEntryDelete}
+      />
+
+      <div className="card p-5 space-y-4">
+        <div>
+          <p className="text-app-muted text-[11px] uppercase tracking-[0.18em]">Análisis asistido</p>
+          <p className="text-app-secondary text-[12px] mt-1">
+            Prompts y análisis largos quedan al final para no competir con la proyección de cashflow.
+          </p>
         </div>
+        <ClaudeActionBar storeId={storeId} storeName={store?.nombre} from={from} to={to} mode="cashflow" />
+        <AIAnalysisPanel storeId={storeId} section="cashflow" from={from} to={to} />
       </div>
-
-      {/* Tab switcher */}
-      <div className="flex gap-2 border-b border-white/[0.06] pb-0">
-        {[
-          { key: 'forecast', label: 'Forecast (próximas 4 semanas)' },
-          { key: 'daily', label: 'Detalle diario' },
-        ].map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            className={`px-4 py-2.5 text-[13px] font-medium border-b-2 -mb-px transition ${
-              tab === t.key
-                ? 'border-blue-500 text-blue-400'
-                : 'border-transparent text-gray-500 hover:text-gray-300'
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
-
-      <div className="card">
-        {tab === 'forecast' ? <ForecastTable forecast={forecast} /> : <DailyTable daily={daily} />}
-      </div>
-
-      <AIAnalysisPanel storeId={storeId} section="cashflow" from={from} to={to} />
     </div>
   );
 }

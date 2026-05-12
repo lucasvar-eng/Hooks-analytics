@@ -8,17 +8,12 @@ const SyncLog = require('../models/SyncLog');
 const MetaCampaign = require('../models/MetaCampaign');
 const MetaDailyInsight = require('../models/MetaDailyInsight');
 const { recalculateDailyMetric } = require('./metricCalculator');
-
-function buildDateMatch(from, to, endOfDay = false) {
-  const dateMatch = {};
-  if (from) dateMatch.$gte = new Date(from);
-  if (to) {
-    const toDate = new Date(to);
-    if (endOfDay) toDate.setUTCHours(23, 59, 59, 999);
-    dateMatch.$lte = toDate;
-  }
-  return dateMatch;
-}
+const {
+  BUSINESS_TZ,
+  buildBusinessDateKeyMatch,
+  buildBusinessSourceDateMatch,
+  dateKeyToLabel,
+} = require('../utils/businessDate');
 
 function round2(value) {
   return Math.round((Number(value || 0) + Number.EPSILON) * 100) / 100;
@@ -41,13 +36,13 @@ function deriveSyncStatus(log, connected, latestSourceAt, staleThresholdHours = 
  * Get full TiendaNube breakdown for a date range.
  */
 async function getTiendaBreakdown(storeId, from, to) {
-  const dateMatch = buildDateMatch(from, to, true);
+  const orderDateMatch = buildBusinessSourceDateMatch(from, to);
 
   const orderMatch = {
     storeId: new mongoose.Types.ObjectId(storeId),
     estado: { $nin: ['cancelled'] },
   };
-  if (from || to) orderMatch.fechaCreacion = dateMatch;
+  if (from || to) orderMatch.fechaCreacion = orderDateMatch;
 
   const [
     summary,
@@ -58,6 +53,8 @@ async function getTiendaBreakdown(storeId, from, to) {
     dailyOrders,
     aovDaily,
     topCustomers,
+    dailyTopProductsAgg,
+    dailyTopGatewayAgg,
   ] = await Promise.all([
     // 1. Summary
     Order.aggregate([
@@ -129,7 +126,7 @@ async function getTiendaBreakdown(storeId, from, to) {
       {
         $match: {
           storeId: new mongoose.Types.ObjectId(storeId),
-          ...(from || to ? { fechaCreacion: dateMatch } : {}),
+          ...(from || to ? { fechaCreacion: orderDateMatch } : {}),
           $or: [{ esDevolucion: true }, { estado: 'cancelled' }],
         },
       },
@@ -147,7 +144,7 @@ async function getTiendaBreakdown(storeId, from, to) {
       { $match: orderMatch },
       {
         $group: {
-          _id: { $dateToString: { format: '%Y-%m-%d', date: '$fechaCreacion' } },
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$fechaCreacion', timezone: BUSINESS_TZ } },
           ordenes: { $sum: 1 },
           revenue: { $sum: '$totalOrden' },
           netRevenue: { $sum: '$totalNeto' },
@@ -167,7 +164,7 @@ async function getTiendaBreakdown(storeId, from, to) {
       { $match: orderMatch },
       {
         $group: {
-          _id: { $dateToString: { format: '%Y-%m-%d', date: '$fechaCreacion' } },
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$fechaCreacion', timezone: BUSINESS_TZ } },
           aov: { $avg: '$totalOrden' },
           ordenes: { $sum: 1 },
         },
@@ -189,7 +186,84 @@ async function getTiendaBreakdown(storeId, from, to) {
       { $sort: { revenue: -1 } },
       { $limit: 10 },
     ]),
+
+    // 9. Top productos vendidos por día (para expandir filas en "Detalle por día")
+    Order.aggregate([
+      { $match: orderMatch },
+      { $unwind: '$lineItems' },
+      {
+        $group: {
+          _id: {
+            day: { $dateToString: { format: '%Y-%m-%d', date: '$fechaCreacion', timezone: BUSINESS_TZ } },
+            productKey: { $ifNull: ['$lineItems.tnProductId', '$lineItems.nombre'] },
+          },
+          nombre: { $first: '$lineItems.nombre' },
+          cantidad: { $sum: '$lineItems.cantidad' },
+          revenue: { $sum: '$lineItems.subtotal' },
+        },
+      },
+      { $sort: { '_id.day': 1, revenue: -1 } },
+      {
+        $group: {
+          _id: '$_id.day',
+          products: {
+            $push: {
+              nombre: '$nombre',
+              cantidad: '$cantidad',
+              revenue: '$revenue',
+            },
+          },
+          totalUnits: { $sum: '$cantidad' },
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          totalUnits: 1,
+          products: { $slice: ['$products', 6] },
+        },
+      },
+    ]),
+
+    // 10. Top gateway por día (medio de pago dominante de cada jornada)
+    Order.aggregate([
+      { $match: orderMatch },
+      {
+        $group: {
+          _id: {
+            day: { $dateToString: { format: '%Y-%m-%d', date: '$fechaCreacion', timezone: BUSINESS_TZ } },
+            gateway: '$gateway',
+          },
+          ordenes: { $sum: 1 },
+          revenue: { $sum: '$totalOrden' },
+        },
+      },
+      { $sort: { '_id.day': 1, revenue: -1 } },
+      {
+        $group: {
+          _id: '$_id.day',
+          top: {
+            $first: {
+              gateway: '$_id.gateway',
+              ordenes: '$ordenes',
+              revenue: '$revenue',
+            },
+          },
+          totalRevenue: { $sum: '$revenue' },
+        },
+      },
+    ]),
   ]);
+
+  // Index daily extras por fecha (top products y top gateway)
+  const dailyExtras = {};
+  for (const row of dailyTopProductsAgg || []) {
+    dailyExtras[row._id] = { ...(dailyExtras[row._id] || {}), products: row.products, totalUnits: row.totalUnits };
+  }
+  for (const row of dailyTopGatewayAgg || []) {
+    const sharePct = row.totalRevenue > 0 ? (row.top.revenue / row.totalRevenue) * 100 : 0;
+    dailyExtras[row._id] = { ...(dailyExtras[row._id] || {}), topGateway: { ...row.top, sharePct } };
+  }
 
   // Format NC/RC
   const nc = ncrcBreakdown.find((r) => r._id === true) || { ordenes: 0, revenue: 0, netRevenue: 0, aov: 0 };
@@ -212,12 +286,14 @@ async function getTiendaBreakdown(storeId, from, to) {
     dailyOrders,
     aovDaily,
     topCustomers,
+    dailyExtras,
   };
 }
 
 async function getDataAudit(storeId, from, to) {
   const storeObjectId = new mongoose.Types.ObjectId(storeId);
-  const dateMatch = buildDateMatch(from, to, true);
+  const orderDateMatch = buildBusinessSourceDateMatch(from, to);
+  const metricDateMatch = buildBusinessDateKeyMatch(from, to, true);
 
   const orderMatch = {
     storeId: storeObjectId,
@@ -225,8 +301,8 @@ async function getDataAudit(storeId, from, to) {
   };
   const dailyMatch = { storeId: storeObjectId };
   if (from || to) {
-    orderMatch.fechaCreacion = dateMatch;
-    dailyMatch.date = dateMatch;
+    orderMatch.fechaCreacion = orderDateMatch;
+    dailyMatch.date = metricDateMatch;
   }
 
   const [
@@ -262,7 +338,7 @@ async function getDataAudit(storeId, from, to) {
       { $match: orderMatch },
       {
         $group: {
-          _id: { $dateToString: { format: '%Y-%m-%d', date: '$fechaCreacion' } },
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$fechaCreacion', timezone: BUSINESS_TZ } },
           orders: { $sum: 1 },
           revenue: { $sum: '$totalOrden' },
         },
@@ -350,7 +426,8 @@ async function getDataAudit(storeId, from, to) {
 
 async function reconcileHistoricalData(storeId, from, to) {
   const storeObjectId = new mongoose.Types.ObjectId(storeId);
-  const dateMatch = buildDateMatch(from, to, true);
+  const orderDateMatch = buildBusinessSourceDateMatch(from, to);
+  const metricDateMatch = buildBusinessDateKeyMatch(from, to, true);
 
   const orderMatch = {
     storeId: storeObjectId,
@@ -358,8 +435,8 @@ async function reconcileHistoricalData(storeId, from, to) {
   };
   const dailyMatch = { storeId: storeObjectId };
   if (from || to) {
-    orderMatch.fechaCreacion = dateMatch;
-    dailyMatch.date = dateMatch;
+    orderMatch.fechaCreacion = orderDateMatch;
+    dailyMatch.date = metricDateMatch;
   }
 
   const [ordersByDay, dailyByDay] = await Promise.all([
@@ -367,7 +444,7 @@ async function reconcileHistoricalData(storeId, from, to) {
       { $match: orderMatch },
       {
         $group: {
-          _id: { $dateToString: { format: '%Y-%m-%d', date: '$fechaCreacion' } },
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$fechaCreacion', timezone: BUSINESS_TZ } },
           orders: { $sum: 1 },
         },
       },
@@ -388,7 +465,7 @@ async function reconcileHistoricalData(storeId, from, to) {
 
   let recalculatedDays = 0;
   for (const day of orderDays) {
-    await recalculateDailyMetric(storeId, new Date(day));
+    await recalculateDailyMetric(storeId, day);
     recalculatedDays++;
   }
 
@@ -397,7 +474,7 @@ async function reconcileHistoricalData(storeId, from, to) {
   let markedMismatches = 0;
 
   for (const doc of allDailyDocs) {
-    const day = new Date(doc.date).toISOString().slice(0, 10);
+    const day = dateKeyToLabel(doc.date);
     const hasOrders = orderDays.includes(day);
     const orderRow = ordersByDay.find((item) => item._id === day);
     const mismatch = hasOrders && Math.abs((orderRow?.orders || 0) - (doc.ordenes || 0)) > 0;
@@ -443,7 +520,7 @@ async function rebuildStoreHistory(storeId) {
           minDate: { $min: '$fechaCreacion' },
           maxDate: { $max: '$fechaCreacion' },
           orderDays: {
-            $addToSet: { $dateToString: { format: '%Y-%m-%d', date: '$fechaCreacion' } },
+            $addToSet: { $dateToString: { format: '%Y-%m-%d', date: '$fechaCreacion', timezone: BUSINESS_TZ } },
           },
         },
       },
@@ -504,8 +581,8 @@ async function getSyncStatus(storeId, from, to) {
     throw new Error('Store not found');
   }
 
-  const orderDateMatch = buildDateMatch(from, to, true);
-  const metricDateMatch = buildDateMatch(from, to, true);
+  const orderDateMatch = buildBusinessSourceDateMatch(from, to);
+  const metricDateMatch = buildBusinessDateKeyMatch(from, to, true);
 
   const tnOrderMatch = {
     storeId: storeObjectId,

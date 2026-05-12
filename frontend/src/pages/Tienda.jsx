@@ -76,7 +76,7 @@ export default function Tienda() {
         <ChannelChart data={data?.byCanal} />
       </div>
 
-      <DailySalesTable data={data?.dailyOrders} />
+      <DailySalesTable data={data?.dailyOrders} extras={data?.dailyExtras} />
 
       <div className="card p-5 space-y-4">
         <div>

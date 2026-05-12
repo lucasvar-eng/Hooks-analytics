@@ -85,6 +85,9 @@ async function aggregateInsightMap(storeId, metaIds, granularity, from, to) {
         impressions: { $sum: '$impressions' },
         reach: { $sum: '$reach' },
         clicks: { $sum: '$clicks' },
+        linkClicks: { $sum: '$linkClicks' },
+        atc: { $sum: '$atc' },
+        checkouts: { $sum: '$checkouts' },
         purchases: { $sum: '$purchases' },
         purchaseValue: { $sum: '$purchaseValue' },
       },
@@ -218,6 +221,9 @@ exports.getCampaigns = async (req, res, next) => {
           impressions: i.impressions || 0,
           reach: i.reach || 0,
           clicks: i.clicks || 0,
+          linkClicks: i.linkClicks || 0,
+          atc: i.atc || 0,
+          checkouts: i.checkouts || 0,
           purchases: i.purchases || 0,
           revenue: i.purchaseValue || 0,
           purchaseValue: i.purchaseValue || 0,
@@ -508,6 +514,104 @@ exports.syncProductInsights = async (req, res, next) => {
     res.json({ ok: true, daysBack });
   } catch (error) {
     logger.error(`Manual product insights sync failed: ${error.message}`);
+    next(error);
+  }
+};
+
+/**
+ * Endpoint consolidado para la página Meta Ads:
+ *  - totals: suma del período (todas las cuentas, granularidad campaign)
+ *  - funnel: pasos del embudo (impressions → reach → linkClicks → atc → checkouts → purchases)
+ *  - daily: array por día con spend, purchaseValue, purchases (para chart diario)
+ */
+exports.getOverview = async (req, res, next) => {
+  try {
+    const { id: storeId } = req.params;
+    const { from, to } = req.query;
+    if (!mongoose.Types.ObjectId.isValid(storeId)) {
+      return res.status(400).json({ error: 'invalid store id' });
+    }
+
+    const storeObjectId = new mongoose.Types.ObjectId(storeId);
+    const match = { storeId: storeObjectId, granularity: 'campaign' };
+    const dateMatch = buildDateMatch(from, to);
+    if (dateMatch) match.date = dateMatch;
+
+    const [totalsAgg, dailyAgg] = await Promise.all([
+      MetaDailyInsight.aggregate([
+        { $match: match },
+        {
+          $group: {
+            _id: null,
+            spend: { $sum: '$spend' },
+            impressions: { $sum: '$impressions' },
+            reach: { $sum: '$reach' },
+            clicks: { $sum: '$clicks' },
+            linkClicks: { $sum: '$linkClicks' },
+            atc: { $sum: '$atc' },
+            checkouts: { $sum: '$checkouts' },
+            purchases: { $sum: '$purchases' },
+            purchaseValue: { $sum: '$purchaseValue' },
+          },
+        },
+      ]),
+      MetaDailyInsight.aggregate([
+        { $match: match },
+        {
+          $group: {
+            _id: { $dateToString: { format: '%Y-%m-%d', date: '$date' } },
+            spend: { $sum: '$spend' },
+            purchaseValue: { $sum: '$purchaseValue' },
+            purchases: { $sum: '$purchases' },
+            clicks: { $sum: '$clicks' },
+            atc: { $sum: '$atc' },
+            checkouts: { $sum: '$checkouts' },
+          },
+        },
+        { $sort: { _id: 1 } },
+      ]),
+    ]);
+
+    const t = totalsAgg[0] || {};
+    const totals = {
+      spend: t.spend || 0,
+      impressions: t.impressions || 0,
+      reach: t.reach || 0,
+      clicks: t.clicks || 0,
+      linkClicks: t.linkClicks || 0,
+      atc: t.atc || 0,
+      checkouts: t.checkouts || 0,
+      purchases: t.purchases || 0,
+      purchaseValue: t.purchaseValue || 0,
+      roas: t.spend > 0 ? (t.purchaseValue || 0) / t.spend : 0,
+      cpa: t.purchases > 0 ? (t.spend || 0) / t.purchases : 0,
+      cpc: t.linkClicks > 0 ? (t.spend || 0) / t.linkClicks : 0,
+      cpm: t.impressions > 0 ? ((t.spend || 0) / t.impressions) * 1000 : 0,
+      ctr: t.impressions > 0 ? ((t.clicks || 0) / t.impressions) * 100 : 0,
+    };
+
+    // Funnel ordenado descendente — cada paso con conversión vs el anterior
+    const linkClicks = totals.linkClicks || totals.clicks || 0;
+    const funnel = [
+      { key: 'impressions', label: 'Impresiones', value: totals.impressions, parent: null },
+      { key: 'reach', label: 'Alcance', value: totals.reach, parent: 'impressions' },
+      { key: 'clicks', label: 'Clicks al link', value: linkClicks, parent: 'impressions' },
+      { key: 'atc', label: 'Add to cart', value: totals.atc, parent: 'clicks' },
+      { key: 'checkouts', label: 'Checkout iniciado', value: totals.checkouts, parent: 'atc' },
+      { key: 'purchases', label: 'Compras', value: totals.purchases, parent: 'checkouts' },
+    ].map((step, idx, arr) => {
+      const parent = step.parent ? arr.find((s) => s.key === step.parent) : null;
+      const conversionPct = parent && parent.value > 0
+        ? (step.value / parent.value) * 100
+        : null;
+      const sharePct = totals.impressions > 0 && idx > 0
+        ? (step.value / totals.impressions) * 100
+        : null;
+      return { ...step, conversionPct, sharePct };
+    });
+
+    res.json({ totals, funnel, daily: dailyAgg });
+  } catch (error) {
     next(error);
   }
 };

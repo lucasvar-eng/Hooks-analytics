@@ -5,6 +5,8 @@ import { fetchStoreMetrics } from '../store/storeSlice';
 import api from '../services/api';
 import SourceMetricsRow from '../components/resumen/SourceMetricsRow';
 import RoasTimelineChart from '../components/resumen/RoasTimelineChart';
+import CvrTimelineChart from '../components/resumen/CvrTimelineChart';
+import MetaFunnel from '../components/meta/MetaFunnel';
 import AttentionPanel from '../components/resumen/AttentionPanel';
 import HighlightCard from '../components/resumen/HighlightCard';
 import { META_METRICS, TN_METRICS, PNL_METRICS, DEFAULTS } from '../components/resumen/metricsCatalog';
@@ -59,6 +61,7 @@ export default function Dashboard() {
   const [productOverview, setProductOverview] = useState(null);
   const [campaigns, setCampaigns] = useState([]);
   const [dailyMetrics, setDailyMetrics] = useState([]);
+  const [metaOverview, setMetaOverview] = useState(null);
 
   useEffect(() => {
     if (storeId && from && to) {
@@ -78,6 +81,9 @@ export default function Dashboard() {
     api.get(`/api/stores/${storeId}/daily-metrics?from=${from}&to=${to}`)
       .then(({ data }) => { if (!cancelled) setDailyMetrics(Array.isArray(data) ? data : []); })
       .catch(() => { if (!cancelled) setDailyMetrics([]); });
+    api.get(`/api/stores/${storeId}/meta/overview?from=${from}&to=${to}`)
+      .then(({ data }) => { if (!cancelled) setMetaOverview(data || null); })
+      .catch(() => { if (!cancelled) setMetaOverview(null); });
     return () => { cancelled = true; };
   }, [storeId, from, to]);
 
@@ -141,6 +147,11 @@ export default function Dashboard() {
       />
 
       <RoasTimelineChart data={dailyMetrics} periodLabel={periodLbl} />
+
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+        <MetaFunnel funnel={metaOverview?.funnel} totals={metaOverview?.totals} excludeKeys={['reach']} compact />
+        <CvrTimelineChart data={dailyMetrics} periodLabel={periodLbl} />
+      </div>
 
       <SourceMetricsRow
         sourceKey="pnl"

@@ -80,7 +80,7 @@ export default function MetaAds() {
         defaultSelected={META_DEFAULTS}
       />
 
-      <MetaFunnel funnel={overview?.funnel} totals={overview?.totals} />
+      <MetaFunnel funnel={overview?.funnel} totals={overview?.totals} excludeKeys={['reach']} />
 
       <MetaSpendRevenueChart data={overview?.daily} />
 

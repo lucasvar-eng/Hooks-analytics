@@ -5,6 +5,53 @@ La bitácora se ordena de **arriba hacia abajo** por orden cronológico inverso 
 
 ---
 
+## 2026-05-13 — Clientes (rediseño operativo)
+
+**Branch**: `codex/universal-dashboard-builder` (continúa)
+**Tienda usada para validar**: Límite Deportes (`69cadede3936709190d773b8`)
+
+### Trabajo hecho
+
+Cierro la 3ra pantalla grande del backlog (Clientes). La página pasó de 248 líneas + tabs (Lista / Cohorts) a 187 líneas orquestando 10 componentes nuevos en `components/clientes/`. Aplica el patrón establecido en Productos: tabla principal arriba con filtros chip + sort + scroll vertical interno + KPIs configurables + SortableLayout + drill-down modal.
+
+**Estructura nueva** (todo dentro de SortableLayout `hooks-clientes-layout-${storeId}`):
+1. `ClientesMetricsRow` — 4 de 10 métricas configurables (Clientes totales · VIP · En riesgo · Tasa recompra son los defaults). Catálogo nuevo `clientesMetricsCatalog.js` con tones automáticos.
+2. `SegmentMap` — barra apilada horizontal con toggle Cantidad/Facturación + grid 4×2 con los 8 segmentos RFM. Click filtra la tabla.
+3. `ClientesTable` — tabla con 8 chips por segmento (con dot de color + count), búsqueda, sort por columna, scroll vertical 720px, paginación cliente. 10 columnas: Cliente · Compras · Gasto total · Ticket promedio · Última compra · Días sin comprar · Score RFM · Segmento · Mes de alta · Demora 2da.
+4. `ActionCards` (2 cols): **En riesgo recuperar** (top 5 con más gasto del segmento at_risk) + **Mejores premiar** (top 5 champions). El "unlock" diferencial de la página.
+5. `ParetoCard` — concentración de facturación calculada en cliente (top 1/5/10/20/50/100%) con 2 insights destacados: regla 80/20 y Top 10% vs Dormidos.
+6. `CohortHeatmap` — rediseño con buckets de color (gris → azul → verde según %). Filtra cohorts con muestra < 3.
+7. `QualityCards` (inline en page) — 3 checks: sin email real / órdenes sin cliente / cohorts débiles.
+
+**Modales nuevos**:
+- `CustomerProfileModal` — drill-down al click en fila o action card. Muestra resumen (compras, gasto, ticket, recencia, fechas, demora 2da, tasa de recompra del cliente) + 3 tiles RFM coloreados por score + acción sugerida según segmento.
+- `GlossaryModal` — botón "Glosario" arriba a la derecha + tooltip ⓘ en cada KPI/columna/segmento. Explica métricas, score RFM, los 8 segmentos (con acción concreta por cada uno), cohortes y Pareto.
+
+**Catálogo de segmentos único** (`segmentsCatalog.js`): label en español, color, badge class, descripción corta, glossary largo y acción de marketing. Cualquier componente que muestra un segmento importa desde acá. Mapeo de IDs del backend (`champions`, `loyal`, `at_risk`, `lost`, `hibernating`, `new`, `promising`, `potential`) → labels español (Mejores, Fieles, En riesgo, Perdidos, Dormidos, Nuevos, Prometedores, Potenciales).
+
+**Cambios clave en el backend**: ninguno. Endpoint `/customers?limit=5000` ya retornaba todos los datos necesarios (4.491 clientes de Límite en 1.26s · 2.6MB). Toda la lógica de filtrado, sort, búsqueda, derivación de top N, cálculo de Pareto y métricas globales corre 100% en cliente.
+
+**Validación end-to-end en runtime** (Límite, 4.491 clientes):
+- KPIs reales: Mejores+Fieles 313 ($60.3M), En riesgo 178 ($27M), Tasa de recompra 11,5% (en amber automático por estar bajo el 15%).
+- Pareto: Top 20% → 44% de la facturación (no llega a 80/20 puro). Top 10% $115,6M vs Dormidos $143,3M — los mejores te dan **menos** que los dormidos en Límite. La copy reactiva correcta ("Los 449 mejores te dan menos que los 1.972 dormidos").
+- Cohortes M1 = 1-6% (muy baja, coherente con tasa recompra 11,5%).
+- Quality: 0 sin email · 0 órdenes huérfanas · 1 cohort débil (2023-04).
+- Click en card del segmento Mejores → tabla filtra a 219 filas con scores 5-5-5/4-5-5 (Ana Jorgelina Dip 8 compras $824k, Emiliano Iautaro Ramirez 2 compras $811k, etc).
+- Modal de cliente (Soledad Suarez): Score 2-5-5 → R amber, F+M emerald. Acción sugerida del segmento En riesgo embebida.
+
+**Bocetos**: `docs/bocetos/clientes-v1.html` + `clientes-v2.html` (HTML standalone para iterar diseño con Lucas antes de implementar). v1 = estructura general. v2 = traducciones al español + modal de glosario (feedback explícito de Lucas).
+
+**Decisión de UX importante**: traducir TODO al español (segmentos, métricas, copy) — Lucas pidió que la app no use jerga técnica. Mantuvimos "LTV" y "RFM" entre paréntesis en el glosario como referencia para usuarios que sí conocen los términos.
+
+### Pendientes (actualiza backlog de 2026-05-13)
+
+- [x] **Clientes** — listo.
+- [ ] **IA**: re-introducir Claude/análisis en una versión más limpia. LanguageBank.jsx y TopicMap.jsx aún tienen el bloque "Análisis asistido" — quedó pendiente porque sus archivos tienen cambios previos no commiteados de otra sesión.
+- [ ] **Bug `stockSharePct`** en `commercial.categoryConcentration` cuando no hay COGS (heredado de Productos).
+- [ ] **Endpoint detalle de cliente** (`/customers/:id/orders`) para enriquecer `CustomerProfileModal` con histórico de compras concreto. Hoy muestra lo derivado del agregado.
+
+---
+
 ## 2026-05-13 — Costos (rediseño operativo)
 
 **Branch**: `codex/universal-dashboard-builder` (continúa)

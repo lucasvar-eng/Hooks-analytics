@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Boceto Clientes v1 — Hooks Analytics</title>
+<style>
+  :root {
+    --bg: #0a0a0b;
+    --card: rgba(255,255,255,0.025);
+    --card-border: rgba(255,255,255,0.08);
+    --text-primary: #ffffff;
+    --text-secondary: rgba(255,255,255,0.92);
+    --text-muted: rgba(255,255,255,0.75);
+    --emerald: #34d399;
+    --emerald-dim: rgba(52,211,153,0.15);
+    --red: #f87171;
+    --red-dim: rgba(248,113,113,0.15);
+    --amber: #fbbf24;
+    --amber-dim: rgba(251,191,36,0.15);
+    --blue: #60a5fa;
+    --blue-dim: rgba(96,165,250,0.15);
+    --purple: #c084fc;
+    --purple-dim: rgba(192,132,252,0.15);
+    --cyan: #67e8f9;
+    --cyan-dim: rgba(103,232,249,0.15);
+    --pink: #f9a8d4;
+    --pink-dim: rgba(249,168,212,0.15);
+    --gray: rgba(255,255,255,0.4);
+    --gray-dim: rgba(255,255,255,0.06);
+
+    /* Colores por segmento — coherentes en toda la página */
+    --seg-champions: #34d399;        /* emerald */
+    --seg-loyal:     #60a5fa;        /* blue */
+    --seg-at_risk:   #fbbf24;        /* amber */
+    --seg-lost:      #f87171;        /* red */
+    --seg-hibernating: rgba(255,255,255,0.4);
+    --seg-new:       #67e8f9;        /* cyan */
+    --seg-promising: #c084fc;        /* purple */
+    --seg-potential: #f9a8d4;        /* pink */
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, 'Inter', system-ui, sans-serif;
+    font-size: 13px;
+    padding: 24px 32px;
+    min-height: 100vh;
+  }
+  .container { max-width: 1640px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+
+  .anchor { color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.18em; margin-bottom: 4px; }
+
+  .card { background: var(--card); border: 1px solid var(--card-border); border-radius: 14px; padding: 22px 24px; }
+
+  /* ===== HEADER MÉTRICAS ===== */
+  .metrics-block { display: flex; flex-direction: column; gap: 12px; }
+  .metrics-block__head { display: flex; justify-content: space-between; align-items: baseline; padding: 0 4px; }
+  .metrics-block__title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-muted); }
+  .metrics-block__sub { font-size: 12.5px; color: var(--text-secondary); margin-top: 2px; }
+  .metrics-block__edit {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: var(--text-secondary);
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 11.5px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .metrics-block__edit:hover { color: #fff; border-color: rgba(255,255,255,0.18); }
+  .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .kpi { padding: 18px 20px; cursor: default; position: relative; }
+  .kpi__label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-muted); }
+  .kpi__value { font-size: 28px; font-weight: 700; color: var(--text-primary); margin-top: 6px; line-height: 1.1; }
+  .kpi__value.is-amber { color: var(--amber); }
+  .kpi__value.is-emerald { color: var(--emerald); }
+  .kpi__value.is-red { color: var(--red); }
+  .kpi__sub { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+
+  /* ===== SEGMENT MAP ===== */
+  .segmap__head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 18px; }
+  .segmap__title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-muted); }
+  .segmap__sub { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+  .segmap__toggle {
+    display: inline-flex; gap: 4px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 999px;
+    padding: 3px;
+  }
+  .segmap__toggle button {
+    background: transparent;
+    border: 0;
+    color: var(--text-muted);
+    font-size: 11px;
+    padding: 5px 12px;
+    border-radius: 999px;
+    cursor: pointer;
+    font-weight: 500;
+  }
+  .segmap__toggle button.is-active { background: rgba(96,165,250,0.18); color: #93c5fd; }
+
+  .segmap__bar {
+    height: 36px;
+    display: flex;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 14px;
+    border: 1px solid rgba(255,255,255,0.04);
+  }
+  .segmap__bar-piece {
+    height: 100%;
+    transition: opacity 0.15s;
+    cursor: pointer;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(0,0,0,0.7);
+    font-size: 10.5px;
+    font-weight: 700;
+  }
+  .segmap__bar-piece:hover { opacity: 0.85; }
+  .segmap__bar-piece.is-tiny { font-size: 0; }
+
+  .segmap__legend { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .seg-card {
+    padding: 12px 14px;
+    background: rgba(255,255,255,0.025);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    position: relative;
+  }
+  .seg-card:hover { border-color: rgba(255,255,255,0.18); background: rgba(255,255,255,0.04); }
+  .seg-card.is-active { border-color: rgba(96,165,250,0.5); background: rgba(96,165,250,0.06); }
+  .seg-card__dot { width: 10px; height: 10px; border-radius: 999px; display: inline-block; margin-right: 7px; vertical-align: middle; }
+  .seg-card__name { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: #fff; display: inline-block; vertical-align: middle; }
+  .seg-card__count { font-size: 22px; font-weight: 700; color: #fff; margin-top: 6px; line-height: 1; }
+  .seg-card__revenue { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+  .seg-card__desc { font-size: 11px; color: var(--text-secondary); margin-top: 6px; line-height: 1.35; }
+
+  /* ===== TABLA ===== */
+  .table-card { padding: 0; overflow: hidden; }
+  .table-card__filters {
+    display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+    padding: 16px 22px; border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .chip {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: var(--text-secondary);
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.15s;
+  }
+  .chip:hover { border-color: rgba(255,255,255,0.18); color: #fff; }
+  .chip.is-active { background: rgba(96,165,250,0.15); border-color: rgba(96,165,250,0.4); color: #93c5fd; }
+  .chip__dot { width: 7px; height: 7px; border-radius: 999px; display: inline-block; }
+  .chip__count {
+    background: rgba(255,255,255,0.08); padding: 1px 7px; border-radius: 999px;
+    font-size: 10px; font-weight: 700;
+  }
+  .chip.is-active .chip__count { background: rgba(96,165,250,0.25); color: #bfdbfe; }
+  .search-input {
+    flex: 1; min-width: 200px; max-width: 280px; margin-left: auto;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: var(--text-primary);
+    padding: 7px 13px; border-radius: 999px; font-size: 12px; outline: none;
+  }
+  .table-scroll { max-height: 720px; overflow-y: auto; overflow-x: auto; }
+  .table-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
+  .table-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+
+  table.customer-table { width: 100%; border-collapse: collapse; }
+  .customer-table th, .customer-table td {
+    padding: 11px 10px; font-size: 12.5px; text-align: center;
+    vertical-align: middle; white-space: nowrap;
+  }
+  .customer-table thead th {
+    position: sticky; top: 0; background: #131316;
+    color: var(--text-muted); font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 1.2px;
+    border-bottom: 1px solid var(--card-border);
+    cursor: pointer; user-select: none; z-index: 2;
+  }
+  .customer-table thead th:hover { color: #fff; }
+  .customer-table thead th.is-sorted { color: #93c5fd; }
+  .customer-table th .sort-arrow::after { content: ' ⇅'; opacity: 0.4; font-size: 10px; }
+  .customer-table th.is-sorted .sort-arrow::after { content: ' ▼'; opacity: 1; }
+  .customer-table tbody tr {
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    transition: background 0.1s;
+  }
+  .customer-table tbody tr:hover { background: rgba(255,255,255,0.02); cursor: pointer; }
+  .customer-table td { color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+  .customer-table td.cust-cell { text-align: left; }
+  .customer-table td.cust-cell .name { color: #fff; font-weight: 500; display: block; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .customer-table td.cust-cell .email { color: var(--text-muted); font-size: 11px; display: block; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; }
+  .customer-table .avatar {
+    width: 28px; height: 28px; border-radius: 999px;
+    background: rgba(96,165,250,0.15);
+    color: #93c5fd; font-size: 11px; font-weight: 700;
+    display: inline-flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .customer-table .cust-row-inner { display: flex; align-items: center; gap: 10px; }
+
+  .seg-badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+  .seg-champions { background: rgba(52,211,153,0.15); color: #6ee7b7; }
+  .seg-loyal     { background: rgba(96,165,250,0.15); color: #93c5fd; }
+  .seg-at_risk   { background: rgba(251,191,36,0.15); color: #fcd34d; }
+  .seg-lost      { background: rgba(248,113,113,0.15); color: #fca5a5; }
+  .seg-hibernating { background: rgba(255,255,255,0.06); color: var(--text-muted); }
+  .seg-new       { background: rgba(103,232,249,0.15); color: #67e8f9; }
+  .seg-promising { background: rgba(192,132,252,0.15); color: #d8b4fe; }
+  .seg-potential { background: rgba(249,168,212,0.15); color: #f9a8d4; }
+
+  .rfm-score { font-family: monospace; font-size: 11.5px; color: var(--text-muted); background: rgba(255,255,255,0.04); padding: 2px 6px; border-radius: 4px; }
+
+  .val-emerald { color: var(--emerald); font-weight: 600; }
+  .val-amber { color: var(--amber); font-weight: 600; }
+  .val-red { color: var(--red); font-weight: 600; }
+  .val-muted { color: var(--text-muted); }
+  .val-strong { color: #fff; font-weight: 600; }
+
+  .table-card__footer {
+    padding: 11px 22px; display: flex; justify-content: space-between; align-items: center;
+    border-top: 1px solid rgba(255,255,255,0.05); font-size: 11.5px; color: var(--text-muted);
+  }
+  .pagination { display: flex; gap: 6px; align-items: center; }
+  .pagination button { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); color: var(--text-secondary); padding: 4px 10px; border-radius: 6px; font-size: 11px; cursor: pointer; }
+  .pagination button:hover { background: rgba(255,255,255,0.08); }
+  .page-size-select { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); color: var(--text-secondary); padding: 3px 8px; border-radius: 6px; font-size: 11px; }
+
+  /* ===== ACTION CARDS (2 cols) ===== */
+  .actions-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .action-card { padding: 20px 22px; }
+  .action-card__head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+  .action-card__title-row { display: flex; align-items: center; gap: 10px; }
+  .action-card__title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.3px; color: var(--text-muted); }
+  .action-card__total { font-size: 22px; font-weight: 700; color: #fff; }
+  .action-card__sub { font-size: 12px; color: var(--text-secondary); margin-top: 2px; line-height: 1.35; }
+  .action-card__cta {
+    margin-top: 4px;
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 10.5px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .action-card__list { margin-top: 14px; }
+  .action-card__row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    cursor: pointer;
+    border-radius: 6px;
+    margin: 0 -8px;
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+  .action-card__row:last-child { border-bottom: 0; }
+  .action-card__row:hover { background: rgba(255,255,255,0.02); }
+  .action-card__row .avatar {
+    width: 32px; height: 32px; border-radius: 999px;
+    background: rgba(255,255,255,0.06); color: var(--text-secondary);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; flex-shrink: 0;
+  }
+  .action-card__row .info { flex: 1; min-width: 0; }
+  .action-card__row .info .name { font-size: 12.5px; font-weight: 500; color: #fff; display: block; max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .action-card__row .info .meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .action-card__row .value { font-size: 13px; font-weight: 700; flex-shrink: 0; }
+  .action-card.at-risk .action-card__row .value { color: var(--amber); }
+  .action-card.champions .action-card__row .value { color: var(--emerald); }
+
+  /* ===== CONCENTRACIÓN PARETO ===== */
+  .pareto-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: center; }
+  .pareto-bars { display: flex; flex-direction: column; gap: 10px; }
+  .pareto-row { display: grid; grid-template-columns: 90px 1fr 110px; align-items: center; gap: 12px; }
+  .pareto-label { font-size: 11.5px; color: var(--text-secondary); font-weight: 500; }
+  .pareto-bar {
+    background: rgba(255,255,255,0.04);
+    border-radius: 6px; height: 16px; overflow: hidden;
+    position: relative;
+  }
+  .pareto-bar__fill {
+    height: 100%;
+    background: linear-gradient(90deg, rgba(96,165,250,0.5), rgba(96,165,250,0.8));
+    border-radius: 6px;
+    position: relative;
+  }
+  .pareto-value { font-size: 11.5px; color: #fff; font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
+  .pareto-summary { display: flex; flex-direction: column; gap: 14px; }
+  .pareto-stat { padding: 14px 18px; background: rgba(96,165,250,0.04); border: 1px solid rgba(96,165,250,0.18); border-radius: 10px; }
+  .pareto-stat__label { font-size: 11px; color: #93c5fd; text-transform: uppercase; letter-spacing: 0.6px; font-weight: 700; }
+  .pareto-stat__value { font-size: 24px; color: #fff; font-weight: 700; margin-top: 4px; line-height: 1; }
+  .pareto-stat__sub { font-size: 11.5px; color: var(--text-secondary); margin-top: 4px; }
+
+  /* ===== COHORT TABLE ===== */
+  .cohort-card { padding: 22px 24px; }
+  .cohort-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 14px; }
+  .cohort-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-muted); }
+  .cohort-sub { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+  .cohort-table { width: 100%; border-collapse: separate; border-spacing: 2px; font-size: 11.5px; }
+  .cohort-table th { color: var(--text-muted); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; padding: 6px 8px; text-align: center; }
+  .cohort-table th.cohort-th-left { text-align: left; }
+  .cohort-table td { padding: 7px 10px; text-align: center; font-variant-numeric: tabular-nums; border-radius: 4px; color: var(--text-secondary); }
+  .cohort-table td.cohort-row-name { text-align: left; color: #fff; font-weight: 500; white-space: nowrap; }
+  .cohort-table td.cohort-total { color: #fff; font-weight: 600; }
+  /* heatmap: cuanto más alto el %, más saturado */
+  .h-0   { background: rgba(255,255,255,0.02); color: var(--text-muted); }
+  .h-1   { background: rgba(96,165,250,0.06); }
+  .h-5   { background: rgba(96,165,250,0.10); }
+  .h-10  { background: rgba(96,165,250,0.18); color: #bfdbfe; }
+  .h-20  { background: rgba(96,165,250,0.30); color: #bfdbfe; font-weight: 600; }
+  .h-50  { background: rgba(52,211,153,0.35); color: #d1fae5; font-weight: 700; }
+  .h-100 { background: rgba(52,211,153,0.5); color: #fff; font-weight: 700; }
+
+  /* ===== QUALITY ===== */
+  .quality-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .quality { padding: 16px 18px; }
+  .quality__label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-muted); }
+  .quality__value { font-size: 22px; font-weight: 700; color: #fff; margin-top: 6px; }
+  .quality__value.is-ok { color: var(--emerald); }
+  .quality__value.is-warn { color: var(--amber); }
+  .quality__sub { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+
+  .reorder-btn {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: var(--text-secondary);
+    padding: 7px 14px; border-radius: 999px; font-size: 11.5px;
+    cursor: pointer; display: inline-flex; align-items: center; gap: 7px;
+    margin-left: auto;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- BARRA REORDER -->
+  <div style="display:flex; justify-content: flex-end;">
+    <button class="reorder-btn">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+      Reordenar
+    </button>
+  </div>
+
+  <!-- 1. KPIs HERO (4 cards configurables) -->
+  <div class="metrics-block">
+    <div class="metrics-block__head">
+      <div>
+        <p class="metrics-block__title">Indicadores</p>
+        <p class="metrics-block__sub">4 de 10 métricas — toques para personalizar</p>
+      </div>
+      <button class="metrics-block__edit">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4v16h16v-7M18.5 2.5a2.121 2.121 0 113 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        Editar métricas
+      </button>
+    </div>
+    <div class="kpi-grid">
+      <div class="card kpi">
+        <p class="kpi__label">Clientes totales</p>
+        <p class="kpi__value">4.491</p>
+        <p class="kpi__sub">Lifetime · 1.972 inactivos (44%)</p>
+      </div>
+      <div class="card kpi">
+        <p class="kpi__label">VIP (Champ + Loyal)</p>
+        <p class="kpi__value is-emerald">313</p>
+        <p class="kpi__sub">7% base · $60M LTV (15%)</p>
+      </div>
+      <div class="card kpi">
+        <p class="kpi__label">At Risk a recuperar</p>
+        <p class="kpi__value is-amber">178</p>
+        <p class="kpi__sub">$27M LTV en juego</p>
+      </div>
+      <div class="card kpi">
+        <p class="kpi__label">Tasa de recompra</p>
+        <p class="kpi__value">14,6%</p>
+        <p class="kpi__sub">654 de 4.491 con &gt;1 orden</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. SEGMENT MAP -->
+  <div class="card">
+    <div class="segmap__head">
+      <div>
+        <p class="segmap__title">Mapa de segmentos RFM</p>
+        <p class="segmap__sub">Distribución de los 4.491 clientes — toca un segmento para filtrar la tabla</p>
+      </div>
+      <div class="segmap__toggle">
+        <button>Por cantidad</button>
+        <button class="is-active">Por revenue</button>
+      </div>
+    </div>
+
+    <!-- Barra apilada por revenue -->
+    <div class="segmap__bar">
+      <!-- Total revenue: $407.9M -->
+      <div class="segmap__bar-piece" style="width: 35.1%; background: var(--seg-hibernating); color: #fff;" title="Hibernating: 1972 · $143M">Hibernating</div>
+      <div class="segmap__bar-piece" style="width: 33.7%; background: var(--seg-new);">New</div>
+      <div class="segmap__bar-piece" style="width: 10.8%; background: var(--seg-champions);">Champions</div>
+      <div class="segmap__bar-piece" style="width: 6.6%; background: var(--seg-at_risk);">At Risk</div>
+      <div class="segmap__bar-piece" style="width: 6.3%; background: var(--seg-potential);">Potential</div>
+      <div class="segmap__bar-piece" style="width: 3.9%; background: var(--seg-loyal);">Loyal</div>
+      <div class="segmap__bar-piece is-tiny" style="width: 3.6%; background: var(--seg-promising);" title="Promising"></div>
+    </div>
+
+    <div class="segmap__legend">
+      <div class="seg-card">
+        <span class="seg-card__dot" style="background: var(--seg-champions);"></span>
+        <span class="seg-card__name">Champions</span>
+        <p class="seg-card__count">219</p>
+        <p class="seg-card__revenue">$44,2M · avg 2,7 órdenes</p>
+        <p class="seg-card__desc">Los mejores. Compraron mucho y recién. Mantenerlos felices.</p>
+      </div>
+      <div class="seg-card">
+        <span class="seg-card__dot" style="background: var(--seg-loyal);"></span>
+        <span class="seg-card__name">Loyal</span>
+        <p class="seg-card__count">94</p>
+        <p class="seg-card__revenue">$16,1M · avg 2,5 órdenes</p>
+        <p class="seg-card__desc">Recompran seguido. Cross-sell y upsell.</p>
+      </div>
+      <div class="seg-card">
+        <span class="seg-card__dot" style="background: var(--seg-at_risk);"></span>
+        <span class="seg-card__name">At Risk</span>
+        <p class="seg-card__count">178</p>
+        <p class="seg-card__revenue">$27M · avg 2,6 órdenes</p>
+        <p class="seg-card__desc">Compraron mucho pero hace tiempo. Recuperar urgente.</p>
+      </div>
+      <div class="seg-card">
+        <span class="seg-card__dot" style="background: var(--seg-promising);"></span>
+        <span class="seg-card__name">Promising</span>
+        <p class="seg-card__count">316</p>
+        <p class="seg-card__revenue">$14,5M · avg 1 orden</p>
+        <p class="seg-card__desc">Recientes con potencial. Nurturing para 2da compra.</p>
+      </div>
+      <div class="seg-card">
+        <span class="seg-card__dot" style="background: var(--seg-potential);"></span>
+        <span class="seg-card__name">Potential</span>
+        <p class="seg-card__count">163</p>
+        <p class="seg-card__revenue">$25,8M · avg 1,2 órdenes</p>
+        <p class="seg-card__desc">Pocas compras pero ticket alto. Subir frecuencia.</p>
+      </div>
+      <div class="seg-card">
+        <span class="seg-card__dot" style="background: var(--seg-new);"></span>
+        <span class="seg-card__name">New</span>
+        <p class="seg-card__count">1.549</p>
+        <p class="seg-card__revenue">$137,4M · avg 1 orden</p>
+        <p class="seg-card__desc">Una sola compra. Convertir a Loyal con segunda.</p>
+      </div>
+      <div class="seg-card">
+        <span class="seg-card__dot" style="background: var(--seg-hibernating);"></span>
+        <span class="seg-card__name">Hibernating</span>
+        <p class="seg-card__count">1.972</p>
+        <p class="seg-card__revenue">$143,3M · avg 1 orden</p>
+        <p class="seg-card__desc">Una compra hace mucho. Re-engagement masivo o aceptar.</p>
+      </div>
+      <div class="seg-card">
+        <span class="seg-card__dot" style="background: var(--seg-lost);"></span>
+        <span class="seg-card__name">Lost</span>
+        <p class="seg-card__count">0</p>
+        <p class="seg-card__revenue">No detectados</p>
+        <p class="seg-card__desc">Múltiples compras pero hace tiempo. (Sin matches hoy.)</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. TABLA DE CLIENTES -->
+  <div class="card table-card">
+    <div class="table-card__filters">
+      <button class="chip is-active">Todos <span class="chip__count">4.491</span></button>
+      <button class="chip"><span class="chip__dot" style="background: var(--seg-champions);"></span>Champions <span class="chip__count">219</span></button>
+      <button class="chip"><span class="chip__dot" style="background: var(--seg-loyal);"></span>Loyal <span class="chip__count">94</span></button>
+      <button class="chip"><span class="chip__dot" style="background: var(--seg-at_risk);"></span>At Risk <span class="chip__count">178</span></button>
+      <button class="chip"><span class="chip__dot" style="background: var(--seg-potential);"></span>Potential <span class="chip__count">163</span></button>
+      <button class="chip"><span class="chip__dot" style="background: var(--seg-promising);"></span>Promising <span class="chip__count">316</span></button>
+      <button class="chip"><span class="chip__dot" style="background: var(--seg-new);"></span>New <span class="chip__count">1.549</span></button>
+      <button class="chip"><span class="chip__dot" style="background: var(--seg-hibernating);"></span>Hibernating <span class="chip__count">1.972</span></button>
+      <input class="search-input" type="text" placeholder="Buscar nombre, email o ID...">
+    </div>
+
+    <div class="table-scroll">
+      <table class="customer-table">
+        <thead>
+          <tr>
+            <th style="text-align:left">Cliente <span class="sort-arrow"></span></th>
+            <th>Órdenes <span class="sort-arrow"></span></th>
+            <th class="is-sorted">LTV <span class="sort-arrow"></span></th>
+            <th>Ticket prom. <span class="sort-arrow"></span></th>
+            <th>Última compra <span class="sort-arrow"></span></th>
+            <th>Recencia <span class="sort-arrow"></span></th>
+            <th>RFM <span class="sort-arrow"></span></th>
+            <th>Segmento <span class="sort-arrow"></span></th>
+            <th>Cohort <span class="sort-arrow"></span></th>
+            <th>Lag 1→2 <span class="sort-arrow"></span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="cust-cell">
+              <div class="cust-row-inner">
+                <span class="avatar">SS</span>
+                <div>
+                  <span class="name">Soledad Suarez</span>
+                  <span class="email">arriolas166@gmail.com</span>
+                </div>
+              </div>
+            </td>
+            <td><span class="val-strong">4</span></td>
+            <td><span class="val-strong">$1.274.310</span></td>
+            <td>$318.578</td>
+            <td>15/11/2024</td>
+            <td class="val-amber">543d</td>
+            <td><span class="rfm-score">2-5-5</span></td>
+            <td><span class="seg-badge seg-at_risk">At Risk</span></td>
+            <td>2024-10</td>
+            <td>7d</td>
+          </tr>
+          <tr>
+            <td class="cust-cell">
+              <div class="cust-row-inner">
+                <span class="avatar">DA</span>
+                <div>
+                  <span class="name">Daniel Arturo Ontiveros</span>
+                  <span class="email">administrador@colegiodelsalvador.edu.ar</span>
+                </div>
+              </div>
+            </td>
+            <td>1</td>
+            <td><span class="val-strong">$1.079.500</span></td>
+            <td>$1.079.500</td>
+            <td>18/09/2025</td>
+            <td>236d</td>
+            <td><span class="rfm-score">3-1-5</span></td>
+            <td><span class="seg-badge seg-potential">Potential</span></td>
+            <td>2025-09</td>
+            <td class="val-muted">—</td>
+          </tr>
+          <tr>
+            <td class="cust-cell">
+              <div class="cust-row-inner">
+                <span class="avatar">NV</span>
+                <div>
+                  <span class="name">Nahuel Osvaldo Victoriano</span>
+                  <span class="email">nahuelosvaldovictoriano@gmail.com</span>
+                </div>
+              </div>
+            </td>
+            <td><span class="val-strong">3</span></td>
+            <td><span class="val-strong">$982.450</span></td>
+            <td>$327.483</td>
+            <td>04/09/2025</td>
+            <td>250d</td>
+            <td><span class="rfm-score">3-5-5</span></td>
+            <td><span class="seg-badge seg-loyal">Loyal</span></td>
+            <td>2025-08</td>
+            <td>10d</td>
+          </tr>
+          <tr>
+            <td class="cust-cell">
+              <div class="cust-row-inner">
+                <span class="avatar">MG</span>
+                <div>
+                  <span class="name">María Gómez</span>
+                  <span class="email">m.gomez@gmail.com</span>
+                </div>
+              </div>
+            </td>
+            <td><span class="val-strong">6</span></td>
+            <td><span class="val-strong">$890.220</span></td>
+            <td>$148.370</td>
+            <td>02/05/2026</td>
+            <td class="val-emerald">11d</td>
+            <td><span class="rfm-score">5-5-5</span></td>
+            <td><span class="seg-badge seg-champions">Champions</span></td>
+            <td>2024-03</td>
+            <td>14d</td>
+          </tr>
+          <tr>
+            <td class="cust-cell">
+              <div class="cust-row-inner">
+                <span class="avatar">JP</span>
+                <div>
+                  <span class="name">Juan Pérez</span>
+                  <span class="email">jperez@hotmail.com</span>
+                </div>
+              </div>
+            </td>
+            <td><span class="val-strong">2</span></td>
+            <td>$756.000</td>
+            <td>$378.000</td>
+            <td>30/04/2026</td>
+            <td class="val-emerald">13d</td>
+            <td><span class="rfm-score">5-3-4</span></td>
+            <td><span class="seg-badge seg-loyal">Loyal</span></td>
+            <td>2025-12</td>
+            <td>87d</td>
+          </tr>
+          <tr>
+            <td class="cust-cell">
+              <div class="cust-row-inner">
+                <span class="avatar">AT</span>
+                <div>
+                  <span class="name">Ana Torres</span>
+                  <span class="email">anatorres@gmail.com</span>
+                </div>
+              </div>
+            </td>
+            <td>1</td>
+            <td>$685.000</td>
+            <td>$685.000</td>
+            <td>21/04/2026</td>
+            <td class="val-emerald">22d</td>
+            <td><span class="rfm-score">5-1-4</span></td>
+            <td><span class="seg-badge seg-new">New</span></td>
+            <td>2026-04</td>
+            <td class="val-muted">—</td>
+          </tr>
+          <tr>
+            <td class="cust-cell">
+              <div class="cust-row-inner">
+                <span class="avatar">CL</span>
+                <div>
+                  <span class="name">Carlos López</span>
+                  <span class="email">clopez@yahoo.com</span>
+                </div>
+              </div>
+            </td>
+            <td>1</td>
+            <td>$612.450</td>
+            <td>$612.450</td>
+            <td>14/06/2024</td>
+            <td class="val-amber">698d</td>
+            <td><span class="rfm-score">1-1-4</span></td>
+            <td><span class="seg-badge seg-hibernating">Hibernating</span></td>
+            <td>2024-06</td>
+            <td class="val-muted">—</td>
+          </tr>
+          <tr>
+            <td colspan="10" style="padding: 14px 22px; color: var(--text-muted); font-size: 11.5px; font-style: italic;">
+              ↓ scroll para ver 4.484 filas más
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="table-card__footer">
+      <span>
+        Mostrando <strong style="color:#fff;">1–25</strong> de <strong style="color:#fff;">4.491</strong>
+        · ordenando por <strong style="color:#93c5fd;">LTV ▼</strong>
+      </span>
+      <div class="pagination">
+        <span>Filas por página</span>
+        <select class="page-size-select"><option>10</option><option selected>25</option><option>50</option><option>100</option></select>
+        <button>‹</button>
+        <span>Pág. 1 de 180</span>
+        <button>›</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. ACTION CARDS (2 cols) -->
+  <div class="actions-grid">
+    <!-- At Risk -->
+    <div class="card action-card at-risk">
+      <div class="action-card__head">
+        <div>
+          <div class="action-card__title-row">
+            <span class="seg-badge seg-at_risk">At Risk</span>
+            <p class="action-card__title">Recuperar urgente</p>
+          </div>
+          <p class="action-card__sub">Top 5 con más LTV en juego — compraron mucho hace tiempo. Mandales algo personalizado.</p>
+        </div>
+        <div style="text-align:right;">
+          <p class="action-card__total" style="color: var(--amber);">$27,0M</p>
+          <p style="font-size:11px; color: var(--text-muted); margin-top:2px;">178 clientes</p>
+        </div>
+      </div>
+      <div class="action-card__list">
+        <div class="action-card__row">
+          <span class="avatar">SS</span>
+          <div class="info">
+            <span class="name">Soledad Suarez</span>
+            <span class="meta">4 órdenes · última hace 543d · 2-5-5</span>
+          </div>
+          <span class="value">$1,3M</span>
+        </div>
+        <div class="action-card__row">
+          <span class="avatar">FC</span>
+          <div class="info">
+            <span class="name">Federico Carrizo</span>
+            <span class="meta">3 órdenes · última hace 410d · 2-4-5</span>
+          </div>
+          <span class="value">$897k</span>
+        </div>
+        <div class="action-card__row">
+          <span class="avatar">LM</span>
+          <div class="info">
+            <span class="name">Laura Méndez</span>
+            <span class="meta">5 órdenes · última hace 380d · 2-5-4</span>
+          </div>
+          <span class="value">$762k</span>
+        </div>
+        <div class="action-card__row">
+          <span class="avatar">RF</span>
+          <div class="info">
+            <span class="name">Roberto Fernández</span>
+            <span class="meta">3 órdenes · última hace 622d · 1-4-5</span>
+          </div>
+          <span class="value">$680k</span>
+        </div>
+        <div class="action-card__row">
+          <span class="avatar">VP</span>
+          <div class="info">
+            <span class="name">Valentina Paz</span>
+            <span class="meta">2 órdenes · última hace 450d · 2-3-5</span>
+          </div>
+          <span class="value">$598k</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Champions -->
+    <div class="card action-card champions">
+      <div class="action-card__head">
+        <div>
+          <div class="action-card__title-row">
+            <span class="seg-badge seg-champions">Champions</span>
+            <p class="action-card__title">Premiar y fidelizar</p>
+          </div>
+          <p class="action-card__sub">Top 5 de tus mejores — programa VIP, acceso anticipado, referidos. No los pierdas.</p>
+        </div>
+        <div style="text-align:right;">
+          <p class="action-card__total" style="color: var(--emerald);">$44,2M</p>
+          <p style="font-size:11px; color: var(--text-muted); margin-top:2px;">219 clientes</p>
+        </div>
+      </div>
+      <div class="action-card__list">
+        <div class="action-card__row">
+          <span class="avatar">MG</span>
+          <div class="info">
+            <span class="name">María Gómez</span>
+            <span class="meta">6 órdenes · última hace 11d · 5-5-5</span>
+          </div>
+          <span class="value">$890k</span>
+        </div>
+        <div class="action-card__row">
+          <span class="avatar">AC</span>
+          <div class="info">
+            <span class="name">Andrés Castro</span>
+            <span class="meta">5 órdenes · última hace 18d · 5-5-5</span>
+          </div>
+          <span class="value">$745k</span>
+        </div>
+        <div class="action-card__row">
+          <span class="avatar">EL</span>
+          <div class="info">
+            <span class="name">Eugenia López</span>
+            <span class="meta">4 órdenes · última hace 5d · 5-4-5</span>
+          </div>
+          <span class="value">$687k</span>
+        </div>
+        <div class="action-card__row">
+          <span class="avatar">PS</span>
+          <div class="info">
+            <span class="name">Pablo Suárez</span>
+            <span class="meta">8 órdenes · última hace 35d · 4-5-5</span>
+          </div>
+          <span class="value">$623k</span>
+        </div>
+        <div class="action-card__row">
+          <span class="avatar">CV</span>
+          <div class="info">
+            <span class="name">Carolina Vega</span>
+            <span class="meta">3 órdenes · última hace 22d · 5-4-5</span>
+          </div>
+          <span class="value">$589k</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. CONCENTRACIÓN DE REVENUE (Pareto) -->
+  <div class="card">
+    <div class="cohort-head">
+      <div>
+        <p class="cohort-title">Concentración de revenue · Pareto</p>
+        <p class="cohort-sub">Qué % de clientes generan qué % del revenue lifetime ($407,9M total)</p>
+      </div>
+    </div>
+    <div class="pareto-grid">
+      <div class="pareto-bars">
+        <div class="pareto-row">
+          <span class="pareto-label">Top 1%</span>
+          <div class="pareto-bar"><div class="pareto-bar__fill" style="width: 8%;"></div></div>
+          <span class="pareto-value">$32,6M · 8%</span>
+        </div>
+        <div class="pareto-row">
+          <span class="pareto-label">Top 5%</span>
+          <div class="pareto-bar"><div class="pareto-bar__fill" style="width: 22%;"></div></div>
+          <span class="pareto-value">$89,7M · 22%</span>
+        </div>
+        <div class="pareto-row">
+          <span class="pareto-label">Top 10%</span>
+          <div class="pareto-bar"><div class="pareto-bar__fill" style="width: 35%;"></div></div>
+          <span class="pareto-value">$142,8M · 35%</span>
+        </div>
+        <div class="pareto-row">
+          <span class="pareto-label">Top 20%</span>
+          <div class="pareto-bar"><div class="pareto-bar__fill" style="width: 56%;"></div></div>
+          <span class="pareto-value">$228,4M · 56%</span>
+        </div>
+        <div class="pareto-row">
+          <span class="pareto-label">Top 50%</span>
+          <div class="pareto-bar"><div class="pareto-bar__fill" style="width: 84%;"></div></div>
+          <span class="pareto-value">$342,6M · 84%</span>
+        </div>
+        <div class="pareto-row">
+          <span class="pareto-label">100%</span>
+          <div class="pareto-bar"><div class="pareto-bar__fill" style="width: 100%;"></div></div>
+          <span class="pareto-value">$407,9M · 100%</span>
+        </div>
+      </div>
+      <div class="pareto-summary">
+        <div class="pareto-stat">
+          <p class="pareto-stat__label">Pareto: 20/80</p>
+          <p class="pareto-stat__value">20% → 56%</p>
+          <p class="pareto-stat__sub">Los 898 mejores clientes generan más de la mitad del revenue. Concentración media: cada cliente top vale ~$255k en su vida.</p>
+        </div>
+        <div class="pareto-stat">
+          <p class="pareto-stat__label">Top 10% vs hibernantes</p>
+          <p class="pareto-stat__value">$142M vs $143M</p>
+          <p class="pareto-stat__sub">Los 449 mejores te dan casi lo mismo que los 1.972 hibernantes. Invertí ahí.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. COHORT TABLE -->
+  <div class="card cohort-card">
+    <div class="cohort-head">
+      <div>
+        <p class="cohort-title">Cohorts de retención</p>
+        <p class="cohort-sub">% de clientes que vuelven a comprar N meses después de su primera compra</p>
+      </div>
+    </div>
+    <table class="cohort-table">
+      <thead>
+        <tr>
+          <th class="cohort-th-left">Cohort</th>
+          <th>Total</th>
+          <th>M0</th><th>M1</th><th>M2</th><th>M3</th><th>M4</th><th>M5</th><th>M6</th><th>M7</th><th>M8</th><th>M9</th><th>M10</th><th>M11</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="cohort-row-name">2025-12</td><td class="cohort-total">144</td>
+          <td class="h-100">100%</td><td class="h-10">11%</td><td class="h-5">6%</td><td class="h-1">2%</td><td class="h-0"></td><td class="h-0"></td><td class="h-0"></td><td class="h-0"></td><td class="h-0"></td><td class="h-0"></td><td class="h-0"></td><td class="h-0"></td>
+        </tr>
+        <tr>
+          <td class="cohort-row-name">2025-11</td><td class="cohort-total">187</td>
+          <td class="h-100">100%</td><td class="h-10">14%</td><td class="h-10">9%</td><td class="h-5">4%</td><td class="h-1">2%</td><td class="h-0"></td><td class="h-0"></td><td class="h-0"></td><td class="h-0"></td><td class="h-0"></td><td class="h-0"></td><td class="h-0"></td>
+        </tr>
+        <tr>
+          <td class="cohort-row-name">2025-10</td><td class="cohort-total">222</td>
+          <td class="h-100">100%</td><td class="h-20">22%</td><td class="h-10">11%</td><td class="h-5">7%</td><td class="h-5">4%</td><td class="h-1">2%</td><td class="h-0"></td><td class="h-0"></td><td class="h-0"></td><td class="h-0"></td><td class="h-0"></td><td class="h-0"></td>
+        </tr>
+        <tr>
+          <td class="cohort-row-name">2025-09</td><td class="cohort-total">236</td>
+          <td class="h-100">100%</td><td class="h-10">12%</td><td class="h-10">10%</td><td class="h-5">6%</td><td class="h-5">5%</td><td class="h-5">4%</td><td class="h-1">2%</td><td class="h-0"></td><td class="h-0"></td><td class="h-0"></td><td class="h-0"></td><td class="h-0"></td>
+        </tr>
+        <tr>
+          <td class="cohort-row-name">2025-08</td><td class="cohort-total">198</td>
+          <td class="h-100">100%</td><td class="h-20">19%</td><td class="h-10">11%</td><td class="h-10">9%</td><td class="h-5">5%</td><td class="h-5">3%</td><td class="h-1">2%</td><td class="h-1">2%</td><td class="h-0"></td><td class="h-0"></td><td class="h-0"></td><td class="h-0"></td>
+        </tr>
+        <tr>
+          <td class="cohort-row-name">2025-07</td><td class="cohort-total">175</td>
+          <td class="h-100">100%</td><td class="h-10">12%</td><td class="h-10">10%</td><td class="h-10">9%</td><td class="h-5">6%</td><td class="h-5">5%</td><td class="h-5">3%</td><td class="h-1">2%</td><td class="h-1">1%</td><td class="h-0"></td><td class="h-0"></td><td class="h-0"></td>
+        </tr>
+        <tr>
+          <td class="cohort-row-name">2024-12</td><td class="cohort-total">112</td>
+          <td class="h-100">100%</td><td class="h-20">18%</td><td class="h-10">14%</td><td class="h-10">11%</td><td class="h-10">9%</td><td class="h-5">7%</td><td class="h-5">5%</td><td class="h-5">4%</td><td class="h-1">3%</td><td class="h-1">2%</td><td class="h-1">2%</td><td class="h-1">1%</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 7. QUALITY CHECKS -->
+  <div class="quality-grid">
+    <div class="card quality">
+      <p class="quality__label">Sin email real</p>
+      <p class="quality__value is-ok">0</p>
+      <p class="quality__sub">Todos los clientes tienen email recuperable</p>
+    </div>
+    <div class="card quality">
+      <p class="quality__label">Órdenes sin cliente</p>
+      <p class="quality__value is-ok">0</p>
+      <p class="quality__sub">Las 192 órdenes están atribuidas</p>
+    </div>
+    <div class="card quality">
+      <p class="quality__label">Cohorts débiles</p>
+      <p class="quality__value is-warn">1</p>
+      <p class="quality__sub">2023-04 con &lt;3 clientes (muestra chica)</p>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

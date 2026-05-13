@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Boceto Clientes v2 — Hooks Analytics</title>
+<style>
+  :root {
+    --bg: #0a0a0b;
+    --card: rgba(255,255,255,0.025);
+    --card-border: rgba(255,255,255,0.08);
+    --text-primary: #ffffff;
+    --text-secondary: rgba(255,255,255,0.92);
+    --text-muted: rgba(255,255,255,0.75);
+    --emerald: #34d399;
+    --red: #f87171;
+    --amber: #fbbf24;
+    --blue: #60a5fa;
+    --purple: #c084fc;
+    --cyan: #67e8f9;
+    --pink: #f9a8d4;
+
+    --seg-champions: #34d399;
+    --seg-loyal:     #60a5fa;
+    --seg-at_risk:   #fbbf24;
+    --seg-lost:      #f87171;
+    --seg-hibernating: rgba(255,255,255,0.4);
+    --seg-new:       #67e8f9;
+    --seg-promising: #c084fc;
+    --seg-potential: #f9a8d4;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, 'Inter', system-ui, sans-serif;
+    font-size: 13px;
+    padding: 24px 32px;
+    min-height: 100vh;
+  }
+  .container { max-width: 1640px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+  .card { background: var(--card); border: 1px solid var(--card-border); border-radius: 14px; padding: 22px 24px; }
+
+  /* TOP BAR */
+  .topbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  .topbar__left { display: flex; gap: 10px; align-items: center; }
+  .topbar__btn {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: var(--text-secondary);
+    padding: 7px 14px; border-radius: 999px; font-size: 11.5px;
+    cursor: pointer; display: inline-flex; align-items: center; gap: 7px;
+  }
+  .topbar__btn:hover { color: #fff; border-color: rgba(255,255,255,0.18); }
+  .topbar__btn.is-primary { background: rgba(96,165,250,0.12); border-color: rgba(96,165,250,0.3); color: #bfdbfe; }
+  .topbar__btn.is-primary:hover { background: rgba(96,165,250,0.2); }
+
+  /* KPIs */
+  .metrics-block { display: flex; flex-direction: column; gap: 12px; }
+  .metrics-block__head { display: flex; justify-content: space-between; align-items: baseline; padding: 0 4px; }
+  .metrics-block__title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-muted); }
+  .metrics-block__sub { font-size: 12.5px; color: var(--text-secondary); margin-top: 2px; }
+  .metrics-block__edit { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); color: var(--text-secondary); padding: 6px 12px; border-radius: 999px; font-size: 11.5px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+  .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .kpi { padding: 18px 20px; position: relative; }
+  .kpi__label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-muted); display: flex; align-items: center; gap: 5px; }
+  .kpi__value { font-size: 28px; font-weight: 700; color: #fff; margin-top: 6px; line-height: 1.1; }
+  .kpi__value.is-amber { color: var(--amber); }
+  .kpi__value.is-emerald { color: var(--emerald); }
+  .kpi__sub { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+  .info-icon {
+    width: 13px; height: 13px; border-radius: 999px;
+    background: rgba(255,255,255,0.08); color: var(--text-muted);
+    font-size: 9px; font-weight: 700;
+    display: inline-flex; align-items: center; justify-content: center;
+    cursor: pointer;
+  }
+  .info-icon:hover { background: rgba(96,165,250,0.2); color: #93c5fd; }
+
+  /* SEGMENT MAP */
+  .segmap__head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 18px; }
+  .segmap__title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-muted); }
+  .segmap__sub { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+  .segmap__toggle { display: inline-flex; gap: 4px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 999px; padding: 3px; }
+  .segmap__toggle button { background: transparent; border: 0; color: var(--text-muted); font-size: 11px; padding: 5px 12px; border-radius: 999px; cursor: pointer; font-weight: 500; }
+  .segmap__toggle button.is-active { background: rgba(96,165,250,0.18); color: #93c5fd; }
+
+  .segmap__bar { height: 36px; display: flex; border-radius: 10px; overflow: hidden; margin-bottom: 14px; border: 1px solid rgba(255,255,255,0.04); }
+  .segmap__bar-piece { height: 100%; transition: opacity 0.15s; cursor: pointer; display: flex; align-items: center; justify-content: center; color: rgba(0,0,0,0.75); font-size: 10.5px; font-weight: 700; }
+  .segmap__bar-piece:hover { opacity: 0.85; }
+  .segmap__bar-piece.is-tiny { font-size: 0; }
+
+  .segmap__legend { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .seg-card { padding: 12px 14px; background: rgba(255,255,255,0.025); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; cursor: pointer; }
+  .seg-card:hover { border-color: rgba(255,255,255,0.18); background: rgba(255,255,255,0.04); }
+  .seg-card__top { display: flex; justify-content: space-between; align-items: center; }
+  .seg-card__name-wrap { display: flex; align-items: center; gap: 7px; }
+  .seg-card__dot { width: 10px; height: 10px; border-radius: 999px; display: inline-block; }
+  .seg-card__name { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: #fff; }
+  .seg-card__count { font-size: 22px; font-weight: 700; color: #fff; margin-top: 6px; line-height: 1; }
+  .seg-card__revenue { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+  .seg-card__desc { font-size: 11px; color: var(--text-secondary); margin-top: 6px; line-height: 1.35; }
+
+  /* TABLA */
+  .table-card { padding: 0; overflow: hidden; }
+  .table-card__filters { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 16px 22px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+  .chip { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); color: var(--text-secondary); padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+  .chip:hover { border-color: rgba(255,255,255,0.18); color: #fff; }
+  .chip.is-active { background: rgba(96,165,250,0.15); border-color: rgba(96,165,250,0.4); color: #93c5fd; }
+  .chip__dot { width: 7px; height: 7px; border-radius: 999px; display: inline-block; }
+  .chip__count { background: rgba(255,255,255,0.08); padding: 1px 7px; border-radius: 999px; font-size: 10px; font-weight: 700; }
+  .chip.is-active .chip__count { background: rgba(96,165,250,0.25); color: #bfdbfe; }
+  .search-input { flex: 1; min-width: 200px; max-width: 280px; margin-left: auto; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); color: #fff; padding: 7px 13px; border-radius: 999px; font-size: 12px; outline: none; }
+  .table-scroll { max-height: 720px; overflow-y: auto; overflow-x: auto; }
+
+  table.customer-table { width: 100%; border-collapse: collapse; }
+  .customer-table th, .customer-table td { padding: 11px 10px; font-size: 12.5px; text-align: center; white-space: nowrap; }
+  .customer-table thead th { position: sticky; top: 0; background: #131316; color: var(--text-muted); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; border-bottom: 1px solid var(--card-border); cursor: pointer; user-select: none; z-index: 2; }
+  .customer-table thead th:hover { color: #fff; }
+  .customer-table thead th.is-sorted { color: #93c5fd; }
+  .customer-table th .sort-arrow::after { content: ' ⇅'; opacity: 0.4; font-size: 10px; }
+  .customer-table th.is-sorted .sort-arrow::after { content: ' ▼'; opacity: 1; }
+  .customer-table thead th .info-icon { margin-left: 4px; }
+  .customer-table tbody tr { border-bottom: 1px solid rgba(255,255,255,0.03); }
+  .customer-table tbody tr:hover { background: rgba(255,255,255,0.02); cursor: pointer; }
+  .customer-table td { color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+  .customer-table td.cust-cell { text-align: left; }
+  .customer-table td.cust-cell .name { color: #fff; font-weight: 500; display: block; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .customer-table td.cust-cell .email { color: var(--text-muted); font-size: 11px; display: block; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; }
+  .customer-table .avatar { width: 28px; height: 28px; border-radius: 999px; background: rgba(96,165,250,0.15); color: #93c5fd; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .customer-table .cust-row-inner { display: flex; align-items: center; gap: 10px; }
+
+  .seg-badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+  .seg-champions { background: rgba(52,211,153,0.15); color: #6ee7b7; }
+  .seg-loyal     { background: rgba(96,165,250,0.15); color: #93c5fd; }
+  .seg-at_risk   { background: rgba(251,191,36,0.15); color: #fcd34d; }
+  .seg-lost      { background: rgba(248,113,113,0.15); color: #fca5a5; }
+  .seg-hibernating { background: rgba(255,255,255,0.06); color: var(--text-muted); }
+  .seg-new       { background: rgba(103,232,249,0.15); color: #67e8f9; }
+  .seg-promising { background: rgba(192,132,252,0.15); color: #d8b4fe; }
+  .seg-potential { background: rgba(249,168,212,0.15); color: #f9a8d4; }
+
+  .rfm-score { font-family: monospace; font-size: 11.5px; color: var(--text-muted); background: rgba(255,255,255,0.04); padding: 2px 6px; border-radius: 4px; }
+  .val-emerald { color: var(--emerald); font-weight: 600; }
+  .val-amber { color: var(--amber); font-weight: 600; }
+  .val-strong { color: #fff; font-weight: 600; }
+  .val-muted { color: var(--text-muted); }
+
+  .table-card__footer { padding: 11px 22px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.05); font-size: 11.5px; color: var(--text-muted); }
+  .pagination { display: flex; gap: 6px; align-items: center; }
+  .pagination button { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); color: var(--text-secondary); padding: 4px 10px; border-radius: 6px; font-size: 11px; cursor: pointer; }
+  .page-size-select { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); color: var(--text-secondary); padding: 3px 8px; border-radius: 6px; font-size: 11px; }
+
+  /* ACTION CARDS */
+  .actions-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .action-card { padding: 20px 22px; }
+  .action-card__head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+  .action-card__title-row { display: flex; align-items: center; gap: 10px; }
+  .action-card__title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.3px; color: var(--text-muted); }
+  .action-card__total { font-size: 22px; font-weight: 700; color: #fff; }
+  .action-card__sub { font-size: 12px; color: var(--text-secondary); margin-top: 2px; line-height: 1.35; max-width: 480px; }
+  .action-card__list { margin-top: 14px; }
+  .action-card__row { display: flex; align-items: center; gap: 12px; padding: 10px 8px; border-bottom: 1px solid rgba(255,255,255,0.03); cursor: pointer; border-radius: 6px; margin: 0 -8px; }
+  .action-card__row:last-child { border-bottom: 0; }
+  .action-card__row:hover { background: rgba(255,255,255,0.02); }
+  .action-card__row .avatar { width: 32px; height: 32px; border-radius: 999px; background: rgba(255,255,255,0.06); color: var(--text-secondary); display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+  .action-card__row .info { flex: 1; min-width: 0; }
+  .action-card__row .info .name { font-size: 12.5px; font-weight: 500; color: #fff; display: block; max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .action-card__row .info .meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .action-card__row .value { font-size: 13px; font-weight: 700; flex-shrink: 0; }
+  .action-card.at-risk .action-card__row .value { color: var(--amber); }
+  .action-card.champions .action-card__row .value { color: var(--emerald); }
+
+  /* PARETO */
+  .pareto-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: center; }
+  .pareto-bars { display: flex; flex-direction: column; gap: 10px; }
+  .pareto-row { display: grid; grid-template-columns: 110px 1fr 130px; align-items: center; gap: 12px; }
+  .pareto-label { font-size: 11.5px; color: var(--text-secondary); font-weight: 500; }
+  .pareto-bar { background: rgba(255,255,255,0.04); border-radius: 6px; height: 16px; overflow: hidden; }
+  .pareto-bar__fill { height: 100%; background: linear-gradient(90deg, rgba(96,165,250,0.5), rgba(96,165,250,0.8)); border-radius: 6px; }
+  .pareto-value { font-size: 11.5px; color: #fff; font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
+  .pareto-summary { display: flex; flex-direction: column; gap: 14px; }
+  .pareto-stat { padding: 14px 18px; background: rgba(96,165,250,0.04); border: 1px solid rgba(96,165,250,0.18); border-radius: 10px; }
+  .pareto-stat__label { font-size: 11px; color: #93c5fd; text-transform: uppercase; letter-spacing: 0.6px; font-weight: 700; }
+  .pareto-stat__value { font-size: 24px; color: #fff; font-weight: 700; margin-top: 4px; line-height: 1; }
+  .pareto-stat__sub { font-size: 11.5px; color: var(--text-secondary); margin-top: 4px; }
+
+  /* COHORT */
+  .cohort-card { padding: 22px 24px; }
+  .cohort-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 14px; }
+  .cohort-head-row { display: flex; align-items: baseline; gap: 7px; }
+  .cohort-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-muted); }
+  .cohort-sub { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+  .cohort-table { width: 100%; border-collapse: separate; border-spacing: 2px; font-size: 11.5px; }
+  .cohort-table th { color: var(--text-muted); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; padding: 6px 8px; text-align: center; }
+  .cohort-table th.cohort-th-left { text-align: left; }
+  .cohort-table td { padding: 7px 10px; text-align: center; font-variant-numeric: tabular-nums; border-radius: 4px; color: var(--text-secondary); }
+  .cohort-table td.cohort-row-name { text-align: left; color: #fff; font-weight: 500; white-space: nowrap; }
+  .cohort-table td.cohort-total { color: #fff; font-weight: 600; }
+  .h-0   { background: rgba(255,255,255,0.02); color: var(--text-muted); }
+  .h-1   { background: rgba(96,165,250,0.06); }
+  .h-5   { background: rgba(96,165,250,0.10); }
+  .h-10  { background: rgba(96,165,250,0.18); color: #bfdbfe; }
+  .h-20  { background: rgba(96,165,250,0.30); color: #bfdbfe; font-weight: 600; }
+  .h-50  { background: rgba(52,211,153,0.35); color: #d1fae5; font-weight: 700; }
+  .h-100 { background: rgba(52,211,153,0.5); color: #fff; font-weight: 700; }
+
+  /* QUALITY */
+  .quality-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .quality { padding: 16px 18px; }
+  .quality__label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-muted); }
+  .quality__value { font-size: 22px; font-weight: 700; color: #fff; margin-top: 6px; }
+  .quality__value.is-ok { color: var(--emerald); }
+  .quality__value.is-warn { color: var(--amber); }
+  .quality__sub { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+
+  /* MODAL */
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100;
+    display: flex; align-items: center; justify-content: center; padding: 40px;
+  }
+  .modal {
+    background: #131316; border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px; max-width: 880px; width: 100%; max-height: 88vh;
+    overflow-y: auto;
+  }
+  .modal__head { padding: 22px 28px; border-bottom: 1px solid rgba(255,255,255,0.06); display: flex; justify-content: space-between; align-items: flex-start; position: sticky; top: 0; background: #131316; z-index: 1; }
+  .modal__title { font-size: 18px; font-weight: 700; color: #fff; }
+  .modal__sub { font-size: 12.5px; color: var(--text-muted); margin-top: 4px; }
+  .modal__close { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); width: 32px; height: 32px; border-radius: 999px; color: #fff; font-size: 16px; cursor: pointer; }
+  .modal__close:hover { background: rgba(255,255,255,0.1); }
+  .modal__body { padding: 4px 28px 28px; }
+  .glossary-section { margin-top: 24px; }
+  .glossary-section h3 { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #93c5fd; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid rgba(96,165,250,0.15); }
+  .glossary-item { padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+  .glossary-item:last-child { border-bottom: 0; }
+  .glossary-item__head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .glossary-item__name { font-size: 13.5px; font-weight: 700; color: #fff; }
+  .glossary-item__what { font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; }
+  .glossary-item__how { font-size: 12.5px; color: var(--text-muted); line-height: 1.5; margin-top: 6px; }
+  .glossary-item__how strong { color: #93c5fd; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="topbar__left">
+      <button class="topbar__btn is-primary" onclick="document.getElementById('glossary').style.display='flex'">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 17v-5M12 8h.01"/></svg>
+        Glosario de métricas
+      </button>
+    </div>
+    <button class="topbar__btn">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+      Reordenar
+    </button>
+  </div>
+
+  <!-- KPIs -->
+  <div class="metrics-block">
+    <div class="metrics-block__head">
+      <div>
+        <p class="metrics-block__title">Indicadores</p>
+        <p class="metrics-block__sub">4 de 10 métricas — toca cualquier ícono ⓘ para ver la definición</p>
+      </div>
+      <button class="metrics-block__edit">Editar métricas</button>
+    </div>
+    <div class="kpi-grid">
+      <div class="card kpi">
+        <p class="kpi__label">Clientes totales <span class="info-icon" title="Cantidad total de personas únicas que compraron alguna vez">ⓘ</span></p>
+        <p class="kpi__value">4.491</p>
+        <p class="kpi__sub">Histórico · 1.972 dormidos (44%)</p>
+      </div>
+      <div class="card kpi">
+        <p class="kpi__label">Mejores + Fieles <span class="info-icon" title="Clientes activos con alto valor">ⓘ</span></p>
+        <p class="kpi__value is-emerald">313</p>
+        <p class="kpi__sub">7% de la base · $60M en compras (15%)</p>
+      </div>
+      <div class="card kpi">
+        <p class="kpi__label">En riesgo a recuperar <span class="info-icon" title="Clientes valiosos que dejaron de comprar — ver glosario">ⓘ</span></p>
+        <p class="kpi__value is-amber">178</p>
+        <p class="kpi__sub">$27M en compras en juego</p>
+      </div>
+      <div class="card kpi">
+        <p class="kpi__label">Tasa de recompra <span class="info-icon" title="% de clientes que compraron más de una vez">ⓘ</span></p>
+        <p class="kpi__value">14,6%</p>
+        <p class="kpi__sub">654 de 4.491 con más de 1 compra</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SEGMENT MAP -->
+  <div class="card">
+    <div class="segmap__head">
+      <div>
+        <p class="segmap__title">Mapa de segmentos · Modelo RFM <span class="info-icon" style="vertical-align: middle;" title="Modelo de segmentación por Recencia, Frecuencia y Monto">ⓘ</span></p>
+        <p class="segmap__sub">Distribución de los 4.491 clientes — toca un segmento para filtrar la tabla</p>
+      </div>
+      <div class="segmap__toggle">
+        <button>Por cantidad</button>
+        <button class="is-active">Por facturación</button>
+      </div>
+    </div>
+
+    <div class="segmap__bar">
+      <div class="segmap__bar-piece" style="width: 35.1%; background: var(--seg-hibernating); color: #fff;">Dormidos</div>
+      <div class="segmap__bar-piece" style="width: 33.7%; background: var(--seg-new);">Nuevos</div>
+      <div class="segmap__bar-piece" style="width: 10.8%; background: var(--seg-champions);">Mejores</div>
+      <div class="segmap__bar-piece" style="width: 6.6%; background: var(--seg-at_risk);">En riesgo</div>
+      <div class="segmap__bar-piece" style="width: 6.3%; background: var(--seg-potential);">Potenciales</div>
+      <div class="segmap__bar-piece" style="width: 3.9%; background: var(--seg-loyal);">Fieles</div>
+      <div class="segmap__bar-piece is-tiny" style="width: 3.6%; background: var(--seg-promising);"></div>
+    </div>
+
+    <div class="segmap__legend">
+      <div class="seg-card">
+        <div class="seg-card__top">
+          <div class="seg-card__name-wrap">
+            <span class="seg-card__dot" style="background: var(--seg-champions);"></span>
+            <span class="seg-card__name">Mejores</span>
+          </div>
+          <span class="info-icon">ⓘ</span>
+        </div>
+        <p class="seg-card__count">219</p>
+        <p class="seg-card__revenue">$44,2M · prom. 2,7 compras</p>
+        <p class="seg-card__desc">Los más valiosos. Compran mucho y siguen activos. Cuidalos.</p>
+      </div>
+      <div class="seg-card">
+        <div class="seg-card__top">
+          <div class="seg-card__name-wrap">
+            <span class="seg-card__dot" style="background: var(--seg-loyal);"></span>
+            <span class="seg-card__name">Fieles</span>
+          </div>
+          <span class="info-icon">ⓘ</span>
+        </div>
+        <p class="seg-card__count">94</p>
+        <p class="seg-card__revenue">$16,1M · prom. 2,5 compras</p>
+        <p class="seg-card__desc">Recompran seguido. Cross-sell y promo de productos relacionados.</p>
+      </div>
+      <div class="seg-card">
+        <div class="seg-card__top">
+          <div class="seg-card__name-wrap">
+            <span class="seg-card__dot" style="background: var(--seg-at_risk);"></span>
+            <span class="seg-card__name">En riesgo</span>
+          </div>
+          <span class="info-icon">ⓘ</span>
+        </div>
+        <p class="seg-card__count">178</p>
+        <p class="seg-card__revenue">$27M · prom. 2,6 compras</p>
+        <p class="seg-card__desc">Compraron mucho pero hace tiempo. Recuperalos antes que se vayan.</p>
+      </div>
+      <div class="seg-card">
+        <div class="seg-card__top">
+          <div class="seg-card__name-wrap">
+            <span class="seg-card__dot" style="background: var(--seg-promising);"></span>
+            <span class="seg-card__name">Prometedores</span>
+          </div>
+          <span class="info-icon">ⓘ</span>
+        </div>
+        <p class="seg-card__count">316</p>
+        <p class="seg-card__revenue">$14,5M · prom. 1 compra</p>
+        <p class="seg-card__desc">Compraron hace poco — empujá la segunda compra.</p>
+      </div>
+      <div class="seg-card">
+        <div class="seg-card__top">
+          <div class="seg-card__name-wrap">
+            <span class="seg-card__dot" style="background: var(--seg-potential);"></span>
+            <span class="seg-card__name">Potenciales</span>
+          </div>
+          <span class="info-icon">ⓘ</span>
+        </div>
+        <p class="seg-card__count">163</p>
+        <p class="seg-card__revenue">$25,8M · prom. 1,2 compras</p>
+        <p class="seg-card__desc">Tickets altos, pocas compras. Subí la frecuencia con remarketing.</p>
+      </div>
+      <div class="seg-card">
+        <div class="seg-card__top">
+          <div class="seg-card__name-wrap">
+            <span class="seg-card__dot" style="background: var(--seg-new);"></span>
+            <span class="seg-card__name">Nuevos</span>
+          </div>
+          <span class="info-icon">ⓘ</span>
+        </div>
+        <p class="seg-card__count">1.549</p>
+        <p class="seg-card__revenue">$137,4M · prom. 1 compra</p>
+        <p class="seg-card__desc">Una sola compra reciente. Convertilos en Fieles con la segunda.</p>
+      </div>
+      <div class="seg-card">
+        <div class="seg-card__top">
+          <div class="seg-card__name-wrap">
+            <span class="seg-card__dot" style="background: var(--seg-hibernating);"></span>
+            <span class="seg-card__name">Dormidos</span>
+          </div>
+          <span class="info-icon">ⓘ</span>
+        </div>
+        <p class="seg-card__count">1.972</p>
+        <p class="seg-card__revenue">$143,3M · prom. 1 compra</p>
+        <p class="seg-card__desc">Una compra hace mucho. Re-engagement masivo o aceptar la pérdida.</p>
+      </div>
+      <div class="seg-card">
+        <div class="seg-card__top">
+          <div class="seg-card__name-wrap">
+            <span class="seg-card__dot" style="background: var(--seg-lost);"></span>
+            <span class="seg-card__name">Perdidos</span>
+          </div>
+          <span class="info-icon">ⓘ</span>
+        </div>
+        <p class="seg-card__count">0</p>
+        <p class="seg-card__revenue">No detectados</p>
+        <p class="seg-card__desc">Compraban seguido y se fueron. Hoy no hay matches.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLA -->
+  <div class="card table-card">
+    <div class="table-card__filters">
+      <button class="chip is-active">Todos <span class="chip__count">4.491</span></button>
+      <button class="chip"><span class="chip__dot" style="background: var(--seg-champions);"></span>Mejores <span class="chip__count">219</span></button>
+      <button class="chip"><span class="chip__dot" style="background: var(--seg-loyal);"></span>Fieles <span class="chip__count">94</span></button>
+      <button class="chip"><span class="chip__dot" style="background: var(--seg-at_risk);"></span>En riesgo <span class="chip__count">178</span></button>
+      <button class="chip"><span class="chip__dot" style="background: var(--seg-potential);"></span>Potenciales <span class="chip__count">163</span></button>
+      <button class="chip"><span class="chip__dot" style="background: var(--seg-promising);"></span>Prometedores <span class="chip__count">316</span></button>
+      <button class="chip"><span class="chip__dot" style="background: var(--seg-new);"></span>Nuevos <span class="chip__count">1.549</span></button>
+      <button class="chip"><span class="chip__dot" style="background: var(--seg-hibernating);"></span>Dormidos <span class="chip__count">1.972</span></button>
+      <input class="search-input" type="text" placeholder="Buscar nombre, email o ID...">
+    </div>
+
+    <div class="table-scroll">
+      <table class="customer-table">
+        <thead>
+          <tr>
+            <th style="text-align:left">Cliente <span class="sort-arrow"></span></th>
+            <th>Compras <span class="sort-arrow"></span></th>
+            <th class="is-sorted">Gasto total <span class="info-icon">ⓘ</span> <span class="sort-arrow"></span></th>
+            <th>Ticket promedio <span class="sort-arrow"></span></th>
+            <th>Última compra <span class="sort-arrow"></span></th>
+            <th>Días sin comprar <span class="info-icon">ⓘ</span> <span class="sort-arrow"></span></th>
+            <th>Score RFM <span class="info-icon">ⓘ</span> <span class="sort-arrow"></span></th>
+            <th>Segmento <span class="sort-arrow"></span></th>
+            <th>Mes de alta <span class="sort-arrow"></span></th>
+            <th>Demora 2da <span class="info-icon">ⓘ</span> <span class="sort-arrow"></span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="cust-cell">
+              <div class="cust-row-inner">
+                <span class="avatar">SS</span>
+                <div><span class="name">Soledad Suarez</span><span class="email">arriolas166@gmail.com</span></div>
+              </div>
+            </td>
+            <td><span class="val-strong">4</span></td>
+            <td><span class="val-strong">$1.274.310</span></td>
+            <td>$318.578</td>
+            <td>15/11/2024</td>
+            <td class="val-amber">543d</td>
+            <td><span class="rfm-score">2-5-5</span></td>
+            <td><span class="seg-badge seg-at_risk">En riesgo</span></td>
+            <td>2024-10</td>
+            <td>7d</td>
+          </tr>
+          <tr>
+            <td class="cust-cell">
+              <div class="cust-row-inner">
+                <span class="avatar">DA</span>
+                <div><span class="name">Daniel Arturo Ontiveros</span><span class="email">administrador@colegiodelsalvador.edu.ar</span></div>
+              </div>
+            </td>
+            <td>1</td>
+            <td><span class="val-strong">$1.079.500</span></td>
+            <td>$1.079.500</td>
+            <td>18/09/2025</td>
+            <td>236d</td>
+            <td><span class="rfm-score">3-1-5</span></td>
+            <td><span class="seg-badge seg-potential">Potenciales</span></td>
+            <td>2025-09</td>
+            <td class="val-muted">—</td>
+          </tr>
+          <tr>
+            <td class="cust-cell">
+              <div class="cust-row-inner">
+                <span class="avatar">NV</span>
+                <div><span class="name">Nahuel Osvaldo Victoriano</span><span class="email">nahuelosvaldovictoriano@gmail.com</span></div>
+              </div>
+            </td>
+            <td><span class="val-strong">3</span></td>
+            <td><span class="val-strong">$982.450</span></td>
+            <td>$327.483</td>
+            <td>04/09/2025</td>
+            <td>250d</td>
+            <td><span class="rfm-score">3-5-5</span></td>
+            <td><span class="seg-badge seg-loyal">Fieles</span></td>
+            <td>2025-08</td>
+            <td>10d</td>
+          </tr>
+          <tr>
+            <td class="cust-cell">
+              <div class="cust-row-inner">
+                <span class="avatar">MG</span>
+                <div><span class="name">María Gómez</span><span class="email">m.gomez@gmail.com</span></div>
+              </div>
+            </td>
+            <td><span class="val-strong">6</span></td>
+            <td><span class="val-strong">$890.220</span></td>
+            <td>$148.370</td>
+            <td>02/05/2026</td>
+            <td class="val-emerald">11d</td>
+            <td><span class="rfm-score">5-5-5</span></td>
+            <td><span class="seg-badge seg-champions">Mejores</span></td>
+            <td>2024-03</td>
+            <td>14d</td>
+          </tr>
+          <tr>
+            <td class="cust-cell">
+              <div class="cust-row-inner">
+                <span class="avatar">JP</span>
+                <div><span class="name">Juan Pérez</span><span class="email">jperez@hotmail.com</span></div>
+              </div>
+            </td>
+            <td><span class="val-strong">2</span></td>
+            <td>$756.000</td>
+            <td>$378.000</td>
+            <td>30/04/2026</td>
+            <td class="val-emerald">13d</td>
+            <td><span class="rfm-score">5-3-4</span></td>
+            <td><span class="seg-badge seg-loyal">Fieles</span></td>
+            <td>2025-12</td>
+            <td>87d</td>
+          </tr>
+          <tr>
+            <td class="cust-cell">
+              <div class="cust-row-inner">
+                <span class="avatar">AT</span>
+                <div><span class="name">Ana Torres</span><span class="email">anatorres@gmail.com</span></div>
+              </div>
+            </td>
+            <td>1</td>
+            <td>$685.000</td>
+            <td>$685.000</td>
+            <td>21/04/2026</td>
+            <td class="val-emerald">22d</td>
+            <td><span class="rfm-score">5-1-4</span></td>
+            <td><span class="seg-badge seg-new">Nuevos</span></td>
+            <td>2026-04</td>
+            <td class="val-muted">—</td>
+          </tr>
+          <tr>
+            <td class="cust-cell">
+              <div class="cust-row-inner">
+                <span class="avatar">CL</span>
+                <div><span class="name">Carlos López</span><span class="email">clopez@yahoo.com</span></div>
+              </div>
+            </td>
+            <td>1</td>
+            <td>$612.450</td>
+            <td>$612.450</td>
+            <td>14/06/2024</td>
+            <td class="val-amber">698d</td>
+            <td><span class="rfm-score">1-1-4</span></td>
+            <td><span class="seg-badge seg-hibernating">Dormidos</span></td>
+            <td>2024-06</td>
+            <td class="val-muted">—</td>
+          </tr>
+          <tr>
+            <td colspan="10" style="padding: 14px 22px; color: var(--text-muted); font-size: 11.5px; font-style: italic;">↓ scroll para ver 4.484 filas más</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="table-card__footer">
+      <span>Mostrando <strong style="color:#fff;">1–25</strong> de <strong style="color:#fff;">4.491</strong> · ordenando por <strong style="color:#93c5fd;">Gasto total ▼</strong></span>
+      <div class="pagination">
+        <span>Filas por página</span>
+        <select class="page-size-select"><option>10</option><option selected>25</option><option>50</option><option>100</option></select>
+        <button>‹</button><span>Pág. 1 de 180</span><button>›</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ACTION CARDS -->
+  <div class="actions-grid">
+    <div class="card action-card at-risk">
+      <div class="action-card__head">
+        <div>
+          <div class="action-card__title-row">
+            <span class="seg-badge seg-at_risk">En riesgo</span>
+            <p class="action-card__title">Recuperar urgente</p>
+          </div>
+          <p class="action-card__sub">Top 5 con más gasto histórico — compraban seguido y se fueron. Mandales algo personalizado.</p>
+        </div>
+        <div style="text-align:right;">
+          <p class="action-card__total" style="color: var(--amber);">$27,0M</p>
+          <p style="font-size:11px; color: var(--text-muted); margin-top:2px;">178 clientes</p>
+        </div>
+      </div>
+      <div class="action-card__list">
+        <div class="action-card__row"><span class="avatar">SS</span><div class="info"><span class="name">Soledad Suarez</span><span class="meta">4 compras · hace 543d · score 2-5-5</span></div><span class="value">$1,3M</span></div>
+        <div class="action-card__row"><span class="avatar">FC</span><div class="info"><span class="name">Federico Carrizo</span><span class="meta">3 compras · hace 410d · score 2-4-5</span></div><span class="value">$897k</span></div>
+        <div class="action-card__row"><span class="avatar">LM</span><div class="info"><span class="name">Laura Méndez</span><span class="meta">5 compras · hace 380d · score 2-5-4</span></div><span class="value">$762k</span></div>
+        <div class="action-card__row"><span class="avatar">RF</span><div class="info"><span class="name">Roberto Fernández</span><span class="meta">3 compras · hace 622d · score 1-4-5</span></div><span class="value">$680k</span></div>
+        <div class="action-card__row"><span class="avatar">VP</span><div class="info"><span class="name">Valentina Paz</span><span class="meta">2 compras · hace 450d · score 2-3-5</span></div><span class="value">$598k</span></div>
+      </div>
+    </div>
+
+    <div class="card action-card champions">
+      <div class="action-card__head">
+        <div>
+          <div class="action-card__title-row">
+            <span class="seg-badge seg-champions">Mejores</span>
+            <p class="action-card__title">Premiar y fidelizar</p>
+          </div>
+          <p class="action-card__sub">Top 5 de tus mejores — programa VIP, acceso anticipado, referidos. No los pierdas.</p>
+        </div>
+        <div style="text-align:right;">
+          <p class="action-card__total" style="color: var(--emerald);">$44,2M</p>
+          <p style="font-size:11px; color: var(--text-muted); margin-top:2px;">219 clientes</p>
+        </div>
+      </div>
+      <div class="action-card__list">
+        <div class="action-card__row"><span class="avatar">MG</span><div class="info"><span class="name">María Gómez</span><span class="meta">6 compras · hace 11d · score 5-5-5</span></div><span class="value">$890k</span></div>
+        <div class="action-card__row"><span class="avatar">AC</span><div class="info"><span class="name">Andrés Castro</span><span class="meta">5 compras · hace 18d · score 5-5-5</span></div><span class="value">$745k</span></div>
+        <div class="action-card__row"><span class="avatar">EL</span><div class="info"><span class="name">Eugenia López</span><span class="meta">4 compras · hace 5d · score 5-4-5</span></div><span class="value">$687k</span></div>
+        <div class="action-card__row"><span class="avatar">PS</span><div class="info"><span class="name">Pablo Suárez</span><span class="meta">8 compras · hace 35d · score 4-5-5</span></div><span class="value">$623k</span></div>
+        <div class="action-card__row"><span class="avatar">CV</span><div class="info"><span class="name">Carolina Vega</span><span class="meta">3 compras · hace 22d · score 5-4-5</span></div><span class="value">$589k</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PARETO -->
+  <div class="card">
+    <div class="cohort-head">
+      <div>
+        <div class="cohort-head-row">
+          <p class="cohort-title">Concentración de facturación</p>
+          <span class="info-icon">ⓘ</span>
+        </div>
+        <p class="cohort-sub">Qué % de clientes generaron qué % de tu facturación histórica ($407,9M total)</p>
+      </div>
+    </div>
+    <div class="pareto-grid">
+      <div class="pareto-bars">
+        <div class="pareto-row"><span class="pareto-label">Top 1%</span><div class="pareto-bar"><div class="pareto-bar__fill" style="width: 8%;"></div></div><span class="pareto-value">$32,6M · 8%</span></div>
+        <div class="pareto-row"><span class="pareto-label">Top 5%</span><div class="pareto-bar"><div class="pareto-bar__fill" style="width: 22%;"></div></div><span class="pareto-value">$89,7M · 22%</span></div>
+        <div class="pareto-row"><span class="pareto-label">Top 10%</span><div class="pareto-bar"><div class="pareto-bar__fill" style="width: 35%;"></div></div><span class="pareto-value">$142,8M · 35%</span></div>
+        <div class="pareto-row"><span class="pareto-label">Top 20%</span><div class="pareto-bar"><div class="pareto-bar__fill" style="width: 56%;"></div></div><span class="pareto-value">$228,4M · 56%</span></div>
+        <div class="pareto-row"><span class="pareto-label">Top 50%</span><div class="pareto-bar"><div class="pareto-bar__fill" style="width: 84%;"></div></div><span class="pareto-value">$342,6M · 84%</span></div>
+        <div class="pareto-row"><span class="pareto-label">100%</span><div class="pareto-bar"><div class="pareto-bar__fill" style="width: 100%;"></div></div><span class="pareto-value">$407,9M · 100%</span></div>
+      </div>
+      <div class="pareto-summary">
+        <div class="pareto-stat">
+          <p class="pareto-stat__label">Regla 80/20</p>
+          <p class="pareto-stat__value">20% → 56%</p>
+          <p class="pareto-stat__sub">Tus 898 mejores clientes generan más de la mitad de tu facturación. Cada cliente top vale en promedio $255k a lo largo de su vida.</p>
+        </div>
+        <div class="pareto-stat">
+          <p class="pareto-stat__label">Top 10% vs Dormidos</p>
+          <p class="pareto-stat__value">$142M vs $143M</p>
+          <p class="pareto-stat__sub">Los 449 mejores te dan casi lo mismo que los 1.972 dormidos. Invertí donde rinde.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COHORT -->
+  <div class="card cohort-card">
+    <div class="cohort-head">
+      <div>
+        <div class="cohort-head-row">
+          <p class="cohort-title">Retención por mes de alta · Cohortes</p>
+          <span class="info-icon">ⓘ</span>
+        </div>
+        <p class="cohort-sub">% de clientes que volvieron a comprar N meses después de su primera compra</p>
+      </div>
+    </div>
+    <table class="cohort-table">
+      <thead>
+        <tr>
+          <th class="cohort-th-left">Mes de alta</th>
+          <th>Total</th>
+          <th>M0</th><th>M1</th><th>M2</th><th>M3</th><th>M4</th><th>M5</th><th>M6</th><th>M7</th><th>M8</th><th>M9</th><th>M10</th><th>M11</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td class="cohort-row-name">2025-12</td><td class="cohort-total">144</td><td class="h-100">100%</td><td class="h-10">11%</td><td class="h-5">6%</td><td class="h-1">2%</td><td class="h-0"></td><td class="h-0"></td><td class="h-0"></td><td class="h-0"></td><td class="h-0"></td><td class="h-0"></td><td class="h-0"></td><td class="h-0"></td></tr>
+        <tr><td class="cohort-row-name">2025-11</td><td class="cohort-total">187</td><td class="h-100">100%</td><td class="h-10">14%</td><td class="h-10">9%</td><td class="h-5">4%</td><td class="h-1">2%</td><td class="h-0"></td><td class="h-0"></td><td class="h-0"></td><td class="h-0"></td><td class="h-0"></td><td class="h-0"></td><td class="h-0"></td></tr>
+        <tr><td class="cohort-row-name">2025-10</td><td class="cohort-total">222</td><td class="h-100">100%</td><td class="h-20">22%</td><td class="h-10">11%</td><td class="h-5">7%</td><td class="h-5">4%</td><td class="h-1">2%</td><td class="h-0"></td><td class="h-0"></td><td class="h-0"></td><td class="h-0"></td><td class="h-0"></td><td class="h-0"></td></tr>
+        <tr><td class="cohort-row-name">2025-09</td><td class="cohort-total">236</td><td class="h-100">100%</td><td class="h-10">12%</td><td class="h-10">10%</td><td class="h-5">6%</td><td class="h-5">5%</td><td class="h-5">4%</td><td class="h-1">2%</td><td class="h-0"></td><td class="h-0"></td><td class="h-0"></td><td class="h-0"></td><td class="h-0"></td></tr>
+        <tr><td class="cohort-row-name">2025-08</td><td class="cohort-total">198</td><td class="h-100">100%</td><td class="h-20">19%</td><td class="h-10">11%</td><td class="h-10">9%</td><td class="h-5">5%</td><td class="h-5">3%</td><td class="h-1">2%</td><td class="h-1">2%</td><td class="h-0"></td><td class="h-0"></td><td class="h-0"></td><td class="h-0"></td></tr>
+        <tr><td class="cohort-row-name">2025-07</td><td class="cohort-total">175</td><td class="h-100">100%</td><td class="h-10">12%</td><td class="h-10">10%</td><td class="h-10">9%</td><td class="h-5">6%</td><td class="h-5">5%</td><td class="h-5">3%</td><td class="h-1">2%</td><td class="h-1">1%</td><td class="h-0"></td><td class="h-0"></td><td class="h-0"></td></tr>
+        <tr><td class="cohort-row-name">2024-12</td><td class="cohort-total">112</td><td class="h-100">100%</td><td class="h-20">18%</td><td class="h-10">14%</td><td class="h-10">11%</td><td class="h-10">9%</td><td class="h-5">7%</td><td class="h-5">5%</td><td class="h-5">4%</td><td class="h-1">3%</td><td class="h-1">2%</td><td class="h-1">2%</td><td class="h-1">1%</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- QUALITY -->
+  <div class="quality-grid">
+    <div class="card quality"><p class="quality__label">Clientes sin email real</p><p class="quality__value is-ok">0</p><p class="quality__sub">Todos los clientes son contactables</p></div>
+    <div class="card quality"><p class="quality__label">Órdenes sin cliente</p><p class="quality__value is-ok">0</p><p class="quality__sub">Las 192 órdenes están atribuidas</p></div>
+    <div class="card quality"><p class="quality__label">Cohortes con poca muestra</p><p class="quality__value is-warn">1</p><p class="quality__sub">2023-04 con menos de 3 clientes</p></div>
+  </div>
+
+</div>
+
+<!-- MODAL GLOSARIO -->
+<div class="modal-backdrop" id="glossary" style="display: none;">
+  <div class="modal">
+    <div class="modal__head">
+      <div>
+        <p class="modal__title">Glosario de métricas</p>
+        <p class="modal__sub">Qué significa cada concepto y cómo usarlo en tu negocio</p>
+      </div>
+      <button class="modal__close" onclick="document.getElementById('glossary').style.display='none'">✕</button>
+    </div>
+    <div class="modal__body">
+
+      <div class="glossary-section">
+        <h3>Métricas generales</h3>
+        <div class="glossary-item">
+          <div class="glossary-item__head"><span class="glossary-item__name">Gasto total (LTV)</span></div>
+          <p class="glossary-item__what">Cuánto gastó un cliente en total a lo largo de toda su vida en la tienda — sumando todas sus compras. En marketing se llama LTV o "Lifetime Value".</p>
+          <p class="glossary-item__how"><strong>Para qué sirve:</strong> identificar a los clientes más valiosos. Un cliente con gasto total alto vale más invertir en retención que conseguir uno nuevo.</p>
+        </div>
+        <div class="glossary-item">
+          <div class="glossary-item__head"><span class="glossary-item__name">Ticket promedio</span></div>
+          <p class="glossary-item__what">Cuánto gasta el cliente en promedio cada vez que compra. Se calcula: gasto total dividido cantidad de compras.</p>
+          <p class="glossary-item__how"><strong>Para qué sirve:</strong> detectar quién pide más por orden. Útil para upsell y para definir mínimos de envío gratis.</p>
+        </div>
+        <div class="glossary-item">
+          <div class="glossary-item__head"><span class="glossary-item__name">Días sin comprar (Recencia)</span></div>
+          <p class="glossary-item__what">Cuántos días pasaron desde la última compra del cliente. Mientras menos, más activo está.</p>
+          <p class="glossary-item__how"><strong>Para qué sirve:</strong> es el indicador más fuerte de probabilidad de que vuelva a comprar. Si pasaron 30 días, probablemente vuelva. Si pasaron 300, ya casi no vuelve solo.</p>
+        </div>
+        <div class="glossary-item">
+          <div class="glossary-item__head"><span class="glossary-item__name">Tasa de recompra</span></div>
+          <p class="glossary-item__what">% de tus clientes que compraron más de una vez. Si tenés 100 clientes y 20 hicieron una 2da compra, tu tasa es 20%.</p>
+          <p class="glossary-item__how"><strong>Para qué sirve:</strong> mide qué tan bien retenés clientes. Una tienda saludable de ecom tiene entre 20-40%. Menos de 15% indica que sos muy dependiente de adquisición.</p>
+        </div>
+        <div class="glossary-item">
+          <div class="glossary-item__head"><span class="glossary-item__name">Demora 2da compra</span></div>
+          <p class="glossary-item__what">Cuántos días tardó un cliente entre su primera y segunda compra.</p>
+          <p class="glossary-item__how"><strong>Para qué sirve:</strong> define cuándo conviene mandar un email/promo de retención. Si la mayoría compra de nuevo a los 30 días, ahí es donde hay que tocar.</p>
+        </div>
+      </div>
+
+      <div class="glossary-section">
+        <h3>Score RFM (Recencia · Frecuencia · Monto)</h3>
+        <div class="glossary-item">
+          <p class="glossary-item__what">Un puntaje de 3 dígitos que clasifica a cada cliente del 1 al 5 en cada dimensión. Por ejemplo "5-4-3" significa: muy reciente (5), bastante frecuente (4), gasto medio (3).</p>
+          <p class="glossary-item__what" style="margin-top: 8px;"><strong style="color:#fff;">R · Recencia:</strong> qué tan reciente fue su última compra. 5 = compró muy reciente · 1 = hace mucho.</p>
+          <p class="glossary-item__what" style="margin-top: 4px;"><strong style="color:#fff;">F · Frecuencia:</strong> cuántas veces compró. 5 = compra muchísimo · 1 = solo una vez.</p>
+          <p class="glossary-item__what" style="margin-top: 4px;"><strong style="color:#fff;">M · Monto:</strong> cuánto gastó en total. 5 = de los que más gastan · 1 = de los que menos.</p>
+          <p class="glossary-item__how"><strong>Para qué sirve:</strong> es la base de la segmentación. Un 5-5-5 es tu mejor cliente; un 1-1-1 está perdido. El score se calcula automáticamente comparando a cada cliente con el resto de tu base.</p>
+        </div>
+      </div>
+
+      <div class="glossary-section">
+        <h3>Segmentos RFM</h3>
+        <div class="glossary-item">
+          <div class="glossary-item__head"><span class="seg-badge seg-champions">Mejores</span><span class="glossary-item__name">Mejores clientes</span></div>
+          <p class="glossary-item__what">Compran mucho, gastan mucho y siguen activos (score 4-4-4 o más alto).</p>
+          <p class="glossary-item__how"><strong>Acción:</strong> programa VIP, acceso anticipado a nuevos productos, descuentos en cumpleaños, programa de referidos. No los pierdas con descuentos genéricos.</p>
+        </div>
+        <div class="glossary-item">
+          <div class="glossary-item__head"><span class="seg-badge seg-loyal">Fieles</span><span class="glossary-item__name">Clientes fieles</span></div>
+          <p class="glossary-item__what">Compran con buena frecuencia y aún están activos (3-3-3 o más). Un poco menos top que los Mejores.</p>
+          <p class="glossary-item__how"><strong>Acción:</strong> cross-sell (productos relacionados), upsell (versiones premium), promo de productos nuevos en categorías que ya compraron.</p>
+        </div>
+        <div class="glossary-item">
+          <div class="glossary-item__head"><span class="seg-badge seg-at_risk">En riesgo</span><span class="glossary-item__name">En riesgo de perder</span></div>
+          <p class="glossary-item__what">Compraban seguido y bien, pero hace tiempo que no aparecen (recencia baja, frecuencia alta).</p>
+          <p class="glossary-item__how"><strong>Acción:</strong> recuperación urgente. Email/WhatsApp personalizado con descuento, "te extrañamos", productos nuevos relacionados a sus compras anteriores. Cuanto antes mejor.</p>
+        </div>
+        <div class="glossary-item">
+          <div class="glossary-item__head"><span class="seg-badge seg-lost">Perdidos</span><span class="glossary-item__name">Perdidos</span></div>
+          <p class="glossary-item__what">Compraron varias veces y hace muchísimo que no vuelven (recencia 1, frecuencia ≥ 2).</p>
+          <p class="glossary-item__how"><strong>Acción:</strong> última oportunidad de recuperación con oferta agresiva, o aceptar la pérdida y enfocar presupuesto en clientes activos.</p>
+        </div>
+        <div class="glossary-item">
+          <div class="glossary-item__head"><span class="seg-badge seg-hibernating">Dormidos</span><span class="glossary-item__name">Dormidos</span></div>
+          <p class="glossary-item__what">Compraron una sola vez hace mucho tiempo y no volvieron. Es el grupo más grande en la mayoría de tiendas.</p>
+          <p class="glossary-item__how"><strong>Acción:</strong> campaña de re-engagement masivo barata (email). No invertir mucho — el retorno por cliente es bajo, pero el volumen ayuda.</p>
+        </div>
+        <div class="glossary-item">
+          <div class="glossary-item__head"><span class="seg-badge seg-new">Nuevos</span><span class="glossary-item__name">Nuevos clientes</span></div>
+          <p class="glossary-item__what">Acaban de hacer su primera compra reciente. Aún no sabés si vuelven o no.</p>
+          <p class="glossary-item__how"><strong>Acción:</strong> flujo de bienvenida automatizado, instructivo del producto, oferta para 2da compra a los 15-30 días. Convertirlos en Fieles es la prioridad.</p>
+        </div>
+        <div class="glossary-item">
+          <div class="glossary-item__head"><span class="seg-badge seg-promising">Prometedores</span><span class="glossary-item__name">Prometedores</span></div>
+          <p class="glossary-item__what">Compraron hace poco pero gastan poco o aún no tienen frecuencia (recencia alta, frecuencia y monto bajos).</p>
+          <p class="glossary-item__how"><strong>Acción:</strong> nurturing — contenido de valor, productos complementarios, animarlos a probar más categorías. Pueden convertirse en Fieles si los cuidás.</p>
+        </div>
+        <div class="glossary-item">
+          <div class="glossary-item__head"><span class="seg-badge seg-potential">Potenciales</span><span class="glossary-item__name">Potenciales</span></div>
+          <p class="glossary-item__what">Tickets altos pero pocas compras. Tienen poder de compra pero no le compran seguido a la tienda.</p>
+          <p class="glossary-item__how"><strong>Acción:</strong> remarketing dirigido, ofertas personalizadas según historial, productos exclusivos. El objetivo es subir la frecuencia.</p>
+        </div>
+      </div>
+
+      <div class="glossary-section">
+        <h3>Retención y cohortes</h3>
+        <div class="glossary-item">
+          <div class="glossary-item__head"><span class="glossary-item__name">Cohorte (mes de alta)</span></div>
+          <p class="glossary-item__what">Un grupo de clientes que compraron por primera vez en el mismo mes. Por ejemplo, la cohorte "2025-10" son todos los que estrenaron tu tienda en octubre 2025.</p>
+          <p class="glossary-item__how"><strong>Para qué sirve:</strong> comparar grupos en igualdad de condiciones. Si la cohorte de octubre retiene mejor que la de septiembre, algo que cambiaste en octubre funcionó.</p>
+        </div>
+        <div class="glossary-item">
+          <div class="glossary-item__head"><span class="glossary-item__name">Retención (% en M0, M1, M2...)</span></div>
+          <p class="glossary-item__what">% de clientes de una cohorte que volvieron a comprar N meses después. M0 = el mes de su primera compra (siempre 100%). M3 = 3 meses después.</p>
+          <p class="glossary-item__how"><strong>Para qué sirve:</strong> medir si tu tienda retiene clientes. Si M1 es alto (más del 15%) es buena señal — significa que la gente vuelve pronto.</p>
+        </div>
+      </div>
+
+      <div class="glossary-section">
+        <h3>Concentración</h3>
+        <div class="glossary-item">
+          <div class="glossary-item__head"><span class="glossary-item__name">Regla 80/20 (Pareto)</span></div>
+          <p class="glossary-item__what">Idea de que aproximadamente el 20% de tus clientes generan el 80% de tu facturación. En la práctica el ratio varía pero el concepto se mantiene: pocos clientes generan la mayoría.</p>
+          <p class="glossary-item__how"><strong>Para qué sirve:</strong> decidir dónde invertir. Si el top 20% te da el 56%, mover una aguja con ellos rinde más que mover una con el resto.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

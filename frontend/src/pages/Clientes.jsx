@@ -1,248 +1,198 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import api from '../services/api';
+import SortableLayout from '../components/common/SortableLayout';
+import ClientesMetricsRow from '../components/clientes/ClientesMetricsRow';
+import SegmentMap from '../components/clientes/SegmentMap';
+import ClientesTable from '../components/clientes/ClientesTable';
+import ActionCards from '../components/clientes/ActionCards';
+import ParetoCard from '../components/clientes/ParetoCard';
+import CohortHeatmap from '../components/clientes/CohortHeatmap';
+import GlossaryModal from '../components/clientes/GlossaryModal';
+import CustomerProfileModal from '../components/clientes/CustomerProfileModal';
+import { CLIENTES_METRICS, CLIENTES_DEFAULTS, CLIENTES_MAX_SELECTED } from '../components/clientes/clientesMetricsCatalog';
 
-function fmt(v) {
+/**
+ * Página Clientes — rediseño operativo (2026-05-13).
+ *
+ * Bloques (todos reordenables vía SortableLayout):
+ *  - kpis: 4 KPIs configurables de un catálogo de 10
+ *  - segmap: mapa de segmentos RFM (barra apilada + 8 cards)
+ *  - table: tabla con filtros chip por segmento, sort, búsqueda, paginación cliente
+ *  - actions: ActionCards (En riesgo recuperar · Mejores premiar)
+ *  - pareto: concentración de facturación (regla 80/20)
+ *  - cohorts: heatmap de retención por mes de alta
+ *  - quality: 3 quality checks
+ *
+ * El estado `selectedSegment` se comparte entre SegmentMap (mapa) y ClientesTable
+ * (chips). Click en cualquiera filtra el otro.
+ */
+function fmtNum(v) {
   if (v == null || isNaN(v)) return '—';
-  return `$${Number(v).toLocaleString('es-AR', { maximumFractionDigits: 0 })}`;
-}
-
-const SEGMENT_STYLES = {
-  champions: 'badge-green',
-  loyal: 'badge-blue',
-  new: 'bg-cyan-500/15 text-cyan-400 badge',
-  promising: 'badge-blue',
-  potential: 'bg-purple-500/15 text-purple-400 badge',
-  at_risk: 'badge-amber',
-  lost: 'badge-red',
-  hibernating: 'badge-gray',
-};
-
-const SEGMENT_LABELS = {
-  champions: 'Champions',
-  loyal: 'Loyal',
-  new: 'Nuevos',
-  promising: 'Promising',
-  potential: 'Potential',
-  at_risk: 'At Risk',
-  lost: 'Lost',
-  hibernating: 'Hibernating',
-};
-
-function SegmentCards({ segments, selected, onSelect }) {
-  return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-      {segments.map((s) => (
-        <button
-          key={s._id}
-          onClick={() => onSelect(selected === s._id ? null : s._id)}
-          className={`card p-3.5 text-left transition ${
-            selected === s._id ? 'ring-1 ring-blue-500' : ''
-          }`}
-        >
-          <span className={`${SEGMENT_STYLES[s._id] || 'badge-gray'}`}>
-            {SEGMENT_LABELS[s._id] || s._id}
-          </span>
-          <p className="text-[22px] font-bold text-white mt-2 leading-none">{s.count}</p>
-          <p className="text-[11px] text-gray-600 mt-1">{fmt(s.totalRevenue)} revenue</p>
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function CohortTableView({ cohorts }) {
-  if (!cohorts || cohorts.length === 0) {
-    return <p className="text-gray-600 text-[13px] text-center py-4">Sin datos de cohorts.</p>;
-  }
-
-  const maxMonth = Math.max(...cohorts.flatMap((c) => Object.keys(c.retention).map(Number)));
-  const monthHeaders = Array.from({ length: Math.min(maxMonth + 1, 12) }, (_, i) => i);
-
-  return (
-    <div className="overflow-x-auto">
-      <table className="w-full table-dark">
-        <thead>
-          <tr>
-            <th className="text-left">Cohorte</th>
-            <th>Total</th>
-            {monthHeaders.map((m) => (
-              <th key={m}>M{m}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {cohorts.map((c) => (
-            <tr key={c.cohortMonth}>
-              <td className="font-medium text-white">{c.cohortMonth}</td>
-              <td className="text-center">{c.total}</td>
-              {monthHeaders.map((m) => {
-                const val = c.retention[m];
-                const bg = val > 50 ? 'bg-emerald-500/15 text-emerald-400' : val > 20 ? 'bg-amber-500/10 text-amber-400' : '';
-                return (
-                  <td key={m} className={`text-center ${bg}`}>
-                    {val != null ? `${val.toFixed(0)}%` : ''}
-                  </td>
-                );
-              })}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-function CustomerTable({ customers }) {
-  // LTV y Total gastado son la misma métrica hoy (no hay churn ni proyección futura
-  // en el cálculo). Si en el futuro LTV se calcula distinto, volver a separar.
-  return (
-    <div className="overflow-x-auto">
-      <table className="w-full table-dark">
-        <thead>
-          <tr>
-            {['Cliente', 'Email', 'Órdenes', 'LTV', 'Segmento', 'Recencia (días)', 'Primera compra'].map((h) => (
-              <th key={h} className="text-left whitespace-nowrap">{h}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {customers.map((c) => (
-            <tr key={c._id}>
-              <td className="font-medium text-white">{c.name || '—'}</td>
-              <td className="text-[11px]">{c.email}</td>
-              <td>{c.totalOrders}</td>
-              <td className="font-semibold text-white">{fmt(c.ltv ?? c.totalSpent)}</td>
-              <td>
-                <span className={SEGMENT_STYLES[c.rfmSegment] || 'badge-gray'}>
-                  {SEGMENT_LABELS[c.rfmSegment] || c.rfmSegment || '—'}
-                </span>
-              </td>
-              <td>{c.recency ?? '—'}</td>
-              <td className="text-[11px]">{c.firstPurchase ? new Date(c.firstPurchase).toLocaleDateString('es-AR') : '—'}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
+  return Number(v).toLocaleString('es-AR');
 }
 
 export default function Clientes() {
   const { storeId } = useParams();
+  const [customers, setCustomers] = useState([]);
+  const [totalCustomers, setTotalCustomers] = useState(0);
   const [segments, setSegments] = useState([]);
   const [cohorts, setCohorts] = useState([]);
   const [quality, setQuality] = useState(null);
-  const [customerData, setCustomerData] = useState({ customers: [], total: 0 });
   const [loading, setLoading] = useState(true);
   const [selectedSegment, setSelectedSegment] = useState(null);
-  const [tab, setTab] = useState('segments');
-  const [page, setPage] = useState(1);
+  const [profileCustomer, setProfileCustomer] = useState(null);
+  const [glossaryOpen, setGlossaryOpen] = useState(false);
 
-  const fetchData = useCallback(async () => {
+  const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
-      const [segRes, cohortRes] = await Promise.all([
+      const [custRes, segRes, cohortRes] = await Promise.all([
+        api.get(`/api/stores/${storeId}/customers`, { params: { limit: 5000 } }),
         api.get(`/api/stores/${storeId}/customers/segments`),
         api.get(`/api/stores/${storeId}/customers/cohorts`),
       ]);
-      setSegments(segRes.data);
-      setCohorts(cohortRes.data);
-      api.get(`/api/stores/${storeId}/customers/quality`).then(({ data }) => setQuality(data)).catch(() => {});
-    } catch {}
-    setLoading(false);
+      setCustomers(custRes.data?.customers || []);
+      setTotalCustomers(custRes.data?.total || 0);
+      setSegments(segRes.data || []);
+      setCohorts(cohortRes.data || []);
+      // Quality es opcional — si falla no rompe el resto
+      api.get(`/api/stores/${storeId}/customers/quality`)
+        .then(({ data }) => setQuality(data))
+        .catch(() => {});
+    } catch (err) {
+      console.error('Error cargando clientes:', err);
+    } finally {
+      setLoading(false);
+    }
   }, [storeId]);
 
-  const fetchCustomers = useCallback(async () => {
-    try {
-      const params = { page, limit: 50 };
-      if (selectedSegment) params.segment = selectedSegment;
-      const { data } = await api.get(`/api/stores/${storeId}/customers`, { params });
-      setCustomerData(data);
-    } catch {}
-  }, [storeId, page, selectedSegment]);
-
-  useEffect(() => { fetchData(); }, [fetchData]);
-  useEffect(() => { fetchCustomers(); }, [fetchCustomers]);
+  useEffect(() => { fetchAll(); }, [fetchAll]);
 
   if (loading) {
-    return <div className="text-center py-12 text-[13px] text-gray-600">Cargando clientes...</div>;
+    return <div className="text-center py-12 text-[13px] text-gray-300">Cargando clientes...</div>;
   }
+
+  const handleCustomerClick = (c) => setProfileCustomer(c);
+
+  const data = {
+    customers,
+    segments,
+    total: totalCustomers,
+  };
+
+  const blocks = [
+    {
+      id: 'kpis',
+      label: 'Indicadores',
+      node: (
+        <ClientesMetricsRow
+          title="Indicadores"
+          subtitle={`Análisis de ${fmtNum(totalCustomers)} clientes — tocá cualquier ícono ⓘ para ver la definición`}
+          data={data}
+          availableMetrics={CLIENTES_METRICS}
+          defaultSelected={CLIENTES_DEFAULTS}
+          maxSelected={CLIENTES_MAX_SELECTED}
+          storageKey={`hooks-clientes-metrics-${storeId}`}
+          onOpenGlossary={() => setGlossaryOpen(true)}
+        />
+      ),
+    },
+    {
+      id: 'segmap',
+      label: 'Mapa de segmentos',
+      node: (
+        <SegmentMap
+          segments={segments}
+          selected={selectedSegment}
+          onSegmentSelect={setSelectedSegment}
+          totalCustomers={totalCustomers}
+        />
+      ),
+    },
+    {
+      id: 'table',
+      label: 'Lista de clientes',
+      node: (
+        <ClientesTable
+          customers={customers}
+          selectedSegment={selectedSegment}
+          onSegmentSelect={setSelectedSegment}
+          onRowClick={handleCustomerClick}
+        />
+      ),
+    },
+    {
+      id: 'actions',
+      label: 'Acciones recomendadas',
+      node: (
+        <ActionCards customers={customers} onCustomerClick={handleCustomerClick} />
+      ),
+    },
+    {
+      id: 'pareto',
+      label: 'Concentración de facturación',
+      node: <ParetoCard customers={customers} segments={segments} />,
+    },
+    {
+      id: 'cohorts',
+      label: 'Cohortes de retención',
+      node: <CohortHeatmap cohorts={cohorts} />,
+    },
+    {
+      id: 'quality',
+      label: 'Calidad de datos',
+      node: <QualityCards quality={quality} />,
+    },
+  ];
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="page-title">Clientes</h1>
-        <p className="page-subtitle">Segmentación RFM, cohorts de retención y lista de clientes ({customerData.total}).</p>
+      <SortableLayout
+        items={blocks}
+        storageKey={`hooks-clientes-layout-${storeId}`}
+        defaultOrder={blocks.map((b) => b.id)}
+      />
+
+      <CustomerProfileModal customer={profileCustomer} onClose={() => setProfileCustomer(null)} />
+      <GlossaryModal open={glossaryOpen} onClose={() => setGlossaryOpen(false)} />
+    </div>
+  );
+}
+
+function QualityCards({ quality }) {
+  if (!quality) return null;
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div className="card p-4">
+        <p className="text-[10px] font-bold uppercase tracking-[1.5px] text-gray-300">Clientes sin email real</p>
+        <p className={`text-[22px] font-bold mt-1.5 leading-none ${(quality.customersWithoutRealEmail || 0) === 0 ? 'text-emerald-400' : 'text-amber-400'}`}>
+          {fmtNum(quality.customersWithoutRealEmail || 0)}
+        </p>
+        <p className="text-[11px] text-gray-300 mt-1.5">
+          {(quality.customersWithoutRealEmail || 0) === 0 ? 'Todos los clientes son contactables' : 'Sin email recuperable — no podés contactarlos'}
+        </p>
       </div>
-
-      {quality && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div className="card p-4">
-            <p className="text-app-muted text-[10px] uppercase tracking-[0.18em]">Sin email real</p>
-            <p className="text-white text-2xl font-semibold mt-2">{quality.customersWithoutRealEmail || 0}</p>
-          </div>
-          <div className="card p-4">
-            <p className="text-app-muted text-[10px] uppercase tracking-[0.18em]">Órdenes sin cliente</p>
-            <p className="text-white text-2xl font-semibold mt-2">{quality.ordersWithoutCustomer || 0}</p>
-          </div>
-          <div className="card p-4">
-            <p className="text-app-muted text-[10px] uppercase tracking-[0.18em]">Cohorts débiles</p>
-            <p className="text-white text-2xl font-semibold mt-2">{quality.sparseCohorts?.length || 0}</p>
-          </div>
-        </div>
-      )}
-
-      <SegmentCards segments={segments} selected={selectedSegment} onSelect={(s) => { setSelectedSegment(s); setPage(1); }} />
-
-      {/* Tabs */}
-      <div className="flex gap-2 border-b border-white/[0.06] pb-0">
-        {[
-          { key: 'segments', label: 'Lista de clientes' },
-          { key: 'cohorts', label: 'Cohorts (retención)' },
-        ].map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            className={`px-4 py-2.5 text-[13px] font-medium border-b-2 -mb-px transition ${
-              tab === t.key
-                ? 'border-blue-500 text-blue-400'
-                : 'border-transparent text-gray-500 hover:text-gray-300'
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
+      <div className="card p-4">
+        <p className="text-[10px] font-bold uppercase tracking-[1.5px] text-gray-300">Órdenes sin cliente</p>
+        <p className={`text-[22px] font-bold mt-1.5 leading-none ${(quality.ordersWithoutCustomer || 0) === 0 ? 'text-emerald-400' : 'text-amber-400'}`}>
+          {fmtNum(quality.ordersWithoutCustomer || 0)}
+        </p>
+        <p className="text-[11px] text-gray-300 mt-1.5">
+          {(quality.ordersWithoutCustomer || 0) === 0 ? 'Todas las órdenes están atribuidas' : 'Órdenes sin email ni ID de cliente'}
+        </p>
       </div>
-
-      <div className="card">
-        {tab === 'cohorts' ? (
-          <CohortTableView cohorts={cohorts} />
-        ) : (
-          <CustomerTable customers={customerData.customers} />
-        )}
+      <div className="card p-4">
+        <p className="text-[10px] font-bold uppercase tracking-[1.5px] text-gray-300">Cohortes con poca muestra</p>
+        <p className={`text-[22px] font-bold mt-1.5 leading-none ${(quality.sparseCohorts?.length || 0) === 0 ? 'text-emerald-400' : 'text-amber-400'}`}>
+          {fmtNum(quality.sparseCohorts?.length || 0)}
+        </p>
+        <p className="text-[11px] text-gray-300 mt-1.5">
+          {(quality.sparseCohorts?.length || 0) === 0
+            ? 'Todas las cohortes tienen muestra suficiente'
+            : `${quality.sparseCohorts.join(', ')} con menos de 3 clientes`}
+        </p>
       </div>
-
-      {/* Pagination */}
-      {tab === 'segments' && customerData.total > 50 && (
-        <div className="flex justify-center items-center gap-2">
-          <button
-            disabled={page <= 1}
-            onClick={() => setPage(page - 1)}
-            className="btn-ghost text-[12px] py-1.5 px-3 disabled:opacity-40"
-          >
-            Anterior
-          </button>
-          <span className="text-[12px] text-gray-500">Pág. {page} de {Math.ceil(customerData.total / 50)}</span>
-          <button
-            disabled={page >= Math.ceil(customerData.total / 50)}
-            onClick={() => setPage(page + 1)}
-            className="btn-ghost text-[12px] py-1.5 px-3 disabled:opacity-40"
-          >
-            Siguiente
-          </button>
-        </div>
-      )}
     </div>
   );
 }

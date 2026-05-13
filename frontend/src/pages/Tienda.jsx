@@ -9,8 +9,6 @@ import DailySalesRevenueChart from '../components/tienda/DailySalesRevenueChart'
 import DailySalesTable from '../components/tienda/DailySalesTable';
 import PaymentMethodsChart from '../components/tienda/PaymentMethodsChart';
 import ChannelChart from '../components/tienda/ChannelChart';
-import AIAnalysisPanel from '../components/common/AIAnalysisPanel';
-import ClaudeActionBar from '../components/common/ClaudeActionBar';
 import TopInsightBar from '../components/insights/TopInsightBar';
 
 function buildTiendaData(summary, ncrc, devoluciones) {
@@ -77,15 +75,6 @@ export default function Tienda() {
       </div>
 
       <DailySalesTable data={data?.dailyOrders} extras={data?.dailyExtras} />
-
-      <div className="card p-5 space-y-4">
-        <div>
-          <p className="text-app-muted text-[11px] uppercase tracking-[0.18em]">Análisis asistido</p>
-          <p className="text-app-secondary text-[12px] mt-1">Prompts y análisis largos quedan al final para no invadir la lectura principal de tienda.</p>
-        </div>
-        <ClaudeActionBar storeId={storeId} storeName={store?.nombre} from={from} to={to} mode="dashboard" />
-        <AIAnalysisPanel storeId={storeId} section="dashboard" from={from} to={to} />
-      </div>
     </div>
   );
 }

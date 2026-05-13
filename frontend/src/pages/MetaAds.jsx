@@ -9,8 +9,6 @@ import SourceMetricsRow from '../components/resumen/SourceMetricsRow';
 import { META_METRICS, META_DEFAULTS } from '../components/meta/metaMetricsCatalog';
 import MetaFunnel from '../components/meta/MetaFunnel';
 import MetaSpendRevenueChart from '../components/meta/MetaSpendRevenueChart';
-import AIAnalysisPanel from '../components/common/AIAnalysisPanel';
-import ClaudeActionBar from '../components/common/ClaudeActionBar';
 import TopInsightBar from '../components/insights/TopInsightBar';
 
 function normalizeCampaignRow(item) {
@@ -109,17 +107,6 @@ export default function MetaAds() {
             <CSVImportMeta storeId={storeId} onImported={fetchAll} />
           </div>
         )}
-      </div>
-
-      <div className="card p-5 space-y-4">
-        <div>
-          <p className="text-app-muted text-[11px] uppercase tracking-[0.18em]">Análisis asistido</p>
-          <p className="text-app-secondary text-[12px] mt-1">
-            Prompts y análisis largos quedan al final para no competir con los KPI de adquisición.
-          </p>
-        </div>
-        <ClaudeActionBar storeId={storeId} storeName={store?.nombre} from={from} to={to} mode="meta" />
-        <AIAnalysisPanel storeId={storeId} section="meta" from={from} to={to} />
       </div>
     </div>
   );

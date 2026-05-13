@@ -2,8 +2,6 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import api from '../services/api';
-import AIAnalysisPanel from '../components/common/AIAnalysisPanel';
-import ClaudeActionBar from '../components/common/ClaudeActionBar';
 import TopInsightBar from '../components/insights/TopInsightBar';
 import { getPeriodLabel } from '../components/common/MasterMetricBoard';
 import SourceMetricsRow from '../components/resumen/SourceMetricsRow';
@@ -142,17 +140,6 @@ export default function Creativos() {
       />
 
       <AnglePerformanceTable data={anglesData} />
-
-      <div className="card p-5 space-y-4">
-        <div>
-          <p className="text-app-muted text-[11px] uppercase tracking-[0.18em]">Análisis asistido</p>
-          <p className="text-app-secondary text-[12px] mt-1">
-            Prompts y análisis largos quedan al final para no competir con la galería de anuncios.
-          </p>
-        </div>
-        <ClaudeActionBar storeId={storeId} storeName={store?.nombre} from={from} to={to} mode="creativos" />
-        <AIAnalysisPanel storeId={storeId} section="creativos" from={from} to={to} />
-      </div>
 
       {compareOpen && compareAds.length >= 2 && (
         <AdCompareModal

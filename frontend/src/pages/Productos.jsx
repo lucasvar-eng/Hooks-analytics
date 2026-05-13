@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import api from '../services/api';
-import ClaudeActionBar from '../components/common/ClaudeActionBar';
 import MetricCompleteness from '../components/common/MetricCompleteness';
 
 function fmt(v) {
@@ -205,14 +204,6 @@ export default function Productos() {
         <h1 className="page-title">Productos</h1>
         <p className="page-subtitle">Performance, márgenes y stock de tus {data.total} productos con ventas pagadas e ingresos netos de descuentos.</p>
       </div>
-
-      <ClaudeActionBar
-        storeId={storeId}
-        storeName={store?.nombre}
-        from={from}
-        to={to}
-        mode="productos"
-      />
 
       {overview?.summary && (
         <div className="grid grid-cols-2 xl:grid-cols-6 gap-3">

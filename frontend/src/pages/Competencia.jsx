@@ -1,8 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import api from '../services/api';
-import AIAnalysisPanel from '../components/common/AIAnalysisPanel';
-import ClaudeActionBar from '../components/common/ClaudeActionBar';
 import { renderMarkdown } from '../utils/markdown';
 
 export default function Competencia() {
@@ -110,11 +108,6 @@ export default function Competencia() {
         </button>
       </div>
 
-      <ClaudeActionBar
-        mode="competencia"
-        storeId={storeId}
-      />
-
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
           ['Competidores', summary.total || 0],
@@ -133,31 +126,28 @@ export default function Competencia() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-[1.2fr_0.8fr] gap-4">
-        <div className="card p-4">
-          <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-3">Pendientes competitivos</p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
-              <p className="text-[10px] text-app-muted uppercase tracking-[0.16em] mb-2">Sin análisis</p>
-              <div className="space-y-1 text-[12px] text-app-secondary">
-                {(gaps.pendingAnalysis || []).length ? gaps.pendingAnalysis.map((item) => <p key={item}>{item}</p>) : <p>Al día.</p>}
-              </div>
+      <div className="card p-4">
+        <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-3">Pendientes competitivos</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
+            <p className="text-[10px] text-app-muted uppercase tracking-[0.16em] mb-2">Sin análisis</p>
+            <div className="space-y-1 text-[12px] text-app-secondary">
+              {(gaps.pendingAnalysis || []).length ? gaps.pendingAnalysis.map((item) => <p key={item}>{item}</p>) : <p>Al día.</p>}
             </div>
-            <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
-              <p className="text-[10px] text-app-muted uppercase tracking-[0.16em] mb-2">Sin ángulos</p>
-              <div className="space-y-1 text-[12px] text-app-secondary">
-                {(gaps.missingAngles || []).length ? gaps.missingAngles.map((item) => <p key={item}>{item}</p>) : <p>Sin huecos.</p>}
-              </div>
+          </div>
+          <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
+            <p className="text-[10px] text-app-muted uppercase tracking-[0.16em] mb-2">Sin ángulos</p>
+            <div className="space-y-1 text-[12px] text-app-secondary">
+              {(gaps.missingAngles || []).length ? gaps.missingAngles.map((item) => <p key={item}>{item}</p>) : <p>Sin huecos.</p>}
             </div>
-            <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
-              <p className="text-[10px] text-app-muted uppercase tracking-[0.16em] mb-2">Sin territorios</p>
-              <div className="space-y-1 text-[12px] text-app-secondary">
-                {(gaps.missingTerritories || []).length ? gaps.missingTerritories.map((item) => <p key={item}>{item}</p>) : <p>Sin huecos.</p>}
-              </div>
+          </div>
+          <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
+            <p className="text-[10px] text-app-muted uppercase tracking-[0.16em] mb-2">Sin territorios</p>
+            <div className="space-y-1 text-[12px] text-app-secondary">
+              {(gaps.missingTerritories || []).length ? gaps.missingTerritories.map((item) => <p key={item}>{item}</p>) : <p>Sin huecos.</p>}
             </div>
           </div>
         </div>
-        <AIAnalysisPanel storeId={storeId} section="competencia" />
       </div>
 
       {showForm && (

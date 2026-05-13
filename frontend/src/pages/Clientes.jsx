@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import api from '../services/api';
-import AIAnalysisPanel from '../components/common/AIAnalysisPanel';
 
 function fmt(v) {
   if (v == null || isNaN(v)) return '—';
@@ -244,8 +243,6 @@ export default function Clientes() {
           </button>
         </div>
       )}
-
-      <AIAnalysisPanel storeId={storeId} section="clientes" from={undefined} to={undefined} />
     </div>
   );
 }

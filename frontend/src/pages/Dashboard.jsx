@@ -13,8 +13,6 @@ import {
   buildCampaignsRows,
   buildStockRows,
 } from '../components/resumen/deriveResumen';
-import AIAnalysisPanel from '../components/common/AIAnalysisPanel';
-import ClaudeActionBar from '../components/common/ClaudeActionBar';
 
 const PRELIMINAR_BADGE = (
   <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-[0.06em] bg-amber-500/12 text-amber-300 border border-amber-500/25">
@@ -178,16 +176,6 @@ export default function Dashboard() {
         />
       </div>
 
-      <div className="space-y-3">
-        <ClaudeActionBar
-          storeId={storeId}
-          storeName={store?.nombre}
-          from={from}
-          to={to}
-          mode="dashboard"
-        />
-        <AIAnalysisPanel storeId={storeId} section="dashboard" from={from} to={to} />
-      </div>
     </div>
   );
 }

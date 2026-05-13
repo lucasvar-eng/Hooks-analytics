@@ -4,8 +4,6 @@ import { useSelector, useDispatch } from 'react-redux';
 import api from '../services/api';
 import { fetchStoreMetrics } from '../store/storeSlice';
 import { getPeriodLabel } from '../components/common/MasterMetricBoard';
-import AIAnalysisPanel from '../components/common/AIAnalysisPanel';
-import ClaudeActionBar from '../components/common/ClaudeActionBar';
 import TopInsightBar from '../components/insights/TopInsightBar';
 import CoverageBanner from '../components/costs/CoverageBanner';
 import PnLBreakdown from '../components/costs/PnLBreakdown';
@@ -123,17 +121,6 @@ export default function Costos() {
         adsConnected={adsConnected}
         onChanged={refreshAll}
       />
-
-      <div className="card p-5 space-y-4">
-        <div>
-          <p className="text-[10px] font-bold uppercase tracking-[1.5px] text-gray-300">Análisis asistido</p>
-          <p className="text-[12.5px] text-gray-200 mt-1">
-            Prompts y análisis largos quedan al final para no competir con la lectura del P&L.
-          </p>
-        </div>
-        <ClaudeActionBar storeId={storeId} storeName={store?.nombre} from={from} to={to} mode="costos" />
-        <AIAnalysisPanel storeId={storeId} section="costos" from={from} to={to} />
-      </div>
     </div>
   );
 }

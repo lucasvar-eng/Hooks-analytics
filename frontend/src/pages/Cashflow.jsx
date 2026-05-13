@@ -2,8 +2,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import api from '../services/api';
-import AIAnalysisPanel from '../components/common/AIAnalysisPanel';
-import ClaudeActionBar from '../components/common/ClaudeActionBar';
 import TopInsightBar from '../components/insights/TopInsightBar';
 import UnifiedProjectionChart from '../components/cashflow/UnifiedProjectionChart';
 import BankBalancesPanel from '../components/cashflow/BankBalancesPanel';
@@ -101,17 +99,6 @@ export default function Cashflow() {
         onUpsert={handleEntryUpsert}
         onDelete={handleEntryDelete}
       />
-
-      <div className="card p-5 space-y-4">
-        <div>
-          <p className="text-app-muted text-[11px] uppercase tracking-[0.18em]">Análisis asistido</p>
-          <p className="text-app-secondary text-[12px] mt-1">
-            Prompts y análisis largos quedan al final para no competir con la proyección de cashflow.
-          </p>
-        </div>
-        <ClaudeActionBar storeId={storeId} storeName={store?.nombre} from={from} to={to} mode="cashflow" />
-        <AIAnalysisPanel storeId={storeId} section="cashflow" from={from} to={to} />
-      </div>
     </div>
   );
 }

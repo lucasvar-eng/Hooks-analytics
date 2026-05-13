@@ -10,6 +10,7 @@ import DailySalesTable from '../components/tienda/DailySalesTable';
 import PaymentMethodsChart from '../components/tienda/PaymentMethodsChart';
 import ChannelChart from '../components/tienda/ChannelChart';
 import TopInsightBar from '../components/insights/TopInsightBar';
+import SortableLayout from '../components/common/SortableLayout';
 
 function buildTiendaData(summary, ncrc, devoluciones) {
   if (!summary) return null;
@@ -49,32 +50,56 @@ export default function Tienda() {
 
   if (loading) return <div className="text-center py-12 text-[13px] text-gray-600">Cargando datos de tienda...</div>;
 
+  const sortableItems = [
+    {
+      id: 'tn-row',
+      label: 'KPIs Tienda Nube',
+      node: (
+        <SourceMetricsRow
+          sourceKey="tn"
+          title="Tienda Nube"
+          subtitle="Lectura comercial · volumen, monetización y calidad de venta"
+          periodLabel={getPeriodLabel(preset, from, to)}
+          availableMetrics={TIENDA_METRICS}
+          data={buildTiendaData(data?.summary, data?.ncrc, data?.devoluciones)}
+          deltas={null}
+          coverage={coverage}
+          storeId={storeId}
+          storageKey={`hooks-tienda-${storeId}`}
+          defaultSelected={TIENDA_DEFAULTS}
+        />
+      ),
+    },
+    {
+      id: 'daily-chart',
+      label: 'Ventas y facturación por día',
+      node: <DailySalesRevenueChart data={data?.dailyOrders} />,
+    },
+    {
+      id: 'payment-channel',
+      label: 'Medios de pago + Canales',
+      node: (
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+          <PaymentMethodsChart data={data?.byMedioPago} />
+          <ChannelChart data={data?.byCanal} />
+        </div>
+      ),
+    },
+    {
+      id: 'daily-table',
+      label: 'Detalle diario',
+      node: <DailySalesTable data={data?.dailyOrders} extras={data?.dailyExtras} />,
+    },
+  ];
+
   return (
     <div className="space-y-5">
       <TopInsightBar storeId={storeId} />
 
-      <SourceMetricsRow
-        sourceKey="tn"
-        title="Tienda Nube"
-        subtitle="Lectura comercial · volumen, monetización y calidad de venta"
-        periodLabel={getPeriodLabel(preset, from, to)}
-        availableMetrics={TIENDA_METRICS}
-        data={buildTiendaData(data?.summary, data?.ncrc, data?.devoluciones)}
-        deltas={null}
-        coverage={coverage}
-        storeId={storeId}
-        storageKey={`hooks-tienda-${storeId}`}
-        defaultSelected={TIENDA_DEFAULTS}
+      <SortableLayout
+        items={sortableItems}
+        storageKey={`hooks-tienda-layout-${storeId}`}
       />
-
-      <DailySalesRevenueChart data={data?.dailyOrders} />
-
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-        <PaymentMethodsChart data={data?.byMedioPago} />
-        <ChannelChart data={data?.byCanal} />
-      </div>
-
-      <DailySalesTable data={data?.dailyOrders} extras={data?.dailyExtras} />
     </div>
   );
 }

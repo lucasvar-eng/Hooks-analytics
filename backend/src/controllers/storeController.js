@@ -168,7 +168,7 @@ exports.list = async (req, res, next) => {
         : { _id: { $in: req.user.storeAccess } };
 
     const stores = await Store.find(filter).select(
-      'nombre tnNombre shopifyShopName plataforma logoUrl storeUrl integrationStatus metricasHome objetivos pageLayouts createdAt'
+      'nombre tnNombre shopifyShopName plataforma logoUrl storeUrl integrationStatus metricasHome objetivos createdAt'
     );
     res.json(stores);
   } catch (error) {

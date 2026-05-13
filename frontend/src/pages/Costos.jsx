@@ -10,6 +10,7 @@ import PnLBreakdown from '../components/costs/PnLBreakdown';
 import BreakevenCard from '../components/costs/BreakevenCard';
 import CostCoverageChecklist from '../components/costs/CostCoverageChecklist';
 import CostsConfigAccordion from '../components/costs/CostsConfigAccordion';
+import SortableLayout from '../components/common/SortableLayout';
 
 /**
  * Página Costos rediseñada (2026-05-13).
@@ -90,6 +91,47 @@ export default function Costos() {
 
   const openConfig = (tab) => configRef.current?.open(tab);
 
+  const sortableItems = [
+    {
+      id: 'pnl',
+      label: 'P&L',
+      node: (
+        <PnLBreakdown
+          pnl={pnl}
+          coverage={coverage}
+          period={{ from, to, label: periodLabel }}
+        />
+      ),
+    },
+    {
+      id: 'breakeven-checklist',
+      label: 'Breakeven + Cobertura',
+      node: (
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+          <BreakevenCard breakeven={breakeven} actuals={actuals} />
+          <CostCoverageChecklist
+            coverage={coverage}
+            adsConnected={adsConnected}
+            onConfigClick={(tab) => openConfig(tab)}
+          />
+        </div>
+      ),
+    },
+    {
+      id: 'config-accordion',
+      label: 'Configurar costos',
+      node: (
+        <CostsConfigAccordion
+          ref={configRef}
+          storeId={storeId}
+          coverage={coverage}
+          adsConnected={adsConnected}
+          onChanged={refreshAll}
+        />
+      ),
+    },
+  ];
+
   return (
     <div className="space-y-5">
       <TopInsightBar storeId={storeId} />
@@ -99,27 +141,9 @@ export default function Costos() {
         onConfigClick={() => openConfig('wizard')}
       />
 
-      <PnLBreakdown
-        pnl={pnl}
-        coverage={coverage}
-        period={{ from, to, label: periodLabel }}
-      />
-
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-        <BreakevenCard breakeven={breakeven} actuals={actuals} />
-        <CostCoverageChecklist
-          coverage={coverage}
-          adsConnected={adsConnected}
-          onConfigClick={(tab) => openConfig(tab)}
-        />
-      </div>
-
-      <CostsConfigAccordion
-        ref={configRef}
-        storeId={storeId}
-        coverage={coverage}
-        adsConnected={adsConnected}
-        onChanged={refreshAll}
+      <SortableLayout
+        items={sortableItems}
+        storageKey={`hooks-costos-layout-${storeId}`}
       />
     </div>
   );

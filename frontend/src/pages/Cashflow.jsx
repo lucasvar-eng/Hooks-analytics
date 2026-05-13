@@ -6,6 +6,7 @@ import TopInsightBar from '../components/insights/TopInsightBar';
 import UnifiedProjectionChart from '../components/cashflow/UnifiedProjectionChart';
 import BankBalancesPanel from '../components/cashflow/BankBalancesPanel';
 import ManualMovementsTable from '../components/cashflow/ManualMovementsTable';
+import SortableLayout from '../components/common/SortableLayout';
 
 export default function Cashflow() {
   const { storeId } = useParams();
@@ -77,27 +78,45 @@ export default function Cashflow() {
     return <div className="text-center py-12 text-[13px] text-gray-600">Cargando cashflow...</div>;
   }
 
+  const sortableItems = [
+    {
+      id: 'projection',
+      label: 'Forecast unificado',
+      node: <UnifiedProjectionChart data={projection} onChangeDays={setDays} />,
+    },
+    {
+      id: 'bank-balances',
+      label: 'Saldos bancarios',
+      node: (
+        <BankBalancesPanel
+          accounts={accounts}
+          categories={categories}
+          onUpsert={handleAccountUpsert}
+          onArchive={handleAccountArchive}
+        />
+      ),
+    },
+    {
+      id: 'manual-movements',
+      label: 'Movimientos manuales',
+      node: (
+        <ManualMovementsTable
+          entries={entries}
+          categories={categories}
+          onUpsert={handleEntryUpsert}
+          onDelete={handleEntryDelete}
+        />
+      ),
+    },
+  ];
+
   return (
     <div className="space-y-5">
       <TopInsightBar storeId={storeId} />
 
-      {/* 1. Forecast unificado con cash gap detector */}
-      <UnifiedProjectionChart data={projection} onChangeDays={setDays} />
-
-      {/* 2. Saldos bancarios del momento */}
-      <BankBalancesPanel
-        accounts={accounts}
-        categories={categories}
-        onUpsert={handleAccountUpsert}
-        onArchive={handleAccountArchive}
-      />
-
-      {/* 3. Movimientos manuales (ingresos no-TN + egresos) */}
-      <ManualMovementsTable
-        entries={entries}
-        categories={categories}
-        onUpsert={handleEntryUpsert}
-        onDelete={handleEntryDelete}
+      <SortableLayout
+        items={sortableItems}
+        storageKey={`hooks-cashflow-layout-${storeId}`}
       />
     </div>
   );

@@ -148,9 +148,6 @@ const storeSchema = new mongoose.Schema(
       }],
     },
 
-    // Layouts editables por página
-    pageLayouts: { type: mongoose.Schema.Types.Mixed, default: {} },
-
     // Google Sheets
     googleSheets: {
       spreadsheetId: { type: String, default: '' },

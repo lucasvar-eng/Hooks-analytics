@@ -14,6 +14,7 @@ import {
   CREATIVOS_DEFAULTS,
   buildCreativosData,
 } from '../components/creativos/creativosMetricsCatalog';
+import SortableLayout from '../components/common/SortableLayout';
 
 export default function Creativos() {
   const { storeId } = useParams();
@@ -111,35 +112,56 @@ export default function Creativos() {
     return <div className="text-center py-12 text-[13px] text-gray-600">Cargando anuncios...</div>;
   }
 
+  const sortableItems = [
+    {
+      id: 'metrics-row',
+      label: 'KPIs Anuncios',
+      node: (
+        <SourceMetricsRow
+          sourceKey="meta"
+          title="Anuncios — Meta"
+          subtitle="Performance por creativo · análisis a nivel ad"
+          periodLabel={getPeriodLabel(preset, from, to)}
+          availableMetrics={CREATIVOS_METRICS}
+          data={summary}
+          deltas={null}
+          coverage={null}
+          storeId={storeId}
+          storageKey={`hooks-creativos-${storeId}`}
+          defaultSelected={CREATIVOS_DEFAULTS}
+        />
+      ),
+    },
+    {
+      id: 'ad-gallery',
+      label: 'Galería de anuncios',
+      node: (
+        <AdGallery
+          ads={ads}
+          selectedIds={selectedIds}
+          onToggleSelect={toggleSelect}
+          onClickAd={handleClickAd}
+          onClearSelection={() => setSelectedIds([])}
+          onCompare={handleCompare}
+          onAnalyze={handleAnalyze}
+        />
+      ),
+    },
+    {
+      id: 'angles-table',
+      label: 'Performance por ángulo',
+      node: <AnglePerformanceTable data={anglesData} />,
+    },
+  ];
+
   return (
     <div className="space-y-5">
       <TopInsightBar storeId={storeId} />
 
-      <SourceMetricsRow
-        sourceKey="meta"
-        title="Anuncios — Meta"
-        subtitle="Performance por creativo · análisis a nivel ad"
-        periodLabel={getPeriodLabel(preset, from, to)}
-        availableMetrics={CREATIVOS_METRICS}
-        data={summary}
-        deltas={null}
-        coverage={null}
-        storeId={storeId}
-        storageKey={`hooks-creativos-${storeId}`}
-        defaultSelected={CREATIVOS_DEFAULTS}
+      <SortableLayout
+        items={sortableItems}
+        storageKey={`hooks-creativos-layout-${storeId}`}
       />
-
-      <AdGallery
-        ads={ads}
-        selectedIds={selectedIds}
-        onToggleSelect={toggleSelect}
-        onClickAd={handleClickAd}
-        onClearSelection={() => setSelectedIds([])}
-        onCompare={handleCompare}
-        onAnalyze={handleAnalyze}
-      />
-
-      <AnglePerformanceTable data={anglesData} />
 
       {compareOpen && compareAds.length >= 2 && (
         <AdCompareModal

@@ -11,6 +11,7 @@ import CategoryTable from '../components/productos/CategoryTable';
 import AgingChart from '../components/productos/AgingChart';
 import ConcentrationChart from '../components/productos/ConcentrationChart';
 import ProductProfileModal from '../components/productos/ProductProfileModal';
+import SortableLayout from '../components/common/SortableLayout';
 import {
   PRODUCTOS_METRICS,
   PRODUCTOS_DEFAULTS,
@@ -114,55 +115,76 @@ export default function Productos() {
     return <div className="text-center py-12 text-[13px] text-gray-300">Cargando productos...</div>;
   }
 
+  const sortableItems = [
+    {
+      id: 'products-table',
+      label: 'Tabla principal',
+      node: <ProductsTable products={products} onRowClick={setSelectedProduct} />,
+    },
+    {
+      id: 'metrics-row',
+      label: 'Indicadores',
+      node: (
+        <ProductsMetricsRow
+          title="Indicadores"
+          subtitle="Lectura rápida del catálogo en el período seleccionado"
+          data={metricsData}
+          availableMetrics={PRODUCTOS_METRICS}
+          defaultSelected={PRODUCTOS_DEFAULTS}
+          maxSelected={PRODUCTOS_MAX_SELECTED}
+          storageKey={`hooks-productos-${storeId}`}
+          coverage={coverage}
+          storeId={storeId}
+        />
+      ),
+    },
+    {
+      id: 'action-cards',
+      label: 'Acciones recomendadas',
+      node: (
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+          <CapitalAtrapadoCard products={products} onProductClick={setSelectedProduct} />
+          <RepongoCard products={products} onProductClick={setSelectedProduct} />
+        </div>
+      ),
+    },
+    {
+      id: 'catalog-health',
+      label: 'Salud del catálogo',
+      node: <CatalogHealth products={products} summary={overview?.summary} />,
+    },
+    ...(commercial?.categories ? [{
+      id: 'category-table',
+      label: 'Comercial por categoría',
+      node: <CategoryTable categories={commercial.categories} coverageHasIssue={coverageHasIssue} />,
+    }] : []),
+    ...(commercial?.agingSummary || commercial?.categoryConcentration ? [{
+      id: 'aging-concentration',
+      label: 'Aging + Concentración',
+      node: (
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+          {commercial?.agingSummary && (
+            <AgingChart
+              agingSummary={commercial.agingSummary}
+              totalProducts={overview?.summary?.totalProducts}
+            />
+          )}
+          {commercial?.categoryConcentration && (
+            <ConcentrationChart items={commercial.categoryConcentration} />
+          )}
+        </div>
+      ),
+    }] : []),
+  ];
+
   return (
     <div className="space-y-5">
       <TopInsightBar storeId={storeId} />
 
-      {/* 1. Tabla principal — el bloque más importante */}
-      <ProductsTable
-        products={products}
-        onRowClick={setSelectedProduct}
+      <SortableLayout
+        items={sortableItems}
+        storageKey={`hooks-productos-layout-${storeId}`}
       />
-
-      {/* 2. Indicadores configurables */}
-      <ProductsMetricsRow
-        title="Indicadores"
-        subtitle="Lectura rápida del catálogo en el período seleccionado"
-        data={metricsData}
-        availableMetrics={PRODUCTOS_METRICS}
-        defaultSelected={PRODUCTOS_DEFAULTS}
-        maxSelected={PRODUCTOS_MAX_SELECTED}
-        storageKey={`hooks-productos-${storeId}`}
-        coverage={coverage}
-        storeId={storeId}
-      />
-
-      {/* 3. Acciones recomendadas */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-        <CapitalAtrapadoCard products={products} onProductClick={setSelectedProduct} />
-        <RepongoCard products={products} onProductClick={setSelectedProduct} />
-      </div>
-
-      {/* 4. Salud del catálogo */}
-      <CatalogHealth products={products} summary={overview?.summary} />
-
-      {/* 5. Comercial por categoría */}
-      {commercial?.categories && (
-        <CategoryTable categories={commercial.categories} coverageHasIssue={coverageHasIssue} />
-      )}
-
-      {/* 6. Aging + Concentración */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-        {commercial?.agingSummary && (
-          <AgingChart
-            agingSummary={commercial.agingSummary}
-            totalProducts={overview?.summary?.totalProducts}
-          />
-        )}
-        {commercial?.categoryConcentration && (
-          <ConcentrationChart items={commercial.categoryConcentration} />
-        )}
-      </div>
 
       {selectedProduct && (
         <ProductProfileModal

@@ -1,325 +1,407 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import api from '../services/api';
-import { renderMarkdown } from '../utils/markdown';
+import SortableLayout from '../components/common/SortableLayout';
+import CompetenciaMetricsRow from '../components/competencia/CompetenciaMetricsRow';
+import CompetidorCard from '../components/competencia/CompetidorCard';
+import ActionCardsCompetencia from '../components/competencia/ActionCardsCompetencia';
+import AddCompetidorModal from '../components/competencia/AddCompetidorModal';
+import CompetidorDetailModal from '../components/competencia/CompetidorDetailModal';
+import CompetidorCompareModal from '../components/competencia/CompetidorCompareModal';
+import GlossaryModalCompetencia from '../components/competencia/GlossaryModalCompetencia';
+import {
+  COMPETENCIA_METRICS,
+  COMPETENCIA_DEFAULTS,
+  COMPETENCIA_MAX_SELECTED,
+} from '../components/competencia/competenciaMetricsCatalog';
+
+/**
+ * Página Competencia — rediseño operativo (2026-05-13).
+ *
+ * Bloques (reordenables vía SortableLayout):
+ *  - kpis: 4 KPIs configurables de 8
+ *  - filters: chips por estado + búsqueda + topbar con CTA "+ Agregar"
+ *  - grid: cards grandes 2 cols, una por competidor
+ *  - actions: ActionCards (Sin análisis · Oportunidades hot)
+ *
+ * Modales:
+ *  - Add/Edit competidor (form simplificado, avanzado opt-in)
+ *  - Detalle (markdown análisis + datos + oportunidades focalizadas)
+ *  - Comparar (2-3 lado a lado)
+ *  - Glosario
+ */
+
+function fmtNum(v) {
+  if (v == null || isNaN(v)) return '—';
+  return Number(v).toLocaleString('es-AR');
+}
+
+const STATUS_FILTERS = [
+  { id: 'all', label: 'Todos', match: () => true },
+  { id: 'analyzed', label: 'Analizados', match: (c) => !!c.analysisResult },
+  { id: 'pending', label: 'Pendientes', match: (c) => !!c.url && !c.analysisResult },
+  { id: 'no_url', label: 'Sin URL', match: (c) => !c.url },
+  { id: 'with_opps', label: 'Con oportunidades', match: (c) => !!c.analysisResult && /[-•*]\s+/m.test(c.analysisResult || '') },
+];
 
 export default function Competencia() {
   const { storeId } = useParams();
   const [competitors, setCompetitors] = useState([]);
   const [overview, setOverview] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({
-    nombre: '',
-    url: '',
-    positioning: '',
-    avatar: '',
-    awarenessLevel: 'unknown',
-    mainOffer: '',
-    angles: '',
-    territories: '',
-    objectionsDetected: '',
-    notas: '',
-  });
-  const [editId, setEditId] = useState(null);
-  const [analyzing, setAnalyzing] = useState(null);
-  const [opportunityState, setOpportunityState] = useState({ id: null, data: null, loading: false });
 
-  const fetchData = useCallback(async () => {
+  const [filterId, setFilterId] = useState('all');
+  const [search, setSearch] = useState('');
+
+  const [addOpen, setAddOpen] = useState(false);
+  const [editing, setEditing] = useState(null);
+  const [detailCompetitor, setDetailCompetitor] = useState(null);
+  const [compareIds, setCompareIds] = useState([]);
+  const [compareOpen, setCompareOpen] = useState(false);
+  const [glossaryOpen, setGlossaryOpen] = useState(false);
+  const [analyzingId, setAnalyzingId] = useState(null);
+
+  const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
-      const [competitorsRes, overviewRes] = await Promise.all([
+      const [list, ov] = await Promise.all([
         api.get(`/api/stores/${storeId}/competitors`),
         api.get(`/api/stores/${storeId}/competitors/overview`),
       ]);
-      setCompetitors(competitorsRes.data);
-      setOverview(overviewRes.data);
-    } catch {}
-    setLoading(false);
+      setCompetitors(list.data || []);
+      setOverview(ov.data || null);
+    } catch (err) {
+      console.error('Error cargando competidores:', err);
+    } finally {
+      setLoading(false);
+    }
   }, [storeId]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => { fetchAll(); }, [fetchAll]);
 
-  const handleEdit = (c) => {
-    setForm({
-      nombre: c.nombre,
-      url: c.url || '',
-      positioning: c.positioning || '',
-      avatar: c.avatar || '',
-      awarenessLevel: c.awarenessLevel || 'unknown',
-      mainOffer: c.mainOffer || '',
-      angles: (c.angles || []).join(', '),
-      territories: (c.territories || []).join(', '),
-      objectionsDetected: (c.objectionsDetected || []).join(', '),
-      notas: c.notas || '',
+  const filterCounts = useMemo(() => {
+    const counts = {};
+    STATUS_FILTERS.forEach((f) => { counts[f.id] = competitors.filter(f.match).length; });
+    return counts;
+  }, [competitors]);
+
+  const filtered = useMemo(() => {
+    const f = STATUS_FILTERS.find((x) => x.id === filterId) || STATUS_FILTERS[0];
+    const q = search.trim().toLowerCase();
+    return competitors.filter((c) => {
+      if (!f.match(c)) return false;
+      if (!q) return true;
+      const name = (c.nombre || '').toLowerCase();
+      const url = (c.url || '').toLowerCase();
+      const angles = (c.angles || []).join(' ').toLowerCase();
+      const offer = (c.mainOffer || '').toLowerCase();
+      return name.includes(q) || url.includes(q) || angles.includes(q) || offer.includes(q);
     });
-    setEditId(c._id);
-    setShowForm(true);
-  };
+  }, [competitors, filterId, search]);
 
-  const handleDelete = async (id) => {
-    await api.delete(`/api/stores/${storeId}/competitors/${id}`);
-    fetchData();
-  };
+  const compareList = useMemo(() => {
+    return compareIds.map((id) => competitors.find((c) => c._id === id)).filter(Boolean);
+  }, [compareIds, competitors]);
 
-  const handleAnalyze = async (id) => {
-    setAnalyzing(id);
+  const handleSubmit = async (payload) => {
     try {
-      await api.post(`/api/stores/${storeId}/competitors/${id}/analyze`);
-      fetchData();
-    } catch {}
-    setAnalyzing(null);
-  };
-
-  const handleOpportunities = async (competitor) => {
-    setOpportunityState({ id: competitor._id, data: null, loading: true });
-    try {
-      const { data } = await api.post(`/api/stores/${storeId}/competitors/${competitor._id}/opportunities`);
-      setOpportunityState({ id: competitor._id, data, loading: false });
-    } catch {
-      setOpportunityState({ id: competitor._id, data: null, loading: false });
+      if (editing) {
+        await api.put(`/api/stores/${storeId}/competitors/${editing._id}`, payload);
+      } else {
+        await api.post(`/api/stores/${storeId}/competitors`, payload);
+      }
+      setAddOpen(false);
+      setEditing(null);
+      await fetchAll();
+    } catch (err) {
+      console.error('Error guardando competidor:', err);
     }
   };
 
-  if (loading) return <div className="text-center py-12 text-[13px] text-gray-600">Cargando competencia...</div>;
-
-  const summary = overview?.summary || {};
-  const gaps = overview?.gaps || {};
-
-  const submitPayload = {
-    ...form,
-    angles: form.angles.split(',').map((item) => item.trim()).filter(Boolean),
-    territories: form.territories.split(',').map((item) => item.trim()).filter(Boolean),
-    objectionsDetected: form.objectionsDetected.split(',').map((item) => item.trim()).filter(Boolean),
+  const handleAnalyze = async (c) => {
+    setAnalyzingId(c._id);
+    try {
+      await api.post(`/api/stores/${storeId}/competitors/${c._id}/analyze`);
+      await fetchAll();
+    } catch (err) {
+      console.error('Error analizando:', err);
+    } finally {
+      setAnalyzingId(null);
+    }
   };
+
+  const handleOpportunities = async (c) => {
+    try {
+      const { data } = await api.post(`/api/stores/${storeId}/competitors/${c._id}/opportunities`);
+      return data;
+    } catch (err) {
+      console.error('Error generando oportunidades:', err);
+      return null;
+    }
+  };
+
+  const handleDelete = async (c) => {
+    if (!window.confirm(`¿Eliminar "${c.nombre}"? Esta acción no se puede deshacer.`)) return;
+    try {
+      await api.delete(`/api/stores/${storeId}/competitors/${c._id}`);
+      setDetailCompetitor(null);
+      setCompareIds((ids) => ids.filter((id) => id !== c._id));
+      await fetchAll();
+    } catch (err) {
+      console.error('Error eliminando:', err);
+    }
+  };
+
+  const handleEdit = (c) => {
+    setEditing(c);
+    setDetailCompetitor(null);
+    setAddOpen(true);
+  };
+
+  const toggleCompare = (c) => {
+    setCompareIds((prev) => {
+      if (prev.includes(c._id)) return prev.filter((id) => id !== c._id);
+      if (prev.length >= 3) return prev; // max 3
+      return [...prev, c._id];
+    });
+  };
+
+  const removeFromCompare = (c) => {
+    setCompareIds((prev) => prev.filter((id) => id !== c._id));
+  };
+
+  const openDetail = (c) => {
+    setDetailCompetitor(c);
+  };
+
+  const closeAdd = () => {
+    setAddOpen(false);
+    setEditing(null);
+  };
+
+  if (loading) {
+    return <div className="text-center py-12 text-[13px] text-gray-300">Cargando competencia...</div>;
+  }
+
+  const data = { competitors, overview };
+
+  const blocks = [
+    {
+      id: 'kpis',
+      label: 'Indicadores',
+      node: (
+        <CompetenciaMetricsRow
+          title="Indicadores"
+          subtitle={`Análisis de ${fmtNum(competitors.length)} competidor${competitors.length === 1 ? '' : 'es'} cargado${competitors.length === 1 ? '' : 's'}`}
+          data={data}
+          availableMetrics={COMPETENCIA_METRICS}
+          defaultSelected={COMPETENCIA_DEFAULTS}
+          maxSelected={COMPETENCIA_MAX_SELECTED}
+          storageKey={`hooks-competencia-metrics-${storeId}`}
+          onOpenGlossary={() => setGlossaryOpen(true)}
+        />
+      ),
+    },
+    {
+      id: 'filters',
+      label: 'Filtros',
+      node: (
+        <FiltersBar
+          filterId={filterId}
+          onFilterChange={setFilterId}
+          counts={filterCounts}
+          search={search}
+          onSearchChange={setSearch}
+          compareCount={compareIds.length}
+          onOpenCompare={() => setCompareOpen(true)}
+          onAddCompetidor={() => { setEditing(null); setAddOpen(true); }}
+        />
+      ),
+    },
+    {
+      id: 'grid',
+      label: 'Competidores',
+      node: (
+        <CompetitorsGrid
+          competitors={filtered}
+          compareIds={compareIds}
+          analyzingId={analyzingId}
+          onToggleCompare={toggleCompare}
+          onAnalyze={handleAnalyze}
+          onEdit={handleEdit}
+          onOpenDetail={openDetail}
+          onAddCompetidor={() => { setEditing(null); setAddOpen(true); }}
+          totalCount={competitors.length}
+        />
+      ),
+    },
+    {
+      id: 'actions',
+      label: 'Acciones recomendadas',
+      node: (
+        <ActionCardsCompetencia
+          competitors={competitors}
+          onAnalyze={handleAnalyze}
+          onEdit={handleEdit}
+          onOpenDetail={openDetail}
+          analyzingId={analyzingId}
+        />
+      ),
+    },
+  ];
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="page-title">Competencia</h1>
-          <p className="page-subtitle">Seguimiento y análisis AI de competidores.</p>
-        </div>
+      <SortableLayout
+        items={blocks}
+        storageKey={`hooks-competencia-layout-${storeId}`}
+        defaultOrder={blocks.map((b) => b.id)}
+      />
+
+      <AddCompetidorModal
+        open={addOpen}
+        competitor={editing}
+        onClose={closeAdd}
+        onSubmit={handleSubmit}
+      />
+
+      <CompetidorDetailModal
+        competitor={detailCompetitor}
+        onClose={() => setDetailCompetitor(null)}
+        onAnalyze={handleAnalyze}
+        onOpportunities={handleOpportunities}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+        analyzing={analyzingId === detailCompetitor?._id}
+      />
+
+      {compareOpen && (
+        <CompetidorCompareModal
+          competitors={compareList}
+          onClose={() => setCompareOpen(false)}
+          onRemove={removeFromCompare}
+          onOpenDetail={(c) => { setCompareOpen(false); openDetail(c); }}
+        />
+      )}
+
+      <GlossaryModalCompetencia open={glossaryOpen} onClose={() => setGlossaryOpen(false)} />
+    </div>
+  );
+}
+
+function FiltersBar({
+  filterId,
+  onFilterChange,
+  counts,
+  search,
+  onSearchChange,
+  compareCount,
+  onOpenCompare,
+  onAddCompetidor,
+}) {
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex justify-between items-center gap-2 flex-wrap">
         <button
-          onClick={() => { setShowForm(!showForm); setEditId(null); setForm({ nombre: '', url: '', positioning: '', avatar: '', awarenessLevel: 'unknown', mainOffer: '', angles: '', territories: '', objectionsDetected: '', notas: '' }); }}
-          className="btn-primary"
+          type="button"
+          onClick={onOpenCompare}
+          disabled={compareCount < 2}
+          className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.04] hover:border-white/20 px-3 py-1.5 text-[11.5px] font-medium text-gray-200 hover:text-white transition disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {showForm ? 'Cancelar' : '+ Agregar competidor'}
+          Comparar ({compareCount})
+        </button>
+        <button
+          type="button"
+          onClick={onAddCompetidor}
+          className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/40 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-200 px-4 py-1.5 text-[12px] font-semibold transition"
+        >
+          + Agregar competidor
         </button>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {[
-          ['Competidores', summary.total || 0],
-          ['Analizados', summary.analyzed || 0],
-          ['Pendientes', summary.pendingAnalysis || 0],
-          ['Con URL', summary.withUrl || 0],
-          ['Ángulos únicos', summary.uniqueAngles || 0],
-          ['Territorios únicos', summary.uniqueTerritories || 0],
-          ['Sin ángulos', summary.missingAngles || 0],
-          ['Sin territorios', summary.missingTerritories || 0],
-        ].map(([label, value]) => (
-          <div key={label} className="card p-4">
-            <p className="text-app-muted text-[10px] uppercase tracking-[0.18em]">{label}</p>
-            <p className="text-white text-2xl font-semibold mt-2">{value}</p>
-          </div>
-        ))}
-      </div>
-
-      <div className="card p-4">
-        <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-3">Pendientes competitivos</p>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
-            <p className="text-[10px] text-app-muted uppercase tracking-[0.16em] mb-2">Sin análisis</p>
-            <div className="space-y-1 text-[12px] text-app-secondary">
-              {(gaps.pendingAnalysis || []).length ? gaps.pendingAnalysis.map((item) => <p key={item}>{item}</p>) : <p>Al día.</p>}
-            </div>
-          </div>
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
-            <p className="text-[10px] text-app-muted uppercase tracking-[0.16em] mb-2">Sin ángulos</p>
-            <div className="space-y-1 text-[12px] text-app-secondary">
-              {(gaps.missingAngles || []).length ? gaps.missingAngles.map((item) => <p key={item}>{item}</p>) : <p>Sin huecos.</p>}
-            </div>
-          </div>
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
-            <p className="text-[10px] text-app-muted uppercase tracking-[0.16em] mb-2">Sin territorios</p>
-            <div className="space-y-1 text-[12px] text-app-secondary">
-              {(gaps.missingTerritories || []).length ? gaps.missingTerritories.map((item) => <p key={item}>{item}</p>) : <p>Sin huecos.</p>}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {showForm && (
-        <form onSubmit={(e) => {
-          e.preventDefault();
-          (async () => {
-            try {
-              if (editId) {
-                await api.put(`/api/stores/${storeId}/competitors/${editId}`, submitPayload);
-              } else {
-                await api.post(`/api/stores/${storeId}/competitors`, submitPayload);
-              }
-              setForm({ nombre: '', url: '', positioning: '', avatar: '', awarenessLevel: 'unknown', mainOffer: '', angles: '', territories: '', objectionsDetected: '', notas: '' });
-              setEditId(null);
-              setShowForm(false);
-              fetchData();
-            } catch {}
-          })();
-        }} className="card p-5 space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="kpi-label mb-1 block">Nombre</label>
-              <input
-                value={form.nombre}
-                onChange={(e) => setForm({ ...form, nombre: e.target.value })}
-                required
-                className="input-dark w-full"
-              />
-            </div>
-            <div>
-              <label className="kpi-label mb-1 block">URL</label>
-              <input
-                value={form.url}
-                onChange={(e) => setForm({ ...form, url: e.target.value })}
-                className="input-dark w-full"
-                placeholder="https://..."
-              />
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div>
-              <label className="kpi-label mb-1 block">Posicionamiento</label>
-              <input value={form.positioning} onChange={(e) => setForm({ ...form, positioning: e.target.value })} className="input-dark w-full" />
-            </div>
-            <div>
-              <label className="kpi-label mb-1 block">Avatar</label>
-              <input value={form.avatar} onChange={(e) => setForm({ ...form, avatar: e.target.value })} className="input-dark w-full" />
-            </div>
-            <div>
-              <label className="kpi-label mb-1 block">Nivel de consciencia</label>
-              <select value={form.awarenessLevel} onChange={(e) => setForm({ ...form, awarenessLevel: e.target.value })} className="input-dark w-full">
-                <option value="unknown">Sin definir</option>
-                <option value="unaware">No consciente</option>
-                <option value="problem-aware">Problema</option>
-                <option value="solution-aware">Solución</option>
-                <option value="product-aware">Producto</option>
-                <option value="most-aware">Muy consciente</option>
-              </select>
-            </div>
-            <div>
-              <label className="kpi-label mb-1 block">Oferta principal</label>
-              <input value={form.mainOffer} onChange={(e) => setForm({ ...form, mainOffer: e.target.value })} className="input-dark w-full" />
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="kpi-label mb-1 block">Ángulos</label>
-              <input value={form.angles} onChange={(e) => setForm({ ...form, angles: e.target.value })} className="input-dark w-full" placeholder="precio, autoridad, transformación" />
-            </div>
-            <div>
-              <label className="kpi-label mb-1 block">Territorios</label>
-              <input value={form.territories} onChange={(e) => setForm({ ...form, territories: e.target.value })} className="input-dark w-full" placeholder="confianza, urgencia, estilo" />
-            </div>
-            <div>
-              <label className="kpi-label mb-1 block">Objeciones detectadas</label>
-              <input value={form.objectionsDetected} onChange={(e) => setForm({ ...form, objectionsDetected: e.target.value })} className="input-dark w-full" placeholder="precio, calidad, entrega" />
-            </div>
-          </div>
-          <div>
-            <label className="kpi-label mb-1 block">Notas</label>
-            <textarea
-              value={form.notas}
-              onChange={(e) => setForm({ ...form, notas: e.target.value })}
-              rows={2}
-              className="input-dark w-full"
-            />
-          </div>
-          <button type="submit" className="btn-primary">
-            {editId ? 'Actualizar' : 'Agregar'}
-          </button>
-        </form>
-      )}
-
-      {competitors.length === 0 ? (
-        <div className="text-center py-12 text-[13px] text-gray-600">
-          No hay competidores agregados aún. Hacé click en "+ Agregar competidor" para empezar.
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {competitors.map((c) => (
-            <div key={c._id} className="card p-4">
-              <div className="flex items-start justify-between">
-                <div className="min-w-0 flex-1">
-                  <h3 className="text-[14px] font-bold text-white">{c.nombre}</h3>
-                  {c.url && (
-                    <a href={c.url} target="_blank" rel="noopener noreferrer" className="text-[11px] text-blue-400 hover:text-blue-300 transition">{c.url}</a>
-                  )}
-                  <div className="mt-2 grid grid-cols-1 gap-1 text-[11px] text-app-secondary">
-                    {c.positioning && <p><strong className="text-app-primary">Posicionamiento:</strong> {c.positioning}</p>}
-                    {c.mainOffer && <p><strong className="text-app-primary">Oferta:</strong> {c.mainOffer}</p>}
-                    {c.avatar && <p><strong className="text-app-primary">Avatar:</strong> {c.avatar}</p>}
-                    {c.awarenessLevel && <p><strong className="text-app-primary">Consciencia:</strong> {c.awarenessLevel}</p>}
-                  </div>
-                  {(c.angles?.length || c.territories?.length || c.objectionsDetected?.length) > 0 && (
-                    <div className="mt-2 flex flex-wrap gap-1.5">
-                      {(c.angles || []).map((item) => <span key={`a-${item}`} className="chip text-[10px] py-0">{item}</span>)}
-                      {(c.territories || []).map((item) => <span key={`t-${item}`} className="chip text-[10px] py-0">{item}</span>)}
-                      {(c.objectionsDetected || []).map((item) => <span key={`o-${item}`} className="chip text-[10px] py-0">{item}</span>)}
-                    </div>
-                  )}
-                </div>
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => handleOpportunities(c)}
-                    disabled={opportunityState.loading && opportunityState.id === c._id}
-                    className="text-[11px] font-semibold text-emerald-400 hover:text-emerald-300 disabled:opacity-50 transition"
-                  >
-                    {opportunityState.loading && opportunityState.id === c._id ? 'Pensando...' : 'Oportunidades'}
-                  </button>
-                  <button
-                    onClick={() => handleAnalyze(c._id)}
-                    disabled={analyzing === c._id}
-                    className="text-[11px] font-semibold text-blue-400 hover:text-blue-300 disabled:opacity-50 transition"
-                  >
-                    {analyzing === c._id ? 'Analizando...' : 'Analizar AI'}
-                  </button>
-                  <button onClick={() => handleEdit(c)} className="text-[11px] text-gray-500 hover:text-gray-300 transition">Editar</button>
-                  <button onClick={() => handleDelete(c._id)} className="text-[11px] text-gray-500 hover:text-red-400 transition">Eliminar</button>
-                </div>
-              </div>
-              {c.notas && <p className="mt-2 text-[12px] text-gray-500 leading-relaxed">{c.notas}</p>}
-              {c.analysisResult && (
-                <div className="mt-3 p-3 bg-blue-500/[0.07] border border-blue-500/20 rounded-lg text-[12px] text-gray-400 leading-relaxed">
-                  <p className="text-[10px] font-bold text-blue-400 mb-1.5 uppercase tracking-wider">
-                    Análisis AI {c.lastAnalysis && `— ${new Date(c.lastAnalysis).toLocaleDateString('es-AR')}`}
-                  </p>
-                  <div
-                    className="markdown-body"
-                    dangerouslySetInnerHTML={{ __html: renderMarkdown(c.analysisResult) }}
-                  />
-                </div>
-              )}
-              {opportunityState.id === c._id && opportunityState.data?.opportunities?.length > 0 && (
-                <div className="mt-3 p-3 bg-emerald-500/[0.07] border border-emerald-500/20 rounded-lg">
-                  <p className="text-[10px] font-bold text-emerald-400 mb-2 uppercase tracking-wider">
-                    Oportunidades AI {opportunityState.data.confidence != null && `— ${(opportunityState.data.confidence * 100).toFixed(0)}%`}
-                  </p>
-                  <div className="space-y-2">
-                    {opportunityState.data.opportunities.map((item, index) => (
-                      <div key={`${item.title}-${index}`} className="text-[12px]">
-                        <p className="text-white font-medium">{item.title}</p>
-                        <p className="text-app-secondary mt-0.5">{item.gap}</p>
-                        <p className="text-app-primary mt-1">{item.action}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+      <div className="card p-0">
+        <div className="flex flex-wrap gap-2.5 items-center px-5 py-4">
+          {STATUS_FILTERS.map((f) => (
+            <button
+              key={f.id}
+              type="button"
+              onClick={() => onFilterChange(f.id)}
+              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium border transition
+                ${filterId === f.id
+                  ? 'bg-blue-500/15 border-blue-500/40 text-blue-200'
+                  : 'bg-white/[0.04] border-white/[0.08] text-gray-200 hover:border-white/20 hover:text-white'}`}
+            >
+              {f.label}
+              <span className={`rounded-full px-1.5 py-px text-[10px] font-bold
+                ${filterId === f.id ? 'bg-blue-500/25 text-blue-100' : 'bg-white/[0.08] text-gray-200'}`}>
+                {fmtNum(counts[f.id])}
+              </span>
+            </button>
           ))}
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => onSearchChange(e.target.value)}
+            placeholder="Buscar por nombre, URL u ángulo..."
+            className="ml-auto bg-white/[0.04] border border-white/[0.08] rounded-full px-3 py-1.5 text-[12px] text-white placeholder:text-gray-400 outline-none focus:border-blue-500/40 min-w-[200px] max-w-[280px] flex-1"
+          />
         </div>
-      )}
+      </div>
+    </div>
+  );
+}
+
+function CompetitorsGrid({
+  competitors,
+  compareIds,
+  analyzingId,
+  onToggleCompare,
+  onAnalyze,
+  onEdit,
+  onOpenDetail,
+  onAddCompetidor,
+  totalCount,
+}) {
+  if (totalCount === 0) {
+    return (
+      <div className="card py-14 px-6 text-center border-dashed border-white/[0.1]">
+        <p className="text-[18px] font-bold text-white">No hay competidores cargados</p>
+        <p className="text-[13px] text-gray-300 mt-2 max-w-[480px] mx-auto leading-relaxed">
+          Agregá un competidor con su URL y la IA va a extraer su oferta, ángulos, posicionamiento y oportunidades automáticamente.
+        </p>
+        <button
+          type="button"
+          onClick={onAddCompetidor}
+          className="mt-5 inline-flex items-center gap-2 rounded-full border border-emerald-500/40 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-200 px-5 py-2.5 text-[13px] font-semibold transition"
+        >
+          + Agregar primer competidor
+        </button>
+      </div>
+    );
+  }
+
+  if (competitors.length === 0) {
+    return (
+      <div className="card py-12 text-center">
+        <p className="text-[13px] text-gray-200">No hay competidores para este filtro o búsqueda.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      {competitors.map((c) => (
+        <CompetidorCard
+          key={c._id}
+          competitor={c}
+          selectedForCompare={compareIds.includes(c._id)}
+          onToggleCompare={onToggleCompare}
+          onAnalyze={onAnalyze}
+          onEdit={onEdit}
+          onOpenDetail={onOpenDetail}
+          analyzing={analyzingId === c._id}
+        />
+      ))}
     </div>
   );
 }

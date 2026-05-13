@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Boceto Competencia v1 — Hooks Analytics</title>
+<style>
+  :root {
+    --bg: #0a0a0b;
+    --card: rgba(255,255,255,0.025);
+    --card-border: rgba(255,255,255,0.08);
+    --text-primary: #ffffff;
+    --text-secondary: rgba(255,255,255,0.92);
+    --text-muted: rgba(255,255,255,0.75);
+    --emerald: #34d399;
+    --red: #f87171;
+    --amber: #fbbf24;
+    --blue: #60a5fa;
+    --purple: #c084fc;
+    --cyan: #67e8f9;
+    --pink: #f9a8d4;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, 'Inter', system-ui, sans-serif;
+    font-size: 13px;
+    padding: 24px 32px;
+    min-height: 100vh;
+  }
+  .container { max-width: 1640px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+  .card { background: var(--card); border: 1px solid var(--card-border); border-radius: 14px; padding: 22px 24px; }
+
+  /* TOP BAR */
+  .topbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  .topbar__left { display: flex; gap: 10px; align-items: center; }
+  .topbar__right { display: flex; gap: 10px; align-items: center; }
+  .topbar__btn {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: var(--text-secondary);
+    padding: 7px 14px; border-radius: 999px; font-size: 11.5px;
+    cursor: pointer; display: inline-flex; align-items: center; gap: 7px;
+  }
+  .topbar__btn:hover { color: #fff; border-color: rgba(255,255,255,0.18); }
+  .topbar__btn.is-primary { background: rgba(96,165,250,0.12); border-color: rgba(96,165,250,0.3); color: #bfdbfe; }
+  .topbar__btn.is-cta { background: rgba(52,211,153,0.15); border-color: rgba(52,211,153,0.4); color: #6ee7b7; font-weight: 600; }
+  .topbar__btn.is-cta:hover { background: rgba(52,211,153,0.25); }
+
+  /* KPIs */
+  .metrics-block { display: flex; flex-direction: column; gap: 12px; }
+  .metrics-block__head { display: flex; justify-content: space-between; align-items: baseline; padding: 0 4px; }
+  .metrics-block__title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-muted); }
+  .metrics-block__sub { font-size: 12.5px; color: var(--text-secondary); margin-top: 2px; }
+  .metrics-block__edit { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); color: var(--text-secondary); padding: 6px 12px; border-radius: 999px; font-size: 11.5px; cursor: pointer; }
+
+  .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .kpi { padding: 18px 20px; position: relative; }
+  .kpi__label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-muted); display: flex; align-items: center; gap: 5px; }
+  .kpi__value { font-size: 28px; font-weight: 700; color: #fff; margin-top: 6px; line-height: 1.1; }
+  .kpi__value.is-amber { color: var(--amber); }
+  .kpi__value.is-emerald { color: var(--emerald); }
+  .kpi__sub { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+  .info-icon {
+    width: 13px; height: 13px; border-radius: 999px;
+    background: rgba(255,255,255,0.08); color: var(--text-muted);
+    font-size: 9px; font-weight: 700;
+    display: inline-flex; align-items: center; justify-content: center;
+    cursor: help;
+  }
+
+  /* FILTERS */
+  .filters-bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 14px 20px; }
+  .chip {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: var(--text-secondary);
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: all 0.15s;
+  }
+  .chip:hover { border-color: rgba(255,255,255,0.18); color: #fff; }
+  .chip.is-active { background: rgba(96,165,250,0.15); border-color: rgba(96,165,250,0.4); color: #93c5fd; }
+  .chip__count { background: rgba(255,255,255,0.08); padding: 1px 7px; border-radius: 999px; font-size: 10px; font-weight: 700; }
+  .chip.is-active .chip__count { background: rgba(96,165,250,0.25); color: #bfdbfe; }
+  .search-input {
+    flex: 1; min-width: 200px; max-width: 280px; margin-left: auto;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: #fff; padding: 7px 13px; border-radius: 999px; font-size: 12px; outline: none;
+  }
+
+  /* COMPETITOR CARDS (grid 2-3 cols) */
+  .competitors-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+    gap: 16px;
+  }
+  .comp-card {
+    padding: 20px 22px;
+    transition: border-color 0.15s, background 0.15s;
+    cursor: pointer;
+  }
+  .comp-card:hover { border-color: rgba(255,255,255,0.18); background: rgba(255,255,255,0.04); }
+
+  .comp-card__head { display: flex; align-items: flex-start; gap: 14px; }
+  .comp-card__logo {
+    width: 48px; height: 48px; border-radius: 10px;
+    background: linear-gradient(135deg, rgba(96,165,250,0.2), rgba(96,165,250,0.05));
+    color: #93c5fd;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: 700;
+    flex-shrink: 0;
+    border: 1px solid rgba(96,165,250,0.15);
+  }
+  .comp-card__head-info { flex: 1; min-width: 0; }
+  .comp-card__name { font-size: 15px; font-weight: 700; color: #fff; line-height: 1.2; }
+  .comp-card__url {
+    color: #93c5fd; font-size: 11.5px; text-decoration: none;
+    display: inline-flex; align-items: center; gap: 4px; margin-top: 3px;
+    max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .comp-card__url:hover { text-decoration: underline; }
+
+  .comp-card__status { display: flex; align-items: flex-start; gap: 6px; flex-direction: column; }
+  .comp-card__badge {
+    display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 10px;
+    font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+    white-space: nowrap;
+  }
+  .badge-analyzed { background: rgba(52,211,153,0.15); color: #6ee7b7; }
+  .badge-pending { background: rgba(251,191,36,0.15); color: #fcd34d; }
+  .badge-no-url { background: rgba(255,255,255,0.06); color: var(--text-muted); }
+
+  .comp-card__offer {
+    margin-top: 14px;
+    padding: 10px 12px;
+    background: rgba(96,165,250,0.04);
+    border: 1px solid rgba(96,165,250,0.12);
+    border-radius: 8px;
+  }
+  .comp-card__offer-label {
+    font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+    color: #93c5fd;
+  }
+  .comp-card__offer-text {
+    font-size: 13px; color: #fff; margin-top: 3px; line-height: 1.35;
+  }
+
+  .comp-card__meta-grid {
+    margin-top: 12px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+  }
+  .comp-card__meta-label {
+    font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px;
+    color: var(--text-muted);
+  }
+  .comp-card__meta-value {
+    font-size: 12px; color: var(--text-secondary); margin-top: 2px;
+  }
+
+  .comp-card__tags { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 5px; }
+  .tag {
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+    color: var(--text-secondary); padding: 3px 8px; border-radius: 999px; font-size: 10.5px;
+  }
+  .tag.is-angle { background: rgba(192,132,252,0.10); border-color: rgba(192,132,252,0.18); color: #d8b4fe; }
+  .tag.is-territory { background: rgba(103,232,249,0.10); border-color: rgba(103,232,249,0.18); color: #67e8f9; }
+  .tag.is-objection { background: rgba(248,113,113,0.10); border-color: rgba(248,113,113,0.18); color: #fca5a5; }
+
+  .comp-card__opportunities {
+    margin-top: 12px; padding: 10px 12px;
+    background: rgba(52,211,153,0.04);
+    border: 1px solid rgba(52,211,153,0.15);
+    border-radius: 8px;
+  }
+  .comp-card__opp-label {
+    font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+    color: #6ee7b7;
+  }
+  .comp-card__opp-item {
+    font-size: 12px; color: var(--text-secondary); margin-top: 5px; line-height: 1.4;
+    display: flex; gap: 6px;
+  }
+  .comp-card__opp-item::before { content: '→'; color: #6ee7b7; font-weight: 700; }
+  .comp-card__opp-more { font-size: 11px; color: #6ee7b7; margin-top: 6px; }
+
+  .comp-card__footer {
+    margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.04);
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  }
+  .comp-card__time {
+    font-size: 10.5px; color: var(--text-muted); display: inline-flex; align-items: center; gap: 5px;
+  }
+  .comp-card__actions { display: flex; gap: 4px; }
+  .comp-card__action-btn {
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+    color: var(--text-secondary); padding: 4px 10px; border-radius: 6px;
+    font-size: 11px; cursor: pointer; transition: all 0.1s;
+  }
+  .comp-card__action-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
+  .comp-card__action-btn.is-primary { background: rgba(96,165,250,0.12); border-color: rgba(96,165,250,0.3); color: #bfdbfe; }
+  .comp-card__action-btn.is-primary:hover { background: rgba(96,165,250,0.2); }
+
+  /* EMPTY STATE */
+  .empty-state {
+    text-align: center; padding: 60px 24px;
+    border: 1px dashed rgba(255,255,255,0.1); border-radius: 14px;
+  }
+  .empty-state__title { font-size: 18px; font-weight: 700; color: #fff; }
+  .empty-state__sub { font-size: 13px; color: var(--text-muted); margin-top: 8px; max-width: 480px; margin-left: auto; margin-right: auto; }
+  .empty-state__btn {
+    margin-top: 20px;
+    background: rgba(96,165,250,0.15); border: 1px solid rgba(96,165,250,0.35); color: #bfdbfe;
+    padding: 10px 20px; border-radius: 999px; font-size: 13px; font-weight: 600; cursor: pointer;
+  }
+
+  /* ACTION CARDS */
+  .actions-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .action-card { padding: 20px 22px; }
+  .action-card__head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; }
+  .action-card__title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.3px; color: var(--text-muted); }
+  .action-card__sub { font-size: 12px; color: var(--text-secondary); margin-top: 2px; line-height: 1.35; }
+  .action-card__total { font-size: 22px; font-weight: 700; }
+  .action-card__count { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .action-card__row {
+    display: flex; align-items: center; gap: 12px; padding: 10px 8px;
+    border-bottom: 1px solid rgba(255,255,255,0.03); cursor: pointer;
+    border-radius: 6px; margin: 0 -8px;
+  }
+  .action-card__row:last-child { border-bottom: 0; }
+  .action-card__row:hover { background: rgba(255,255,255,0.02); }
+  .action-card__row .logo {
+    width: 36px; height: 36px; border-radius: 8px;
+    background: linear-gradient(135deg, rgba(96,165,250,0.15), rgba(96,165,250,0.05));
+    color: #93c5fd; display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700; flex-shrink: 0;
+    border: 1px solid rgba(96,165,250,0.12);
+  }
+  .action-card__row .info { flex: 1; min-width: 0; }
+  .action-card__row .info .name { font-size: 12.5px; font-weight: 500; color: #fff; display: block; max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .action-card__row .info .meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .action-card__row .action {
+    font-size: 11.5px; font-weight: 700; padding: 4px 10px; border-radius: 999px;
+    background: rgba(96,165,250,0.15); color: #93c5fd; border: 1px solid rgba(96,165,250,0.3);
+    flex-shrink: 0;
+  }
+  .opportunity-text { font-size: 12.5px; color: #fff; line-height: 1.4; }
+  .opportunity-source { font-size: 11px; color: #6ee7b7; margin-top: 3px; }
+
+  .comp-card.is-no-url .comp-card__head { opacity: 0.7; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="topbar__left">
+      <button class="topbar__btn is-primary">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 17v-5M12 8h.01"/></svg>
+        Glosario
+      </button>
+      <button class="topbar__btn">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19l-7-7 7-7M22 12H4"/></svg>
+        Comparar (0)
+      </button>
+    </div>
+    <div class="topbar__right">
+      <button class="topbar__btn">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+        Reordenar
+      </button>
+      <button class="topbar__btn is-cta">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+        Agregar competidor
+      </button>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="metrics-block">
+    <div class="metrics-block__head">
+      <div>
+        <p class="metrics-block__title">Indicadores</p>
+        <p class="metrics-block__sub">Análisis de 6 competidores cargados — tocá cualquier ícono ⓘ para ver la definición</p>
+      </div>
+      <button class="metrics-block__edit">Editar métricas</button>
+    </div>
+    <div class="kpi-grid">
+      <div class="card kpi">
+        <p class="kpi__label">Competidores cargados <span class="info-icon" title="Total de competidores registrados">ⓘ</span></p>
+        <p class="kpi__value">6</p>
+        <p class="kpi__sub">5 con URL · 1 sin URL</p>
+      </div>
+      <div class="card kpi">
+        <p class="kpi__label">Analizados con AI <span class="info-icon" title="Competidores que tienen análisis automático generado">ⓘ</span></p>
+        <p class="kpi__value is-emerald">4</p>
+        <p class="kpi__sub">67% · 2 sin analizar</p>
+      </div>
+      <div class="card kpi">
+        <p class="kpi__label">Oportunidades pendientes <span class="info-icon" title="Acciones sugeridas por el análisis AI que aún no implementaste">ⓘ</span></p>
+        <p class="kpi__value is-amber">12</p>
+        <p class="kpi__sub">Distribuidas en 4 competidores</p>
+      </div>
+      <div class="card kpi">
+        <p class="kpi__label">Último análisis <span class="info-icon" title="Días desde el análisis más reciente — refrescá si pasó más de 30 días">ⓘ</span></p>
+        <p class="kpi__value">3d</p>
+        <p class="kpi__sub">Solo Deportes · 10/05/2026</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- FILTERS -->
+  <div class="card" style="padding: 0;">
+    <div class="filters-bar">
+      <button class="chip is-active">Todos <span class="chip__count">6</span></button>
+      <button class="chip"><span style="width:7px;height:7px;border-radius:999px;background:var(--emerald);"></span>Analizados <span class="chip__count">4</span></button>
+      <button class="chip"><span style="width:7px;height:7px;border-radius:999px;background:var(--amber);"></span>Pendientes <span class="chip__count">2</span></button>
+      <button class="chip"><span style="width:7px;height:7px;border-radius:999px;background:#fff;opacity:0.4;"></span>Sin URL <span class="chip__count">1</span></button>
+      <button class="chip">Con oportunidades <span class="chip__count">4</span></button>
+      <input class="search-input" type="text" placeholder="Buscar por nombre, URL o ángulo...">
+    </div>
+  </div>
+
+  <!-- COMPETITORS GRID -->
+  <div class="competitors-grid">
+
+    <!-- 1. Stock Center -->
+    <div class="card comp-card">
+      <div class="comp-card__head">
+        <div class="comp-card__logo">SC</div>
+        <div class="comp-card__head-info">
+          <p class="comp-card__name">Stock Center</p>
+          <a href="#" class="comp-card__url">stockcenter.com.ar
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
+          </a>
+        </div>
+        <div class="comp-card__status">
+          <span class="comp-card__badge badge-analyzed">Analizado</span>
+        </div>
+      </div>
+
+      <div class="comp-card__offer">
+        <p class="comp-card__offer-label">Oferta principal</p>
+        <p class="comp-card__offer-text">3 cuotas sin interés + envío gratis desde $80k. Marketplace de marcas premium.</p>
+      </div>
+
+      <div class="comp-card__meta-grid">
+        <div>
+          <p class="comp-card__meta-label">Avatar</p>
+          <p class="comp-card__meta-value">Consumidor de marca, 25-45</p>
+        </div>
+        <div>
+          <p class="comp-card__meta-label">Awareness</p>
+          <p class="comp-card__meta-value">Product-aware</p>
+        </div>
+      </div>
+
+      <div class="comp-card__tags">
+        <span class="tag is-angle">precio sin interés</span>
+        <span class="tag is-angle">marcas premium</span>
+        <span class="tag is-territory">confianza</span>
+        <span class="tag is-objection">stock real</span>
+      </div>
+
+      <div class="comp-card__opportunities">
+        <p class="comp-card__opp-label">3 oportunidades detectadas</p>
+        <p class="comp-card__opp-item">Cuotas sin interés más visibles en PDP</p>
+        <p class="comp-card__opp-item">Programa de fidelidad similar al de ellos</p>
+        <p class="comp-card__opp-more">+1 más · ver detalle</p>
+      </div>
+
+      <div class="comp-card__footer">
+        <span class="comp-card__time">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+          Analizado hace 3 días
+        </span>
+        <div class="comp-card__actions">
+          <button class="comp-card__action-btn">Comparar</button>
+          <button class="comp-card__action-btn is-primary">Ver detalle</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Dexter -->
+    <div class="card comp-card">
+      <div class="comp-card__head">
+        <div class="comp-card__logo" style="background: linear-gradient(135deg, rgba(248,113,113,0.2), rgba(248,113,113,0.05)); color: #fca5a5; border-color: rgba(248,113,113,0.15);">D</div>
+        <div class="comp-card__head-info">
+          <p class="comp-card__name">Dexter</p>
+          <a href="#" class="comp-card__url">dexter.com.ar
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
+          </a>
+        </div>
+        <div class="comp-card__status">
+          <span class="comp-card__badge badge-analyzed">Analizado</span>
+        </div>
+      </div>
+
+      <div class="comp-card__offer">
+        <p class="comp-card__offer-label">Oferta principal</p>
+        <p class="comp-card__offer-text">"Para los que viven el deporte". 6 cuotas sin interés con tarjetas Banco Galicia + Outlet permanente.</p>
+      </div>
+
+      <div class="comp-card__meta-grid">
+        <div>
+          <p class="comp-card__meta-label">Avatar</p>
+          <p class="comp-card__meta-value">Deportista amateur 18-35</p>
+        </div>
+        <div>
+          <p class="comp-card__meta-label">Awareness</p>
+          <p class="comp-card__meta-value">Solution-aware</p>
+        </div>
+      </div>
+
+      <div class="comp-card__tags">
+        <span class="tag is-angle">cuotas largas</span>
+        <span class="tag is-angle">outlet</span>
+        <span class="tag is-territory">pasión deportiva</span>
+        <span class="tag is-objection">precio</span>
+      </div>
+
+      <div class="comp-card__opportunities">
+        <p class="comp-card__opp-label">4 oportunidades detectadas</p>
+        <p class="comp-card__opp-item">Crear sección "Outlet" permanente</p>
+        <p class="comp-card__opp-item">Storytelling deportivo en home</p>
+        <p class="comp-card__opp-more">+2 más · ver detalle</p>
+      </div>
+
+      <div class="comp-card__footer">
+        <span class="comp-card__time">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+          Analizado hace 7 días
+        </span>
+        <div class="comp-card__actions">
+          <button class="comp-card__action-btn">Comparar</button>
+          <button class="comp-card__action-btn is-primary">Ver detalle</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Solo Deportes -->
+    <div class="card comp-card">
+      <div class="comp-card__head">
+        <div class="comp-card__logo" style="background: linear-gradient(135deg, rgba(251,191,36,0.2), rgba(251,191,36,0.05)); color: #fcd34d; border-color: rgba(251,191,36,0.15);">SD</div>
+        <div class="comp-card__head-info">
+          <p class="comp-card__name">Solo Deportes</p>
+          <a href="#" class="comp-card__url">solodeportes.com.ar
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
+          </a>
+        </div>
+        <div class="comp-card__status">
+          <span class="comp-card__badge badge-analyzed">Analizado</span>
+        </div>
+      </div>
+
+      <div class="comp-card__offer">
+        <p class="comp-card__offer-label">Oferta principal</p>
+        <p class="comp-card__offer-text">Especialistas en running, fútbol y básquet. Asesoramiento técnico + envío 24-48h Buenos Aires.</p>
+      </div>
+
+      <div class="comp-card__meta-grid">
+        <div>
+          <p class="comp-card__meta-label">Avatar</p>
+          <p class="comp-card__meta-value">Deportista de nicho (running, fútbol)</p>
+        </div>
+        <div>
+          <p class="comp-card__meta-label">Awareness</p>
+          <p class="comp-card__meta-value">Most-aware</p>
+        </div>
+      </div>
+
+      <div class="comp-card__tags">
+        <span class="tag is-angle">especialización</span>
+        <span class="tag is-angle">envío rápido</span>
+        <span class="tag is-territory">expertise</span>
+        <span class="tag is-territory">tiempo</span>
+        <span class="tag is-objection">talles</span>
+      </div>
+
+      <div class="comp-card__opportunities">
+        <p class="comp-card__opp-label">3 oportunidades detectadas</p>
+        <p class="comp-card__opp-item">Asesor virtual por categoría de deporte</p>
+        <p class="comp-card__opp-item">Garantía de talle (cambio gratis)</p>
+        <p class="comp-card__opp-more">+1 más · ver detalle</p>
+      </div>
+
+      <div class="comp-card__footer">
+        <span class="comp-card__time">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+          Analizado hoy
+        </span>
+        <div class="comp-card__actions">
+          <button class="comp-card__action-btn">Comparar</button>
+          <button class="comp-card__action-btn is-primary">Ver detalle</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Open Sports -->
+    <div class="card comp-card">
+      <div class="comp-card__head">
+        <div class="comp-card__logo" style="background: linear-gradient(135deg, rgba(52,211,153,0.2), rgba(52,211,153,0.05)); color: #6ee7b7; border-color: rgba(52,211,153,0.15);">OS</div>
+        <div class="comp-card__head-info">
+          <p class="comp-card__name">Open Sports</p>
+          <a href="#" class="comp-card__url">opensports.com.ar
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
+          </a>
+        </div>
+        <div class="comp-card__status">
+          <span class="comp-card__badge badge-analyzed">Analizado</span>
+        </div>
+      </div>
+
+      <div class="comp-card__offer">
+        <p class="comp-card__offer-label">Oferta principal</p>
+        <p class="comp-card__offer-text">Cadena retail con e-commerce. 12 cuotas con Mercado Pago + retiro en sucursales en todo el país.</p>
+      </div>
+
+      <div class="comp-card__meta-grid">
+        <div>
+          <p class="comp-card__meta-label">Avatar</p>
+          <p class="comp-card__meta-value">Familia argentina amplia</p>
+        </div>
+        <div>
+          <p class="comp-card__meta-label">Awareness</p>
+          <p class="comp-card__meta-value">Solution-aware</p>
+        </div>
+      </div>
+
+      <div class="comp-card__tags">
+        <span class="tag is-angle">12 cuotas</span>
+        <span class="tag is-angle">retiro sucursal</span>
+        <span class="tag is-territory">accesibilidad</span>
+        <span class="tag is-territory">cobertura nacional</span>
+      </div>
+
+      <div class="comp-card__opportunities">
+        <p class="comp-card__opp-label">2 oportunidades detectadas</p>
+        <p class="comp-card__opp-item">Sumar Mercado Pago con cuotas más largas</p>
+        <p class="comp-card__opp-item">Mapa de puntos de retiro</p>
+      </div>
+
+      <div class="comp-card__footer">
+        <span class="comp-card__time">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+          Analizado hace 12 días
+        </span>
+        <div class="comp-card__actions">
+          <button class="comp-card__action-btn">Comparar</button>
+          <button class="comp-card__action-btn is-primary">Ver detalle</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. Dribbling — sin analizar -->
+    <div class="card comp-card">
+      <div class="comp-card__head">
+        <div class="comp-card__logo" style="background: linear-gradient(135deg, rgba(192,132,252,0.2), rgba(192,132,252,0.05)); color: #d8b4fe; border-color: rgba(192,132,252,0.15);">DR</div>
+        <div class="comp-card__head-info">
+          <p class="comp-card__name">Dribbling</p>
+          <a href="#" class="comp-card__url">dribbling.com.ar
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
+          </a>
+        </div>
+        <div class="comp-card__status">
+          <span class="comp-card__badge badge-pending">Sin análisis</span>
+        </div>
+      </div>
+
+      <div class="comp-card__offer" style="background: rgba(255,255,255,0.02); border-color: rgba(255,255,255,0.06);">
+        <p class="comp-card__offer-label" style="color: var(--text-muted);">Oferta principal</p>
+        <p class="comp-card__offer-text" style="color: var(--text-muted); font-style: italic;">Sin información — ejecutá "Analizar con AI" para extraer datos del sitio.</p>
+      </div>
+
+      <div class="comp-card__footer" style="margin-top: 14px;">
+        <span class="comp-card__time">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 6v6l4 2"/></svg>
+          Agregado hace 2 días
+        </span>
+        <div class="comp-card__actions">
+          <button class="comp-card__action-btn" style="background: rgba(52,211,153,0.15); border-color: rgba(52,211,153,0.3); color: #6ee7b7;">Analizar con AI</button>
+          <button class="comp-card__action-btn is-primary">Ver detalle</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6. Sporting — sin URL -->
+    <div class="card comp-card is-no-url">
+      <div class="comp-card__head">
+        <div class="comp-card__logo" style="background: rgba(255,255,255,0.04); color: var(--text-muted); border-color: rgba(255,255,255,0.06);">SP</div>
+        <div class="comp-card__head-info">
+          <p class="comp-card__name">Sporting</p>
+          <p style="color: var(--text-muted); font-size: 11.5px; font-style: italic; margin-top: 3px;">Sin URL cargada</p>
+        </div>
+        <div class="comp-card__status">
+          <span class="comp-card__badge badge-no-url">Incompleto</span>
+        </div>
+      </div>
+
+      <div style="margin-top: 14px; padding: 12px; background: rgba(251,191,36,0.04); border: 1px solid rgba(251,191,36,0.15); border-radius: 8px;">
+        <p style="font-size: 12px; color: #fcd34d; line-height: 1.4;">
+          ⚠ Agregá la URL para que podamos analizarlo automáticamente y detectar su oferta, ángulos y oportunidades.
+        </p>
+      </div>
+
+      <div class="comp-card__footer" style="margin-top: 14px;">
+        <span class="comp-card__time">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+          Agregado hace 9 días
+        </span>
+        <div class="comp-card__actions">
+          <button class="comp-card__action-btn is-primary">Editar</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ACTION CARDS -->
+  <div class="actions-grid">
+    <div class="card action-card">
+      <div class="action-card__head">
+        <div>
+          <p class="action-card__title">Sin análisis</p>
+          <p class="action-card__sub">Competidores cargados que aún no analizaste con AI</p>
+        </div>
+        <div style="text-align:right;">
+          <p class="action-card__total" style="color: var(--amber);">2</p>
+          <p class="action-card__count">pendientes</p>
+        </div>
+      </div>
+      <div>
+        <div class="action-card__row">
+          <span class="logo" style="background: linear-gradient(135deg, rgba(192,132,252,0.15), rgba(192,132,252,0.05)); color: #d8b4fe;">DR</span>
+          <div class="info">
+            <span class="name">Dribbling</span>
+            <span class="meta">Agregado hace 2 días · dribbling.com.ar</span>
+          </div>
+          <span class="action">Analizar</span>
+        </div>
+        <div class="action-card__row">
+          <span class="logo" style="background: rgba(255,255,255,0.04); color: var(--text-muted);">SP</span>
+          <div class="info">
+            <span class="name">Sporting</span>
+            <span class="meta">Agregado hace 9 días · falta URL</span>
+          </div>
+          <span class="action">Editar</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card action-card">
+      <div class="action-card__head">
+        <div>
+          <p class="action-card__title">Oportunidades hot</p>
+          <p class="action-card__sub">Acciones de mayor impacto detectadas por AI a partir del análisis competitivo</p>
+        </div>
+        <div style="text-align:right;">
+          <p class="action-card__total" style="color: var(--emerald);">12</p>
+          <p class="action-card__count">en backlog</p>
+        </div>
+      </div>
+      <div>
+        <div class="action-card__row">
+          <span class="logo" style="background: linear-gradient(135deg, rgba(248,113,113,0.15), rgba(248,113,113,0.05)); color: #fca5a5;">D</span>
+          <div class="info">
+            <span class="opportunity-text">Crear sección "Outlet" permanente</span>
+            <span class="opportunity-source">de Dexter · 4 oportunidades</span>
+          </div>
+          <span class="action">Plan</span>
+        </div>
+        <div class="action-card__row">
+          <span class="logo">SC</span>
+          <div class="info">
+            <span class="opportunity-text">Cuotas sin interés más visibles en PDP</span>
+            <span class="opportunity-source">de Stock Center · 3 oportunidades</span>
+          </div>
+          <span class="action">Plan</span>
+        </div>
+        <div class="action-card__row">
+          <span class="logo" style="background: linear-gradient(135deg, rgba(251,191,36,0.15), rgba(251,191,36,0.05)); color: #fcd34d;">SD</span>
+          <div class="info">
+            <span class="opportunity-text">Asesor virtual por categoría de deporte</span>
+            <span class="opportunity-source">de Solo Deportes · 3 oportunidades</span>
+          </div>
+          <span class="action">Plan</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

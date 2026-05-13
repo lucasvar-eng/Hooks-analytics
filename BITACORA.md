@@ -5,6 +5,57 @@ La bitácora se ordena de **arriba hacia abajo** por orden cronológico inverso 
 
 ---
 
+## 2026-05-13 — Competencia (rediseño operativo)
+
+**Branch**: `codex/universal-dashboard-builder` (continúa)
+**Tienda usada para validar**: Límite Deportes (`69cadede3936709190d773b8`)
+
+### Trabajo hecho
+
+Aplicar el patrón Productos/Clientes/Resumen a Competencia. La página de 326 líneas pasó a 360 orquestando 7 componentes nuevos en `components/competencia/`. Reemplaza forms gigantes + grid de cards chicas por un layout enfocado en lectura rápida + acciones.
+
+**Decisión de diseño**: simplificar drásticamente. Vino con feedback explícito de Lucas — "está confuso con tantos colores chips y contenedores, hacelo más grande y simple". Pasamos de 4 cards por fila con chips coloridos por categoría a 2 cards grandes con paleta unificada (solo verde/amber/gris funcionales).
+
+**Estructura nueva** (todo dentro de SortableLayout `hooks-competencia-layout-${storeId}`):
+
+1. `CompetenciaMetricsRow` — 4 de 8 métricas configurables. Defaults: Competidores cargados · Analizados con AI · Oportunidades pendientes · Último análisis. Tones automáticos (warn si < 50% analizados).
+2. `FiltersBar` (inline en page) — chips por estado (Todos · Analizados · Pendientes · Sin URL · Con oportunidades) + búsqueda por nombre/URL/ángulo/oferta + botones "Comparar (N)" y "+ Agregar competidor".
+3. `CompetidorCard` × N — grid de 2 columnas. Card grande con: header (avatar + nombre + URL + badge status), oferta principal destacada, 3 columnas con avatar/awareness/posicionamiento, lista bullets de ángulos+territorios+objeciones, top 3 oportunidades con borde lateral verde, footer con tiempo + acciones (Comparar/Ver detalle/Analizar/Editar según estado).
+4. `ActionCardsCompetencia` — 2 cards: **Sin análisis** (top 5 pendientes con CTA Analizar/Editar) + **Oportunidades hot** (top 6 extraídas del markdown de todos los análisis).
+
+**Modales nuevos**:
+
+- `AddCompetidorModal` — form simplificado: nombre + URL + notas obligatorios. Sección "Campos avanzados" colapsable con posicionamiento, awareness, avatar, oferta, ángulos/territorios/objeciones manuales. Filosofía: AI completa cuando se ejecuta "Analizar", el form pesado es opt-in.
+- `CompetidorDetailModal` — vista expandida: datos cargados en cards (avatar/awareness/posicionamiento/oferta), tags de ángulos/territorios/objeciones (objeciones en amber), análisis AI markdown completo, sección "Oportunidades focalizadas" con botón para generar via endpoint `/opportunities`. Footer con Eliminar / Re-analizar / Editar.
+- `CompetidorCompareModal` — tabla de comparación lado a lado (2-3 competidores) con filas: URL, Oferta principal, Posicionamiento, Avatar, Awareness target, Ángulos, Territorios, Objeciones. Permite quitar de comparación o saltar al detalle.
+- `GlossaryModalCompetencia` — explica flujo de análisis (4 pasos), campos del competidor (URL, posicionamiento, oferta, avatar, awareness con sus 5 niveles Schwartz), framework copy (ángulos vs territorios vs objeciones) y outputs de la IA.
+
+**Empty state nuevo**: cuando no hay competidores cargados, card centrada "No hay competidores cargados" con CTA "+ Agregar primer competidor" en verde grande.
+
+**Backend sin cambios**: los 6 endpoints existentes (`list`, `create`, `update`, `delete`, `analyze`, `opportunities`) + el `/overview` ya cubrían todo lo necesario. Sin migraciones.
+
+**Validación en runtime** (Límite, seeds temporales):
+- Empty state: render correcto, CTA funciona, abre modal "Agregar".
+- Modal de agregar: form básico se ve limpio, "Campos avanzados" colapsable funciona.
+- Con seeds (Stock Center analyzed + Dribbling pending + Sporting sin URL): los 3 estados renderean correctamente con badges y CTAs apropiados (Analizar / Editar / Comparar / Ver detalle).
+- Modal de detalle: markdown de análisis AI se renderiza con headings, bullets y código. Footer con acciones funciona.
+- Filtros chip con conteos: 5 chips dinámicos según estado.
+- Build frontend: clean.
+- Seeds eliminados al cerrar — la página queda en empty state listo para que el equipo cargue competidores reales.
+
+**Bocetos**: `docs/bocetos/competencia-v1.html` (estructura inicial) + `competencia-v2.html` (simplificación post-feedback de Lucas).
+
+### Pendientes (actualiza backlog)
+
+- [x] **Competencia** — rediseño listo.
+- [ ] **TopicMap + LanguageBank**: mover de la sidebar a tabs/cards dentro de Creativos y Meta. Decisión tomada con Lucas — la captura manual de fragmentos abstractos no funciona como pestaña standalone (0 entries globales en 30+ tiendas), vive mejor donde se usan.
+- [ ] **Scraping automático URL competidor**: pegás dominio → fetch HTML + AI extrae headlines/oferta sin que el usuario complete el form. Hoy el flujo es manual + "Analizar con AI" usa el endpoint existente que toma los datos cargados.
+- [ ] **Snapshot temporal de competidores**: cada análisis guarda versión histórica + diff entre snapshots para detectar cambios ("Atléticos cambió su oferta el 02/05").
+- [ ] **Alerts en Resumen** cuando un competidor analizado cambia su oferta o lanza algo nuevo.
+- [ ] **Endpoint detalle cliente** (`/customers/:id/orders`) — pendiente desde el rediseño de Clientes para enriquecer el modal de perfil con histórico de compras concreto.
+
+---
+
 ## 2026-05-13 — Clientes (rediseño operativo)
 
 **Branch**: `codex/universal-dashboard-builder` (continúa)

@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const CashflowEntry = require('../models/CashflowEntry');
 const { getFixedCostsForRange } = require('./fixedCostService');
 const logger = require('../utils/logger');
+const { BUSINESS_TZ, buildBusinessSourceDateMatch } = require('../utils/businessDate');
 
 /**
  * Days until payment credit by gateway.
@@ -122,13 +123,7 @@ async function getCashflowForecast(storeId, weeks = 4) {
 async function getCashflowSummary(storeId, from, to) {
   const match = { storeId: new mongoose.Types.ObjectId(storeId) };
   if (from || to) {
-    match.fechaPago = {};
-    if (from) match.fechaPago.$gte = new Date(from);
-    if (to) {
-      const toDate = new Date(to);
-      toDate.setHours(23, 59, 59, 999);
-      match.fechaPago.$lte = toDate;
-    }
+    match.fechaPago = buildBusinessSourceDateMatch(from, to);
   }
 
   const [summary] = await CashflowEntry.aggregate([
@@ -182,13 +177,7 @@ async function getCashflowSummary(storeId, from, to) {
 async function getCashflowDaily(storeId, from, to) {
   const match = { storeId: new mongoose.Types.ObjectId(storeId) };
   if (from || to) {
-    match.fechaPago = {};
-    if (from) match.fechaPago.$gte = new Date(from);
-    if (to) {
-      const toDate = new Date(to);
-      toDate.setHours(23, 59, 59, 999);
-      match.fechaPago.$lte = toDate;
-    }
+    match.fechaPago = buildBusinessSourceDateMatch(from, to);
   }
 
   return CashflowEntry.aggregate([
@@ -196,7 +185,7 @@ async function getCashflowDaily(storeId, from, to) {
     {
       $group: {
         _id: {
-          $dateToString: { format: '%Y-%m-%d', date: '$fechaPago' },
+          $dateToString: { format: '%Y-%m-%d', date: '$fechaPago', timezone: BUSINESS_TZ },
         },
         liquidable: { $sum: '$liquidable' },
         comisiones: { $sum: '$comision' },

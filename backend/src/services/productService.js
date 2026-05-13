@@ -1,25 +1,18 @@
 const mongoose = require('mongoose');
 const Product = require('../models/Product');
 const Order = require('../models/Order');
+const { buildBusinessSourceDateMatch, toBusinessDateLabel } = require('../utils/businessDate');
 
 const POSITIVE_PAYMENT_STATUSES = ['paid'];
 
 function buildPositiveOrderMatch(storeId, from, to) {
-  const dateMatch = {};
-  if (from) dateMatch.$gte = new Date(from);
-  if (to) {
-    const toDate = new Date(to);
-    toDate.setHours(23, 59, 59, 999);
-    dateMatch.$lte = toDate;
-  }
-
   const match = {
     storeId: new mongoose.Types.ObjectId(storeId),
     estado: { $nin: ['cancelled'] },
     paymentStatus: { $in: POSITIVE_PAYMENT_STATUSES },
   };
 
-  if (from || to) match.fechaCreacion = dateMatch;
+  if (from || to) match.fechaCreacion = buildBusinessSourceDateMatch(from, to);
   return match;
 }
 
@@ -73,8 +66,9 @@ function buildSalesMapFromOrders(orders) {
 
 async function refreshProductDerivedMetrics(storeId) {
   const storeObjectId = new mongoose.Types.ObjectId(storeId);
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  const todayLabel = toBusinessDateLabel(new Date());
+  const approxThirtyDaysAgoLabel = toBusinessDateLabel(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000));
+  const thirtyDaysAgo = buildBusinessSourceDateMatch(approxThirtyDaysAgoLabel, todayLabel).$gte;
 
   const [sales30d, lastSales] = await Promise.all([
     Order.aggregate([

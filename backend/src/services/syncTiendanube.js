@@ -9,6 +9,7 @@ const { generateCashflowEntries } = require('./cashflow');
 const { rebuildCustomersFromOrders, calculateRFM } = require('./customerService');
 const { refreshProductDerivedMetrics } = require('./productService');
 const logger = require('../utils/logger');
+const { toBusinessDateLabel } = require('../utils/businessDate');
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -105,9 +106,7 @@ async function syncOrders(store) {
         }
 
         // Track dates for DailyMetric recalculation
-        const dateStr = new Date(tnOrder.created_at)
-          .toISOString()
-          .split('T')[0];
+        const dateStr = toBusinessDateLabel(tnOrder.created_at);
         affectedDates.add(dateStr);
       }
 
@@ -125,7 +124,7 @@ async function syncOrders(store) {
 
     // Recalculate DailyMetrics for affected dates
     for (const dateStr of affectedDates) {
-      await recalculateDailyMetric(store._id, new Date(dateStr));
+      await recalculateDailyMetric(store._id, dateStr);
     }
 
     await rebuildCustomersFromOrders(store._id);

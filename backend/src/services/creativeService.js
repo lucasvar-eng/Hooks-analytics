@@ -6,6 +6,7 @@ const TopicMap = require('../models/TopicMap');
 const LanguageBank = require('../models/LanguageBank');
 const Competitor = require('../models/Competitor');
 const metaAPI = require('./metaAPI');
+const { buildBusinessDateKeyMatch } = require('../utils/businessDate');
 
 function getConfiguredMetaAccounts(store) {
   const configured = Array.isArray(store?.metaAdAccounts) ? store.metaAdAccounts.filter((item) => item?.id) : [];
@@ -120,13 +121,7 @@ async function fetchLiveCampaignMetadata(store) {
  * Auto-classify ads into ABCDE tiers based on ROAS and CPA vs averages.
  */
 async function autoClassifyAds(storeId, from, to) {
-  const dateMatch = {};
-  if (from) dateMatch.$gte = new Date(from);
-  if (to) {
-    const toDate = new Date(to);
-    toDate.setHours(23, 59, 59, 999);
-    dateMatch.$lte = toDate;
-  }
+  const dateMatch = from || to ? buildBusinessDateKeyMatch(from, to, true) : null;
 
   // Get ad-level metrics
   const match = {
@@ -148,7 +143,7 @@ async function autoClassifyAds(storeId, from, to) {
       metaId: { $in: ads.map((a) => a.metaId) },
       granularity: 'ad',
     };
-    if (from || to) insightMatch.date = dateMatch;
+    if (dateMatch) insightMatch.date = dateMatch;
 
     const insightsAgg = await MetaDailyInsight.aggregate([
       { $match: insightMatch },
@@ -220,13 +215,7 @@ async function autoClassifyAds(storeId, from, to) {
  * Get campaign-level results table.
  */
 async function getCampaignResults(storeId, from, to) {
-  const dateMatch = {};
-  if (from) dateMatch.$gte = new Date(from);
-  if (to) {
-    const toDate = new Date(to);
-    toDate.setHours(23, 59, 59, 999);
-    dateMatch.$lte = toDate;
-  }
+  const dateMatch = from || to ? buildBusinessDateKeyMatch(from, to, true) : null;
 
   // Get campaign-level insights
   const campaigns = await MetaCampaign.find({
@@ -245,7 +234,7 @@ async function getCampaignResults(storeId, from, to) {
       storeId: new mongoose.Types.ObjectId(storeId),
       granularity: 'campaign',
     };
-    if (from || to) insightMatch.date = dateMatch;
+    if (dateMatch) insightMatch.date = dateMatch;
 
     const insightsAgg = await MetaDailyInsight.aggregate([
       {

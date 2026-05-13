@@ -244,7 +244,7 @@ async function importMetaCSV(rows, storeId, fileName, createdBy) {
 
   // Recalculate DailyMetrics for affected dates
   for (const dateStr of affectedDates) {
-    await recalculateDailyMetric(storeId, new Date(dateStr));
+    await recalculateDailyMetric(storeId, dateStr);
   }
 
   // Determine date range

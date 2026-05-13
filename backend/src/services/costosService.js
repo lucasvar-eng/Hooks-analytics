@@ -4,6 +4,7 @@ const DailyMetric = require('../models/DailyMetric');
 const ProductCost = require('../models/ProductCost');
 const mongoose = require('mongoose');
 const { getFixedCostsForRange } = require('./fixedCostService');
+const { buildBusinessDateKeyMatch, buildBusinessSourceDateMatch } = require('../utils/businessDate');
 
 const POSITIVE_PAYMENT_STATUSES = ['paid'];
 
@@ -115,18 +116,8 @@ async function getPnL(storeId, from, to) {
   const dailyMatch = { storeId: storeObjectId };
 
   if (from || to) {
-    orderMatch.fechaCreacion = {};
-    dailyMatch.date = {};
-    if (from) {
-      orderMatch.fechaCreacion.$gte = new Date(from);
-      dailyMatch.date.$gte = new Date(from);
-    }
-    if (to) {
-      const toDate = new Date(to);
-      toDate.setUTCHours(23, 59, 59, 999);
-      orderMatch.fechaCreacion.$lte = toDate;
-      dailyMatch.date.$lte = toDate;
-    }
+    orderMatch.fechaCreacion = buildBusinessSourceDateMatch(from, to);
+    dailyMatch.date = buildBusinessDateKeyMatch(from, to, true);
   }
 
   const [[agg], [adsAgg]] = await Promise.all([

@@ -7,6 +7,7 @@ const { calculateOrderFinancials, classifyCustomer } = require('./orderFinancial
 const { generateCashflowEntries } = require('./cashflow');
 const { rebuildCustomersFromOrders, calculateRFM } = require('./customerService');
 const { refreshProductDerivedMetrics } = require('./productService');
+const { toBusinessDateLabel } = require('../utils/businessDate');
 const logger = require('../utils/logger');
 
 function mapShopifyProductToSchema(shopifyProduct) {
@@ -146,7 +147,7 @@ async function syncShopifyOrders(store) {
         await generateCashflowEntries(order);
       }
 
-      const dateStr = new Date(shopifyOrder.createdAt).toISOString().split('T')[0];
+      const dateStr = toBusinessDateLabel(shopifyOrder.createdAt);
       affectedDates.add(dateStr);
     }
 
@@ -156,7 +157,7 @@ async function syncShopifyOrders(store) {
     await store.save();
 
     for (const dateStr of affectedDates) {
-      await recalculateDailyMetric(store._id, new Date(dateStr));
+      await recalculateDailyMetric(store._id, dateStr);
     }
 
     await rebuildCustomersFromOrders(store._id);

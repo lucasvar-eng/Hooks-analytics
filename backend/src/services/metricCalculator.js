@@ -4,30 +4,18 @@ const DailyMetric = require('../models/DailyMetric');
 const MetaDailyInsight = require('../models/MetaDailyInsight');
 const MetaCampaign = require('../models/MetaCampaign');
 const { getFixedCostsForRange } = require('./fixedCostService');
+const { getBusinessDayContext, buildBusinessDateKeyMatch } = require('../utils/businessDate');
 const logger = require('../utils/logger');
 const POSITIVE_PAYMENT_STATUSES = ['paid'];
 
 const safeDiv = (a, b) => (b && b > 0 ? a / b : 0);
-
-function startOfDay(date) {
-  const d = new Date(date);
-  d.setUTCHours(0, 0, 0, 0);
-  return d;
-}
-
-function endOfDay(date) {
-  const d = new Date(date);
-  d.setUTCHours(23, 59, 59, 999);
-  return d;
-}
 
 /**
  * Sprint 1 basic version: aggregates Orders → DailyMetric.
  * Revenue, ordenes, AOV only. Net Revenue and NC/RC added in Sprint 2.
  */
 async function recalculateDailyMetric(storeId, date) {
-  const dayStart = startOfDay(date);
-  const dayEnd = endOfDay(date);
+  const { label, keyDate: dayStart, keyEnd: dayEnd, sourceStart, sourceEnd } = getBusinessDayContext(date);
   const storeOid = new mongoose.Types.ObjectId(storeId);
 
   // 1. Aggregate orders for the day
@@ -35,7 +23,7 @@ async function recalculateDailyMetric(storeId, date) {
     {
       $match: {
         storeId: storeOid,
-        fechaCreacion: { $gte: dayStart, $lte: dayEnd },
+        fechaCreacion: { $gte: sourceStart, $lte: sourceEnd },
         estado: { $nin: ['cancelled'] },
       },
     },
@@ -209,7 +197,7 @@ async function recalculateDailyMetric(storeId, date) {
   // 2. Count devoluciones
   const devoluciones = await Order.countDocuments({
     storeId: storeOid,
-    fechaCreacion: { $gte: dayStart, $lte: dayEnd },
+    fechaCreacion: { $gte: sourceStart, $lte: sourceEnd },
     estado: { $in: ['cancelled', 'refunded'] },
   });
 
@@ -382,7 +370,7 @@ async function recalculateDailyMetric(storeId, date) {
     { upsert: true }
   );
 
-  logger.debug(`DailyMetric updated: store=${storeId} date=${dayStart.toISOString().split('T')[0]}`);
+  logger.debug(`DailyMetric updated: store=${storeId} date=${label}`);
 }
 
 /**
@@ -391,12 +379,13 @@ async function recalculateDailyMetric(storeId, date) {
  */
 async function aggregateRange(storeId, from, to) {
   const storeOid = new mongoose.Types.ObjectId(storeId);
+  const dateMatch = buildBusinessDateKeyMatch(from, to, false);
 
   const agg = await DailyMetric.aggregate([
     {
       $match: {
         storeId: storeOid,
-        date: { $gte: new Date(from), $lte: new Date(to) },
+        ...(from || to ? { date: dateMatch } : {}),
       },
     },
     {

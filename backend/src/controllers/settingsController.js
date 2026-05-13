@@ -9,6 +9,7 @@ const shopifyAPI = require('../services/shopifyAPI');
 const metaAPI = require('../services/metaAPI');
 const { isCentralizedTiendanubeStore } = require('../utils/tiendanubeToken');
 const DailyMetric = require('../models/DailyMetric');
+const { dateKeyToLabel } = require('../utils/businessDate');
 const Target = require('../models/Target');
 const ImportBatch = require('../models/ImportBatch');
 const { getCurrentMonthRange } = require('../services/targetService');
@@ -592,7 +593,7 @@ exports.recalculate = async (req, res, next) => {
         // Recalculate all DailyMetrics that exist
         const dailyMetrics = await DailyMetric.find({ storeId: store._id }).select('date');
         for (const dm of dailyMetrics) {
-          await recalculateDailyMetric(store._id, dm.date);
+          await recalculateDailyMetric(store._id, dateKeyToLabel(dm.date));
         }
 
         logger.info(`Full recalculation done for ${store.nombre}: ${processed} orders, ${dailyMetrics.length} days`);

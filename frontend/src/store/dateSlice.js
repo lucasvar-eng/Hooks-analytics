@@ -1,24 +1,32 @@
 import { createSlice } from '@reduxjs/toolkit';
 
+function pad(value) {
+  return String(value).padStart(2, '0');
+}
+
+function formatLocalDate(date) {
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
 function getDefaultRange() {
   const to = new Date();
   const from = new Date();
   from.setDate(from.getDate() - 6); // Last 7 days
   return {
-    from: from.toISOString().split('T')[0],
-    to: to.toISOString().split('T')[0],
+    from: formatLocalDate(from),
+    to: formatLocalDate(to),
   };
 }
 
 const PRESETS = {
   today: () => {
-    const d = new Date().toISOString().split('T')[0];
+    const d = formatLocalDate(new Date());
     return { from: d, to: d };
   },
   yesterday: () => {
     const d = new Date();
     d.setDate(d.getDate() - 1);
-    const str = d.toISOString().split('T')[0];
+    const str = formatLocalDate(d);
     return { from: str, to: str };
   },
   last7: () => {
@@ -26,8 +34,8 @@ const PRESETS = {
     const from = new Date();
     from.setDate(from.getDate() - 6);
     return {
-      from: from.toISOString().split('T')[0],
-      to: to.toISOString().split('T')[0],
+      from: formatLocalDate(from),
+      to: formatLocalDate(to),
     };
   },
   last30: () => {
@@ -35,16 +43,16 @@ const PRESETS = {
     const from = new Date();
     from.setDate(from.getDate() - 29);
     return {
-      from: from.toISOString().split('T')[0],
-      to: to.toISOString().split('T')[0],
+      from: formatLocalDate(from),
+      to: formatLocalDate(to),
     };
   },
   thisMonth: () => {
     const now = new Date();
     const from = new Date(now.getFullYear(), now.getMonth(), 1);
     return {
-      from: from.toISOString().split('T')[0],
-      to: now.toISOString().split('T')[0],
+      from: formatLocalDate(from),
+      to: formatLocalDate(now),
     };
   },
   lastMonth: () => {
@@ -52,8 +60,8 @@ const PRESETS = {
     const from = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const to = new Date(now.getFullYear(), now.getMonth(), 0);
     return {
-      from: from.toISOString().split('T')[0],
-      to: to.toISOString().split('T')[0],
+      from: formatLocalDate(from),
+      to: formatLocalDate(to),
     };
   },
 };

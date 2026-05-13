@@ -102,7 +102,7 @@ export default function RoasTimelineChart({ data = [], periodLabel = '' }) {
   // Geometría
   const width = 1200;
   const height = 380;
-  const padTop = 28;
+  const padTop = 36;
   const padBottom = 60;
   const padLeft = 60;
   const padRight = 60;
@@ -358,6 +358,45 @@ export default function RoasTimelineChart({ data = [], periodLabel = '' }) {
                       transition: `y 650ms cubic-bezier(0.22,1,0.36,1) ${animDelay}ms, height 650ms cubic-bezier(0.22,1,0.36,1) ${animDelay}ms`,
                     }}
                   />
+                )}
+                {/* Etiquetas de valor encima de las barras — siempre visibles */}
+                {mounted && rev > 0 && (
+                  <text
+                    x={xRev + barWidth / 2}
+                    y={yRev - 6}
+                    fill={hovered ? '#dbeafe' : '#93c5fd'}
+                    fontSize={showValuesAlways ? '11' : '9.5'}
+                    fontWeight="600"
+                    textAnchor="middle"
+                    className="tabular-nums"
+                    style={{
+                      paintOrder: 'stroke',
+                      stroke: '#0a0a0a',
+                      strokeWidth: '3px',
+                      strokeLinejoin: 'round',
+                    }}
+                  >
+                    {fmtMoneyShort(rev)}
+                  </text>
+                )}
+                {mounted && spd > 0 && (
+                  <text
+                    x={xSpd + barWidth / 2}
+                    y={ySpd - 6}
+                    fill={hovered ? '#fecaca' : '#fca5a5'}
+                    fontSize={showValuesAlways ? '11' : '9.5'}
+                    fontWeight="600"
+                    textAnchor="middle"
+                    className="tabular-nums"
+                    style={{
+                      paintOrder: 'stroke',
+                      stroke: '#0a0a0a',
+                      strokeWidth: '3px',
+                      strokeLinejoin: 'round',
+                    }}
+                  >
+                    {fmtMoneyShort(spd)}
+                  </text>
                 )}
               </g>
             );

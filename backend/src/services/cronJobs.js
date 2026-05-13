@@ -1,7 +1,7 @@
 const cron = require('node-cron');
 const Store = require('../models/Store');
 const { syncOrders, syncProducts, checkTiendanubeTokenHealth } = require('./syncTiendanube');
-const { syncMetaStructure, syncMetaInsights, refreshMetaTokens } = require('./syncMeta');
+const { syncMetaStructure, syncMetaInsights, syncMetaProductInsights, refreshMetaTokens } = require('./syncMeta');
 const { updateCashflowStates } = require('./cashflow');
 const { runDiagnostics } = require('./diagnosticsService');
 const { runDueRulesForAllStores } = require('./automationService');
@@ -71,6 +71,7 @@ function startCronJobs() {
   // Meta Ads
   cron.schedule('30 */12 * * *', () => runForMetaStores('syncMetaStructure', syncMetaStructure));
   cron.schedule('0 1,7,13,19 * * *', () => runForMetaStores('syncMetaInsights', syncMetaInsights));
+  cron.schedule('30 8,20 * * *', () => runForMetaStores('syncMetaProductInsights', syncMetaProductInsights));
   cron.schedule('0 2 * * *', () => runForMetaStores('refreshMetaTokens', refreshMetaTokens));
 
   // Cashflow
@@ -115,7 +116,7 @@ function startCronJobs() {
     }
   });
 
-  logger.info('Cron jobs scheduled: TN token health(2h), TN orders(4h), TN products(12h), Meta structure(12h), Meta insights(4x/day), Meta tokens(daily), Cashflow states(daily), Diagnostics(6h), Automations(hourly)');
+  logger.info('Cron jobs scheduled: TN token health(2h), TN orders(4h), TN products(12h), Meta structure(12h), Meta insights(4x/day), Meta product breakdown(2x/day), Meta tokens(daily), Cashflow states(daily), Diagnostics(6h), Automations(hourly)');
 }
 
 module.exports = { startCronJobs };

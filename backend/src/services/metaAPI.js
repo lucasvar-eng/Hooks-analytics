@@ -225,6 +225,66 @@ async function getInsights(objectId, dateFrom, dateTo, token, breakdowns = []) {
   }
 }
 
+/**
+ * Get product_id breakdown insights for a single ad (DPA / catalog ads).
+ * Paginated automatically via paging.next.
+ * Returns an array of rows with shape { product_id, spend, impressions, clicks, actions, action_values, date_start }.
+ */
+async function getProductBreakdownInsights(adId, token, { dateFrom, dateTo, fields, limit = 500 } = {}) {
+  const queryFields = (fields && fields.length ? fields : [
+    'spend', 'impressions', 'reach', 'clicks', 'inline_link_clicks',
+    'actions', 'action_values',
+  ]).join(',');
+
+  const params = {
+    access_token: token,
+    fields: queryFields,
+    breakdowns: 'product_id',
+    limit,
+  };
+
+  if (dateFrom && dateTo) {
+    params.time_range = JSON.stringify({ since: dateFrom, until: dateTo });
+  }
+
+  const rows = [];
+  let url = `${GRAPH_API}/${adId}/insights`;
+  let currentParams = params;
+  let safetyCount = 0;
+  const safetyMax = 50; // hard ceiling against runaway pagination
+
+  while (url && safetyCount < safetyMax) {
+    let retries = 0;
+    const maxRetries = 5;
+    let pageResp = null;
+
+    while (retries <= maxRetries) {
+      try {
+        const res = await axios.get(url, { params: currentParams });
+        pageResp = res.data;
+        break;
+      } catch (error) {
+        if (!isRetryableMetaError(error) || retries >= maxRetries) throw error;
+        const waitTime = Math.pow(2, retries + 1) * 1500;
+        logger.warn(`Meta rate limit on product breakdown ad ${adId}, waiting ${waitTime}ms (retry ${retries + 1}/${maxRetries})`);
+        await sleep(waitTime);
+        retries++;
+      }
+    }
+
+    if (!pageResp) break;
+    if (Array.isArray(pageResp.data)) rows.push(...pageResp.data);
+
+    const next = pageResp.paging?.next;
+    if (!next) break;
+    url = next;
+    currentParams = undefined; // next URL already contains params
+    safetyCount++;
+  }
+
+  return rows;
+}
+
 async function getInsightsForAdAccount(adAccountId, token, options = {}) {
   const {
     level = 'ad',
@@ -303,6 +363,7 @@ module.exports = {
   getAccountAds,
   getInsights,
   getInsightsForAdAccount,
+  getProductBreakdownInsights,
   parseActions,
   parseActionValues,
 };

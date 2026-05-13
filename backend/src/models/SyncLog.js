@@ -14,6 +14,7 @@ const syncLogSchema = new mongoose.Schema(
         'shopify_products',
         'meta_structure',
         'meta_insights',
+        'meta_product_insights',
         'meta_token_refresh',
         'diagnostics',
         'cleanup',

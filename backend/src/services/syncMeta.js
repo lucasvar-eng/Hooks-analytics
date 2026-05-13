@@ -1,9 +1,16 @@
 const metaAPI = require('./metaAPI');
 const MetaCampaign = require('../models/MetaCampaign');
 const MetaDailyInsight = require('../models/MetaDailyInsight');
+const MetaProductInsight = require('../models/MetaProductInsight');
+const Product = require('../models/Product');
 const SyncLog = require('../models/SyncLog');
 const { recalculateDailyMetric } = require('./metricCalculator');
+const { toBusinessDateLabel, addDaysToLabel } = require('../utils/businessDate');
 const logger = require('../utils/logger');
+
+function normalizeProductName(name) {
+  return String(name || '').toUpperCase().replace(/\s+/g, ' ').trim();
+}
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -206,12 +213,9 @@ async function syncMetaInsights(store, daysBack = 7) {
   try {
     const token = store.metaAccessToken;
     const configuredAccounts = getConfiguredMetaAccounts(store);
-    const today = new Date();
-    const dateFrom = new Date(today);
-    dateFrom.setDate(dateFrom.getDate() - daysBack);
-
-    const fromStr = dateFrom.toISOString().split('T')[0];
-    const toStr = today.toISOString().split('T')[0];
+    const todayLabel = toBusinessDateLabel(new Date());
+    const fromStr = addDaysToLabel(todayLabel, -daysBack);
+    const toStr = todayLabel;
 
     let totalRecords = 0;
     const affectedDates = new Set();
@@ -247,7 +251,7 @@ async function syncMetaInsights(store, daysBack = 7) {
 
     // Recalculate DailyMetrics for affected dates
     for (const dateStr of affectedDates) {
-      await recalculateDailyMetric(store._id, new Date(dateStr));
+      await recalculateDailyMetric(store._id, dateStr);
     }
 
     // Update last sync
@@ -266,6 +270,141 @@ async function syncMetaInsights(store, daysBack = 7) {
     log.duration = Date.now() - startTime;
     await log.save();
     logger.error(`Meta insights sync failed for ${store.nombre}: ${error.message}`);
+    throw error;
+  }
+}
+
+/**
+ * Sync product_id breakdown insights for all active DPA/catalog ads.
+ * Persists per (ad, product, date) so the frontend can show "spend per product".
+ * Last `daysBack` days by default.
+ */
+async function syncMetaProductInsights(store, daysBack = 7) {
+  const startTime = Date.now();
+  const log = await SyncLog.create({
+    storeId: store._id,
+    type: 'meta_product_insights',
+    status: 'running',
+  });
+
+  try {
+    const token = store.metaAccessToken;
+    const todayLabel = toBusinessDateLabel(new Date());
+    const fromStr = addDaysToLabel(todayLabel, -daysBack);
+    const toStr = todayLabel;
+
+    // 1. Active ads to query. The breakdown only makes sense for ads that ran.
+    //    We query at level=ad with breakdowns=product_id, one call per ad.
+    const ads = await MetaCampaign.find(
+      { storeId: store._id, level: 'ad', status: 'ACTIVE' },
+      'metaId adAccountId parentId'
+    ).lean();
+
+    if (!ads.length) {
+      log.status = 'success';
+      log.recordsFetched = 0;
+      log.duration = Date.now() - startTime;
+      await log.save();
+      logger.info(`Meta product breakdown: no active ads for ${store.nombre}`);
+      return;
+    }
+
+    // 2. Build name → tnProductId map for best-effort product matching.
+    const tnProducts = await Product.find(
+      { storeId: store._id },
+      'tnProductId nombre'
+    ).lean();
+    const nameToTnId = new Map();
+    for (const p of tnProducts) {
+      const key = normalizeProductName(p.nombre);
+      if (key && !nameToTnId.has(key)) nameToTnId.set(key, String(p.tnProductId));
+    }
+
+    // 3. Build adset/campaign parent lookup for context columns.
+    const adsetLookup = new Map();
+    const adsets = await MetaCampaign.find(
+      { storeId: store._id, level: 'adset' },
+      'metaId parentId'
+    ).lean();
+    adsets.forEach(a => adsetLookup.set(String(a.metaId), String(a.parentId || '')));
+
+    let totalRecords = 0;
+    let totalRowsFetched = 0;
+
+    for (const ad of ads) {
+      try {
+        const rows = await metaAPI.getProductBreakdownInsights(ad.metaId, token, {
+          dateFrom: fromStr,
+          dateTo: toStr,
+        });
+        totalRowsFetched += rows.length;
+
+        // Note: breakdown=product_id collapses the time range into a single bucket per product
+        // unless time_increment=1 is added. We respect that — we keep one row per (ad, product, window)
+        // with date = dateTo. Adding time_increment=1 would multiply rows by ~daysBack and the endpoint
+        // becomes slow / hit rate limits. The DailyMetric layer keeps the day-level accuracy elsewhere.
+        const reportingDate = new Date(toStr);
+        reportingDate.setUTCHours(0, 0, 0, 0);
+
+        const campaignId = adsetLookup.get(String(ad.parentId || '')) || null;
+
+        for (const row of rows) {
+          const raw = row.product_id || '';
+          const match = String(raw).match(/^(\d+)\s*,\s*(.+)$/);
+          const metaProductId = match ? match[1] : String(raw);
+          const productName = match ? match[2].trim() : '';
+          const tnProductId = nameToTnId.get(normalizeProductName(productName)) || null;
+
+          const payload = {
+            adAccountId: ad.adAccountId || null,
+            adId: ad.metaId,
+            adsetId: ad.parentId || null,
+            campaignId,
+            productName,
+            tnProductId,
+            spend: parseFloat(row.spend || 0),
+            impressions: parseInt(row.impressions || 0, 10),
+            clicks: parseInt(row.clicks || 0, 10),
+            linkClicks: parseInt(row.inline_link_clicks || 0, 10),
+            reach: parseInt(row.reach || 0, 10),
+            purchases: metaAPI.parseActions(row.actions, 'purchase'),
+            purchaseValue: metaAPI.parseActionValues(row.action_values, 'purchase'),
+            atc: metaAPI.parseActions(row.actions, 'add_to_cart'),
+            checkouts: metaAPI.parseActions(row.actions, 'initiate_checkout'),
+          };
+
+          await MetaProductInsight.findOneAndUpdate(
+            {
+              storeId: store._id,
+              adId: ad.metaId,
+              metaProductId,
+              date: reportingDate,
+              source: 'api',
+            },
+            payload,
+            { upsert: true }
+          );
+          totalRecords++;
+        }
+
+        await sleep(350);
+      } catch (error) {
+        logger.warn(`Meta product breakdown failed for ad ${ad.metaId} (${store.nombre}): ${error.message}`);
+      }
+    }
+
+    log.status = 'success';
+    log.recordsFetched = totalRecords;
+    log.duration = Date.now() - startTime;
+    await log.save();
+
+    logger.info(`Meta product breakdown synced for ${store.nombre}: ${totalRecords} rows from ${totalRowsFetched} API rows across ${ads.length} ads in ${log.duration}ms`);
+  } catch (error) {
+    log.status = 'error';
+    log.error = error.message;
+    log.duration = Date.now() - startTime;
+    await log.save();
+    logger.error(`Meta product breakdown sync failed for ${store.nombre}: ${error.message}`);
     throw error;
   }
 }
@@ -291,4 +430,4 @@ async function refreshMetaTokens(store) {
   }
 }
 
-module.exports = { syncMetaStructure, syncMetaInsights, refreshMetaTokens };
+module.exports = { syncMetaStructure, syncMetaInsights, syncMetaProductInsights, refreshMetaTokens };

@@ -6,6 +6,7 @@ const CACHE_TTL = 5 * 60 * 1000;
 const CENTRALIZED_TN_STORES = {
   '6444342': { label: 'MANGUZ' },
   '2638533': { label: 'Limite Deportes' },
+  '5920984': { label: 'Pataforma' },
 };
 
 const tokenCache = {};

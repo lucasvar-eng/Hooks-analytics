@@ -1,0 +1,5 @@
+nombre,categoria,monto,cadence,periodStart,periodEnd,active,notes
+Sueldo operativo,sueldos,1200000,monthly,2026-04-01,,TRUE,
+Alquiler,deposito,450000,monthly,2026-04-01,,TRUE,
+Diseno creativo,servicios,180000,monthly,2026-04-01,,TRUE,
+Setup estudio,produccion,250000,one_time,2026-04-10,2026-04-10,TRUE,

@@ -1,0 +1,4 @@
+nombre,monto,tipo,categoria,vigenciaDesde,notas
+Packaging premium,800,fijo,operativo,2026-04-01,Por pedido
+Seguro logistico,0.6,porcentaje,logistica,2026-04-01,Sobre revenue
+Bonificacion partner,1.5,porcentaje,comercial,2026-04-01,

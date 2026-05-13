@@ -11,6 +11,7 @@ const ITEMS = [
   {
     key: 'cogs',
     label: 'Costo de productos',
+    tab: 'wizard',
     subPresent: 'Costo unitario cargado por SKU',
     subMissing: (cov) => {
       const c = cov?.components?.cogs;
@@ -21,18 +22,21 @@ const ITEMS = [
   {
     key: 'paymentCommission',
     label: 'Comisiones de cobro',
+    tab: 'commissions',
     subPresent: 'Configurado por medio de pago',
     subMissing: () => 'MercadoPago, Visa, débito, cuotas',
   },
   {
     key: 'fixedCosts',
     label: 'Costos fijos',
+    tab: 'fixed',
     subPresent: 'Alquiler, sueldos, herramientas',
     subMissing: () => 'Alquiler, sueldos, herramientas',
   },
   {
     key: 'shippingCost',
     label: 'Costo de envío',
+    tab: 'csv',
     subPresent: 'Calculado por orden',
     subMissing: () => 'Sin configuración de zonas',
   },
@@ -73,11 +77,11 @@ export default function CostCoverageChecklist({ coverage, adsConnected, onConfig
         <button
           key={row.key}
           type="button"
-          onClick={!row.present && onConfigClick ? onConfigClick : undefined}
-          disabled={row.present || !onConfigClick}
+          onClick={!row.present && onConfigClick && row.tab ? () => onConfigClick(row.tab) : undefined}
+          disabled={row.present || !onConfigClick || !row.tab}
           className={`w-full flex items-baseline justify-between text-left py-3
             ${idx < rows.length - 1 ? 'border-b border-white/[0.04]' : ''}
-            ${!row.present && onConfigClick ? 'hover:bg-white/[0.02] -mx-2 px-2 rounded-md transition' : ''}`}
+            ${!row.present && onConfigClick && row.tab ? 'hover:bg-white/[0.02] -mx-2 px-2 rounded-md transition cursor-pointer' : ''}`}
         >
           <div>
             <div className={`text-[13px] font-semibold ${row.present ? 'text-emerald-300' : 'text-amber-300'}`}>

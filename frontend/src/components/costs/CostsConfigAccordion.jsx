@@ -1,5 +1,6 @@
 import { useState, forwardRef, useImperativeHandle } from 'react';
 import CostsWizard from './CostsWizard';
+import CommissionsPanel from './CommissionsPanel';
 import CSVUploadPanel from './CSVUploadPanel';
 import FixedCostsPanel from './FixedCostsPanel';
 
@@ -11,8 +12,9 @@ import FixedCostsPanel from './FixedCostsPanel';
  * cuando el usuario hace click en "Cargar costos".
  */
 const TABS = [
-  { id: 'wizard', label: 'Top sellers', sub: 'Carga rápida producto por producto' },
-  { id: 'csv', label: 'Importar CSV', sub: 'Productos, comisiones, envío, adicionales' },
+  { id: 'wizard', label: 'Top sellers', sub: 'Costo de productos uno por uno' },
+  { id: 'commissions', label: 'Comisiones y fees', sub: 'IBB, fee plataforma y comisiones por medio de pago' },
+  { id: 'csv', label: 'Importar CSV', sub: 'Carga masiva con plantilla descargable' },
   { id: 'fixed', label: 'Costos fijos', sub: 'Alquiler, sueldos, herramientas' },
 ];
 
@@ -44,7 +46,7 @@ function CostsConfigAccordion({ storeId, coverage, adsConnected, onChanged }, re
         <div className="flex items-center gap-3 text-left">
           <div>
             <p className="text-[13px] font-semibold text-white">Configurar costos</p>
-            <p className="text-[11px] text-gray-300 mt-0.5">Productos · CSV bulk · Fijos</p>
+            <p className="text-[11px] text-gray-300 mt-0.5">Productos · Comisiones · Fijos · CSV bulk</p>
           </div>
           <span className={`text-[11px] font-semibold rounded-full px-2.5 py-0.5
             ${loaded === total
@@ -86,6 +88,9 @@ function CostsConfigAccordion({ storeId, coverage, adsConnected, onChanged }, re
 
             {activeTab === 'wizard' && (
               <CostsWizard storeId={storeId} onUploaded={onChanged} embedded />
+            )}
+            {activeTab === 'commissions' && (
+              <CommissionsPanel storeId={storeId} onChanged={onChanged} />
             )}
             {activeTab === 'csv' && (
               <CSVUploadPanel storeId={storeId} onUploaded={onChanged} />

@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import api from '../services/api';
+import { fetchStoreMetrics } from '../store/storeSlice';
 import { getPeriodLabel } from '../components/common/MasterMetricBoard';
 import AIAnalysisPanel from '../components/common/AIAnalysisPanel';
 import ClaudeActionBar from '../components/common/ClaudeActionBar';
@@ -29,6 +30,7 @@ import CostsConfigAccordion from '../components/costs/CostsConfigAccordion';
  */
 export default function Costos() {
   const { storeId } = useParams();
+  const dispatch = useDispatch();
   const { from, to, preset } = useSelector((s) => s.date);
   const store = useSelector((state) => state.stores.stores.find((item) => item._id === storeId));
   const coverage = useSelector((s) => s.stores.metrics[storeId]?.costCoverage || null);
@@ -66,6 +68,14 @@ export default function Costos() {
     setLoading(false);
   }, [storeId, from, to]);
 
+  // Después de un save dentro del acordeón (comisiones, fijos, etc) hay que
+  // refrescar también el coverage en Redux para que el checklist se actualice
+  // sin reload manual.
+  const refreshAll = useCallback(() => {
+    fetchData();
+    if (from && to) dispatch(fetchStoreMetrics({ storeId, from, to }));
+  }, [fetchData, dispatch, storeId, from, to]);
+
   useEffect(() => { fetchData(); }, [fetchData]);
 
   if (loading) {
@@ -102,7 +112,7 @@ export default function Costos() {
         <CostCoverageChecklist
           coverage={coverage}
           adsConnected={adsConnected}
-          onConfigClick={() => openConfig('wizard')}
+          onConfigClick={(tab) => openConfig(tab)}
         />
       </div>
 
@@ -111,7 +121,7 @@ export default function Costos() {
         storeId={storeId}
         coverage={coverage}
         adsConnected={adsConnected}
-        onChanged={fetchData}
+        onChanged={refreshAll}
       />
 
       <div className="card p-5 space-y-4">

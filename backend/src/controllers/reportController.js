@@ -2,6 +2,7 @@ const Report = require('../models/Report');
 const { aggregateRange } = require('../services/metricCalculator');
 const { getEffectiveTarget } = require('../services/targetService');
 const { logAudit } = require('../services/auditLogService');
+const { buildTemplateReport } = require('../services/reportTemplateService');
 
 function buildSummary(metrics, target) {
   const summary = [];
@@ -116,4 +117,41 @@ exports.exportReport = async (req, res) => {
 exports.remove = async (req, res) => {
   await Report.findOneAndDelete({ _id: req.params.reportId, storeId: req.params.id });
   res.json({ message: 'Deleted' });
+};
+
+exports.createFromTemplate = async (req, res) => {
+  const { templateKey } = req.params;
+  const { from, to } = req.body || {};
+
+  const built = await buildTemplateReport(templateKey, req.params.id, from, to, req.user?._id);
+  const report = await Report.create({
+    storeId: req.params.id,
+    titulo: built.titulo,
+    contenido: built.contenido,
+    summary: built.summary,
+    section: built.section,
+    tipo: built.tipo,
+    dateRange: {
+      from: from ? new Date(from) : undefined,
+      to: to ? new Date(to) : undefined,
+    },
+    snapshot: built.snapshot,
+    confidence: built.confidence,
+    qualityNote: built.qualityNote,
+    generationMode: built.generationMode || 'manual',
+    provider: built.provider,
+    model: built.model,
+    tokensUsed: built.tokensUsed || 0,
+  });
+
+  await logAudit({
+    storeId: req.params.id,
+    userId: req.user?._id,
+    action: 'report.template.created',
+    entityType: 'Report',
+    entityId: report._id,
+    details: { templateKey, section: built.section, tipo: built.tipo },
+  });
+
+  res.status(201).json(report);
 };

@@ -10,7 +10,7 @@ const insightSchema = new mongoose.Schema({
   impacto: { type: String }, // e.g. "~$376M/mes en revenue potencial"
   verdict: { type: String, enum: ['ESCALAR', 'PAUSAR', 'TESTEAR', 'REVISAR', 'IMPLEMENTAR', 'MANTENER', null], default: null },
   layer: { type: String, enum: ['L1', 'L2', 'L3'], default: 'L1' }, // L1=auto rule, L2=AI, L3=manual
-  generatedBy: { type: String, enum: ['rule_engine', 'claude', 'openai', 'manual'], default: 'rule_engine' },
+  generatedBy: { type: String, enum: ['rule_engine', 'claude', 'openai', 'manual', 'local'], default: 'rule_engine' },
   metricKey: { type: String }, // optional: which metric this relates to
   metadata: { type: mongoose.Schema.Types.Mixed }, // flexible extra data
   confidence: { type: Number, default: 0.5 },

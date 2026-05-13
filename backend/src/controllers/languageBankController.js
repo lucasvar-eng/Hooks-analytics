@@ -1,10 +1,16 @@
 const LanguageBank = require('../models/LanguageBank');
+const { getLanguageBankOverview } = require('../services/contentStrategyService');
 
 exports.list = async (req, res) => {
   const filter = { storeId: req.params.id };
   if (req.query.tipo) filter.tipo = req.query.tipo;
   const entries = await LanguageBank.find(filter).sort({ createdAt: -1 });
   res.json(entries);
+};
+
+exports.overview = async (req, res) => {
+  const overview = await getLanguageBankOverview(req.params.id);
+  res.json(overview);
 };
 
 exports.create = async (req, res) => {

@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import api from '../services/api';
+import AIAnalysisPanel from '../components/common/AIAnalysisPanel';
+import ClaudeActionBar from '../components/common/ClaudeActionBar';
 
 const STATUS_LABELS = {
   draft: 'Borrador',
@@ -50,6 +52,7 @@ const EMPTY_FORM = {
 export default function TopicMap() {
   const { storeId } = useParams();
   const [items, setItems] = useState([]);
+  const [overview, setOverview] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -58,8 +61,12 @@ export default function TopicMap() {
   const fetchItems = useCallback(async () => {
     setLoading(true);
     try {
-      const { data } = await api.get(`/api/stores/${storeId}/topic-maps`);
-      setItems(data);
+      const [itemsRes, overviewRes] = await Promise.all([
+        api.get(`/api/stores/${storeId}/topic-maps`),
+        api.get(`/api/stores/${storeId}/topic-maps/overview`),
+      ]);
+      setItems(itemsRes.data);
+      setOverview(overviewRes.data);
     } catch {}
     setLoading(false);
   }, [storeId]);
@@ -119,6 +126,9 @@ export default function TopicMap() {
   };
   if (loading) return <div className="text-center py-12 text-[13px] text-gray-600">Cargando mapa de tópicos...</div>;
 
+  const summary = overview?.summary || {};
+  const gaps = overview?.gaps || {};
+
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
@@ -129,6 +139,56 @@ export default function TopicMap() {
         <button onClick={handleToggleForm} className="btn-primary">
           {showForm ? 'Cancelar' : '+ Agregar tópico'}
         </button>
+      </div>
+
+      <ClaudeActionBar
+        mode="topic-map"
+        storeId={storeId}
+      />
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {[
+          ['Topics totales', summary.total || 0],
+          ['Activos', summary.active || 0],
+          ['Scaling', summary.scaling || 0],
+          ['Testing', summary.testing || 0],
+          ['Alta prioridad', summary.highPriority || 0],
+          ['Sin hipótesis', summary.missingHypothesis || 0],
+          ['Sin ángulo', summary.missingAngle || 0],
+          ['Sin territorio', summary.missingTerritory || 0],
+        ].map(([label, value]) => (
+          <div key={label} className="card p-4">
+            <p className="text-app-muted text-[10px] uppercase tracking-[0.18em]">{label}</p>
+            <p className="text-white text-2xl font-semibold mt-2">{value}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-[1.2fr_0.8fr] gap-4">
+        <div className="card p-4">
+          <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-3">Huecos del framework</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
+              <p className="text-[10px] text-app-muted uppercase tracking-[0.16em] mb-2">Sin hipótesis</p>
+              <div className="space-y-1 text-[12px] text-app-secondary">
+                {(gaps.missingHypothesis || []).length ? gaps.missingHypothesis.map((item) => <p key={item}>{item}</p>) : <p>Sin huecos.</p>}
+              </div>
+            </div>
+            <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
+              <p className="text-[10px] text-app-muted uppercase tracking-[0.16em] mb-2">Sin ángulo</p>
+              <div className="space-y-1 text-[12px] text-app-secondary">
+                {(gaps.missingAngle || []).length ? gaps.missingAngle.map((item) => <p key={item}>{item}</p>) : <p>Sin huecos.</p>}
+              </div>
+            </div>
+            <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
+              <p className="text-[10px] text-app-muted uppercase tracking-[0.16em] mb-2">Sin territorio</p>
+              <div className="space-y-1 text-[12px] text-app-secondary">
+                {(gaps.missingTerritory || []).length ? gaps.missingTerritory.map((item) => <p key={item}>{item}</p>) : <p>Sin huecos.</p>}
+              </div>
+            </div>
+          </div>
+        </div>
+        <AIAnalysisPanel storeId={storeId} section="topic-map" />
       </div>
 
       {showForm && (

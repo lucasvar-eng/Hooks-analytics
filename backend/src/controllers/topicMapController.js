@@ -1,8 +1,14 @@
 const TopicMap = require('../models/TopicMap');
+const { getTopicMapOverview } = require('../services/contentStrategyService');
 
 exports.list = async (req, res) => {
   const topicMaps = await TopicMap.find({ storeId: req.params.id }).sort({ nombre: 1 });
   res.json(topicMaps);
+};
+
+exports.overview = async (req, res) => {
+  const overview = await getTopicMapOverview(req.params.id);
+  res.json(overview);
 };
 
 exports.create = async (req, res) => {

@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import api from '../services/api';
+import AIAnalysisPanel from '../components/common/AIAnalysisPanel';
+import ClaudeActionBar from '../components/common/ClaudeActionBar';
 
 const TIPO_TABS = [
   { value: '', label: 'Todas' },
@@ -51,6 +53,7 @@ const EMPTY_FORM = {
 export default function LanguageBank() {
   const { storeId } = useParams();
   const [entries, setEntries] = useState([]);
+  const [overview, setOverview] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('');
   const [showForm, setShowForm] = useState(false);
@@ -61,8 +64,12 @@ export default function LanguageBank() {
     setLoading(true);
     try {
       const params = activeTab ? `?tipo=${activeTab}` : '';
-      const { data } = await api.get(`/api/stores/${storeId}/language-bank${params}`);
-      setEntries(data);
+      const [entriesRes, overviewRes] = await Promise.all([
+        api.get(`/api/stores/${storeId}/language-bank${params}`),
+        api.get(`/api/stores/${storeId}/language-bank/overview`),
+      ]);
+      setEntries(entriesRes.data);
+      setOverview(overviewRes.data);
     } catch {}
     setLoading(false);
   }, [storeId, activeTab]);
@@ -113,6 +120,9 @@ export default function LanguageBank() {
     setForm(EMPTY_FORM);
   };
 
+  const summary = overview?.summary || {};
+  const gaps = overview?.gaps || {};
+
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
@@ -123,6 +133,56 @@ export default function LanguageBank() {
         <button onClick={handleToggleForm} className="btn-primary">
           {showForm ? 'Cancelar' : '+ Agregar entrada'}
         </button>
+      </div>
+
+      <ClaudeActionBar
+        mode="language-bank"
+        storeId={storeId}
+      />
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {[
+          ['Entradas', summary.total || 0],
+          ['Hooks', summary.hooks || 0],
+          ['Objeciones', summary.objections || 0],
+          ['Sin respuesta', summary.unresolvedObjections || 0],
+          ['Sin avatar', summary.missingAvatar || 0],
+          ['Sin ángulo', summary.missingAngle || 0],
+          ['Sin territorio', summary.missingTerritory || 0],
+          ['Tab activa', activeTab || 'todas'],
+        ].map(([label, value]) => (
+          <div key={label} className="card p-4">
+            <p className="text-app-muted text-[10px] uppercase tracking-[0.18em]">{label}</p>
+            <p className="text-white text-2xl font-semibold mt-2">{String(value)}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-[1.2fr_0.8fr] gap-4">
+        <div className="card p-4">
+          <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-3">Huecos de lenguaje</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
+              <p className="text-[10px] text-app-muted uppercase tracking-[0.16em] mb-2">Objeciones sin respuesta</p>
+              <div className="space-y-1 text-[12px] text-app-secondary">
+                {(gaps.unresolvedObjections || []).length ? gaps.unresolvedObjections.map((item) => <p key={item}>{item}</p>) : <p>Sin huecos.</p>}
+              </div>
+            </div>
+            <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
+              <p className="text-[10px] text-app-muted uppercase tracking-[0.16em] mb-2">Sin avatar</p>
+              <div className="space-y-1 text-[12px] text-app-secondary">
+                {(gaps.missingAvatar || []).length ? gaps.missingAvatar.map((item) => <p key={item}>{item}</p>) : <p>Sin huecos.</p>}
+              </div>
+            </div>
+            <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
+              <p className="text-[10px] text-app-muted uppercase tracking-[0.16em] mb-2">Sin ángulo</p>
+              <div className="space-y-1 text-[12px] text-app-secondary">
+                {(gaps.missingAngle || []).length ? gaps.missingAngle.map((item) => <p key={item}>{item}</p>) : <p>Sin huecos.</p>}
+              </div>
+            </div>
+          </div>
+        </div>
+        <AIAnalysisPanel storeId={storeId} section="language-bank" />
       </div>
 
       {showForm && (

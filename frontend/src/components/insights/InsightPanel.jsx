@@ -18,6 +18,7 @@ export default function InsightPanel({ storeId, section, onClose }) {
   const [noteText, setNoteText] = useState('');
   const [addingNote, setAddingNote] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [autoRequested, setAutoRequested] = useState(false);
 
   const fetchData = useCallback(async () => {
     if (!storeId) return;
@@ -36,6 +37,21 @@ export default function InsightPanel({ storeId, section, onClose }) {
   }, [storeId, section]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  useEffect(() => {
+    if (loading || autoRequested || !storeId || !section) return;
+    if (insights.length > 0) return;
+
+    const shouldAutoGenerate = ['dashboard', 'meta', 'creativos', 'costos', 'productos', 'clientes', 'cashflow', 'competencia'].includes(section);
+    if (!shouldAutoGenerate) return;
+
+    setAutoRequested(true);
+    setGenerating(true);
+    api.post(`/api/stores/${storeId}/insights/generate`, { section })
+      .then(() => fetchData())
+      .catch(() => {})
+      .finally(() => setGenerating(false));
+  }, [loading, autoRequested, storeId, section, insights.length, fetchData]);
 
   const handleDismiss = async (insightId) => {
     try {

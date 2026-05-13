@@ -1,9 +1,15 @@
 const Competitor = require('../models/Competitor');
 const aiService = require('../services/aiService');
+const { getCompetitorOverview } = require('../services/contentStrategyService');
 
 exports.list = async (req, res) => {
   const competitors = await Competitor.find({ storeId: req.params.id }).sort({ nombre: 1 });
   res.json(competitors);
+};
+
+exports.overview = async (req, res) => {
+  const overview = await getCompetitorOverview(req.params.id);
+  res.json(overview);
 };
 
 exports.create = async (req, res) => {

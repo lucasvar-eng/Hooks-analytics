@@ -16,6 +16,12 @@ const mongoose = require('mongoose');
 const { getEffectiveTarget } = require('./targetService');
 const { getDataAudit } = require('./tiendaService');
 const { getFixedCostsForRange } = require('./fixedCostService');
+const {
+  getTopicMapOverview,
+  getLanguageBankOverview,
+  getCompetitorOverview,
+} = require('./contentStrategyService');
+const { buildBusinessDateKeyMatch } = require('../utils/businessDate');
 const logger = require('../utils/logger');
 
 const BASE_SYSTEM_PROMPT = `Sos un analista senior de ecommerce argentino. Tu cliente es una agencia que gestiona tiendas en TiendaNube con Meta Ads.
@@ -57,6 +63,14 @@ const SECTION_PLAYBOOKS = {
   creativos: {
     objective: 'bajar decisiones de creatividad y no solo opinar sobre anuncios',
     mustInclude: ['qué escalar', 'qué pausar', 'qué testear', 'gaps del framework'],
+  },
+  'topic-map': {
+    objective: 'ordenar el framework creativo con foco en consciencia, gaps y priorización',
+    mustInclude: ['tema prioritario', 'gap del framework', 'territorio o ángulo faltante', 'acción concreta'],
+  },
+  'language-bank': {
+    objective: 'detectar si el lenguaje comercial cubre hooks, objeciones y territorios clave',
+    mustInclude: ['hook o patrón fuerte', 'objeción sin respuesta', 'hueco de lenguaje', 'acción concreta'],
   },
   diagnostics: {
     objective: 'identificar anomalías y riesgos de integridad o negocio',
@@ -183,13 +197,7 @@ async function buildSystemPrompt(userId, storeId) {
  */
 async function buildContext(section, storeId, from, to) {
   const sid = new mongoose.Types.ObjectId(storeId);
-  const dateFilter = {};
-  if (from) dateFilter.$gte = new Date(from);
-  if (to) {
-    const toDate = new Date(to);
-    toDate.setHours(23, 59, 59, 999);
-    dateFilter.$lte = toDate;
-  }
+  const dateFilter = from || to ? buildBusinessDateKeyMatch(from, to, true) : {};
 
   const dateMatch = Object.keys(dateFilter).length > 0 ? { date: dateFilter } : {};
 
@@ -366,7 +374,7 @@ async function buildContext(section, storeId, from, to) {
     if (campaignMetrics.length) extra.campañas = campaignMetrics;
   }
 
-  if (section === 'creativos' || section === 'competencia' || section === 'report') {
+  if (['creativos', 'competencia', 'report', 'topic-map', 'language-bank'].includes(section)) {
     const [topicMaps, hooks, objections, competitors] = await Promise.all([
       TopicMap.find({ storeId: sid }).sort({ updatedAt: -1 }).limit(12).lean(),
       LanguageBank.find({ storeId: sid, tipo: 'hook' }).sort({ updatedAt: -1 }).limit(12).lean(),
@@ -427,6 +435,18 @@ async function buildContext(section, storeId, from, to) {
     };
   }
 
+  if (section === 'topic-map') {
+    extra.topicMapOverview = await getTopicMapOverview(storeId);
+  }
+
+  if (section === 'language-bank') {
+    extra.languageBankOverview = await getLanguageBankOverview(storeId);
+  }
+
+  if (section === 'competencia') {
+    extra.competitorOverview = await getCompetitorOverview(storeId);
+  }
+
   return { ...base, ...extra };
 }
 
@@ -454,6 +474,130 @@ Reglas:
 
 Datos:
 ${JSON.stringify(context, null, 2)}`;
+}
+
+function parseRatioValue(value) {
+  if (value == null) return 0;
+  if (typeof value === 'number') return value;
+  const cleaned = String(value).replace(/[^\d.,-]/g, '').replace(',', '.');
+  const parsed = Number(cleaned);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function buildFallbackStructuredInsights(section, context) {
+  const insights = [];
+  const add = (item) => {
+    if (item?.titulo && insights.length < 8) insights.push(item);
+  };
+
+  if (section === 'meta') {
+    const spend = Number(context.adSpend || 0);
+    const purchases = Number(context.metaPurchases || 0);
+    const roas = parseRatioValue(context.roas);
+    const ctr = parseRatioValue(context.ctr);
+
+    if (spend <= 0) {
+      add({
+        titulo: 'No hay inversión publicitaria registrada',
+        descripcion: 'La sección Meta no muestra gasto en el período. Antes de evaluar performance, confirmá si no hubo inversión o si falta sincronización.',
+        tipo: 'diagnostic',
+        severidad: 'warning',
+        verdict: 'REVISAR',
+        metricKey: 'adSpend',
+      });
+    } else if (purchases <= 0) {
+      add({
+        titulo: 'Hay spend sin compras atribuidas',
+        descripcion: `Se registraron ${Math.round(spend).toLocaleString('es-AR')} de inversión sin compras Meta atribuidas en el período.`,
+        tipo: 'alert',
+        severidad: 'critical',
+        verdict: 'REVISAR',
+        metricKey: 'metaPurchases',
+      });
+    } else if (roas >= 2) {
+      add({
+        titulo: 'La adquisición muestra una base rentable',
+        descripcion: `El ROAS del período quedó en ${roas.toFixed(2)}x con ${purchases.toLocaleString('es-AR')} compras atribuidas. Hay señal para identificar campañas escalables.`,
+        tipo: 'win',
+        severidad: 'positive',
+        verdict: 'ESCALAR',
+        metricKey: 'roas',
+      });
+    } else {
+      add({
+        titulo: 'La eficiencia de adquisición todavía es frágil',
+        descripcion: `El ROAS del período quedó en ${roas.toFixed(2)}x. Conviene separar campañas sostenibles de campañas que solo consumen presupuesto.`,
+        tipo: 'diagnostic',
+        severidad: 'warning',
+        verdict: 'REVISAR',
+        metricKey: 'roas',
+      });
+    }
+
+    if (ctr > 0 && ctr < 1) {
+      add({
+        titulo: 'CTR bajo para la inversión actual',
+        descripcion: `El CTR de la cuenta está en ${ctr.toFixed(2)}%. Puede haber fatiga creativa o un problema de propuesta inicial.`,
+        tipo: 'alert',
+        severidad: 'warning',
+        verdict: 'TESTEAR',
+        metricKey: 'ctr',
+      });
+    }
+
+    add({
+      titulo: 'Bajar a campañas con gasto real',
+      descripcion: 'La lectura útil en Meta empieza por campañas con spend y volumen. Evitá sacar conclusiones sobre estructuras sin delivery.',
+      tipo: 'action_item',
+      severidad: 'diagnostic',
+      verdict: 'IMPLEMENTAR',
+      metricKey: 'campaigns',
+    });
+  } else if (section === 'dashboard') {
+    const revenue = Number(context.revenue || 0);
+    const profit = Number(context.adjustedProfit ?? context.profit ?? 0);
+    const orders = Number(context.ordenesPositivas || 0);
+    const ncPct = parseRatioValue(context.ncPct);
+
+    add({
+      titulo: 'Foto ejecutiva del período',
+      descripcion: `La tienda cerró con ${orders.toLocaleString('es-AR')} órdenes positivas, ${Math.round(revenue).toLocaleString('es-AR')} de facturación y ${Math.round(profit).toLocaleString('es-AR')} de ganancia ajustada.`,
+      tipo: 'diagnostic',
+      severidad: 'diagnostic',
+      verdict: null,
+      metricKey: 'revenue',
+    });
+
+    if (ncPct >= 80 && orders > 0) {
+      add({
+        titulo: 'Dependencia alta de nuevos clientes',
+        descripcion: `El mix actual muestra ${ncPct.toFixed(1)}% de órdenes de nuevos clientes. Conviene revisar recompra y calidad de base.`,
+        tipo: 'alert',
+        severidad: 'warning',
+        verdict: 'REVISAR',
+        metricKey: 'ncPct',
+      });
+    }
+  } else {
+    add({
+      titulo: 'Lectura rápida disponible',
+      descripcion: 'La sección no tiene AI paga activa, así que se generó un diagnóstico local de respaldo para no dejarla vacía.',
+      tipo: 'diagnostic',
+      severidad: 'diagnostic',
+      verdict: null,
+      metricKey: null,
+    });
+  }
+
+  return {
+    summary: `Fallback local para ${section}`,
+    confidence: context?.dataQuality?.confidence ?? 0.45,
+    insights,
+    tokensUsed: 0,
+    model: 'local-fallback',
+    provider: 'local',
+    context,
+  };
 }
 
 async function structuredInsights(section, storeId, from, to, userId) {
@@ -649,4 +793,4 @@ async function testConnection(userId) {
   return { status: 'ok', provider: credentials.provider, source: credentials.source };
 }
 
-module.exports = { analyze, chat, testConnection, structuredInsights, buildContext, generateWorkflow };
+module.exports = { analyze, chat, testConnection, structuredInsights, buildContext, generateWorkflow, buildFallbackStructuredInsights };

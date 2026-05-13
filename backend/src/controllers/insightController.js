@@ -1,5 +1,5 @@
 const Insight = require('../models/Insight');
-const { analyze, structuredInsights } = require('../services/aiService');
+const { analyze, structuredInsights, buildContext, buildFallbackStructuredInsights } = require('../services/aiService');
 const logger = require('../utils/logger');
 
 // GET /stores/:id/insights?section=&tipo=&estado=
@@ -142,27 +142,33 @@ exports.generate = async (req, res, next) => {
       result = await structuredInsights(section, storeId, from, to, req.user._id);
     } catch (error) {
       logger.warn(`Structured insights failed, falling back to text parse: ${error.message}`);
-      const fallback = await analyze(section, storeId, from, to, req.user._id);
-      const lines = fallback.analysis.split('\n').filter((l) => l.trim());
-      result = {
-        confidence: fallback.confidence ?? 0.5,
-        provider: fallback.provider,
-        model: fallback.model,
-        tokensUsed: fallback.tokensUsed,
-        insights: lines
-          .map((line) => line.replace(/^[-*#\s]+/, '').trim())
-          .filter((line) => line.length >= 10)
-          .slice(0, 8)
-          .map((line) => ({
-            titulo: line.length > 80 ? `${line.slice(0, 80)}...` : line,
-            descripcion: line,
-            tipo: 'diagnostic',
-            severidad: 'neutral',
-            verdict: null,
-            metricKey: null,
-            impacto: null,
-          })),
-      };
+      try {
+        const fallback = await analyze(section, storeId, from, to, req.user._id);
+        const lines = fallback.analysis.split('\n').filter((l) => l.trim());
+        result = {
+          confidence: fallback.confidence ?? 0.5,
+          provider: fallback.provider,
+          model: fallback.model,
+          tokensUsed: fallback.tokensUsed,
+          insights: lines
+            .map((line) => line.replace(/^[-*#\s]+/, '').trim())
+            .filter((line) => line.length >= 10)
+            .slice(0, 8)
+            .map((line) => ({
+              titulo: line.length > 80 ? `${line.slice(0, 80)}...` : line,
+              descripcion: line,
+              tipo: 'diagnostic',
+              severidad: 'neutral',
+              verdict: null,
+              metricKey: null,
+              impacto: null,
+            })),
+        };
+      } catch (analysisError) {
+        logger.warn(`AI text fallback failed, using local heuristic insights: ${analysisError.message}`);
+        const context = await buildContext(section, storeId, from, to);
+        result = buildFallbackStructuredInsights(section, context);
+      }
     }
 
     const insights = result.insights.map((item) => ({
@@ -175,7 +181,7 @@ exports.generate = async (req, res, next) => {
       impacto: item.impacto || undefined,
       verdict: item.verdict || null,
       layer: 'L2',
-      generatedBy: result.provider === 'openai' ? 'openai' : 'claude',
+      generatedBy: result.provider === 'openai' ? 'openai' : result.provider === 'local' ? 'local' : 'claude',
       metricKey: item.metricKey || undefined,
       confidence: result.confidence ?? 0.5,
       metadata: {

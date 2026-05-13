@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Boceto Costos v1 — Hooks Analytics</title>
+<style>
+  :root {
+    --bg: #0a0a0b;
+    --card: rgba(255,255,255,0.025);
+    --card-border: rgba(255,255,255,0.08);
+    --text-primary: #ffffff;
+    --text-secondary: rgba(255,255,255,0.92);
+    --text-muted: rgba(255,255,255,0.75);
+    --emerald: #34d399;
+    --emerald-dim: rgba(52,211,153,0.15);
+    --red: #f87171;
+    --red-dim: rgba(248,113,113,0.12);
+    --amber: #fbbf24;
+    --amber-dim: rgba(251,191,36,0.12);
+    --blue: #60a5fa;
+    --blue-dim: rgba(96,165,250,0.12);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, 'Inter', system-ui, sans-serif;
+    font-size: 13px;
+    padding: 32px;
+    min-height: 100vh;
+  }
+  .container { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+
+  /* Anchor/note arriba */
+  .anchor {
+    color: var(--text-muted);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    margin-bottom: 8px;
+  }
+
+  /* Banner cobertura */
+  .banner {
+    background: linear-gradient(135deg, rgba(251,191,36,0.08), rgba(251,191,36,0.02));
+    border: 1px solid rgba(251,191,36,0.25);
+    border-radius: 14px;
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .banner__left { display: flex; align-items: center; gap: 14px; }
+  .banner__icon {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: rgba(251,191,36,0.18);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--amber);
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+  .banner__text { line-height: 1.45; }
+  .banner__title { color: var(--amber); font-weight: 600; font-size: 14px; margin-bottom: 2px; }
+  .banner__sub { color: var(--text-secondary); font-size: 12.5px; }
+  .banner__cta {
+    background: var(--amber);
+    color: #1a1100;
+    border: 0;
+    padding: 9px 18px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .banner__cta:hover { background: #fcd34d; }
+
+  /* Card base */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    padding: 24px;
+  }
+  .card__header { margin-bottom: 18px; display: flex; justify-content: space-between; align-items: flex-end; }
+  .card__title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--text-muted); font-weight: 600; }
+  .card__period { font-size: 11px; color: var(--text-muted); }
+
+  /* P&L principal — el HERO de la página */
+  .pnl-hero { padding: 28px 28px 24px; }
+  .pnl-row {
+    display: grid;
+    grid-template-columns: 1.4fr 220px 140px 56px 22px;
+    align-items: center;
+    gap: 16px;
+    padding: 11px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+  }
+  .pnl-row:last-child { border-bottom: 0; }
+  .pnl-row__label-block { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .pnl-row__label { font-size: 13px; color: var(--text-secondary); }
+  .pnl-row__label.is-primary { color: var(--text-primary); font-weight: 600; font-size: 14px; }
+  .pnl-row__bar-track {
+    height: 8px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 4px;
+    flex: 1;
+    overflow: hidden;
+    min-width: 100px;
+  }
+  .pnl-row__bar-fill {
+    height: 100%;
+    border-radius: 4px;
+  }
+  .pnl-row__bar-fill.is-revenue { background: linear-gradient(90deg, #60a5fa, #3b82f6); }
+  .pnl-row__bar-fill.is-cost    { background: linear-gradient(90deg, #f87171, #ef4444); }
+  .pnl-row__bar-fill.is-profit  { background: linear-gradient(90deg, #34d399, #10b981); }
+  .pnl-row__bar-fill.is-missing { background: repeating-linear-gradient(45deg, rgba(251,191,36,0.25) 0 4px, transparent 4px 8px); border: 1px dashed rgba(251,191,36,0.4); }
+  .pnl-row__value {
+    font-size: 13.5px;
+    font-weight: 600;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .pnl-row__value.is-cost { color: var(--red); }
+  .pnl-row__value.is-revenue { color: var(--text-primary); }
+  .pnl-row__value.is-profit { color: var(--emerald); font-size: 16px; }
+  .pnl-row__pct {
+    font-size: 11.5px;
+    color: var(--text-muted);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .pnl-row__flag {
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px;
+    background: rgba(251,191,36,0.15);
+    color: var(--amber);
+    cursor: help;
+  }
+  .pnl-row.is-separator {
+    border-top: 1px solid rgba(255,255,255,0.08);
+    margin-top: 6px;
+    padding-top: 16px;
+  }
+  .pnl-row__sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+  /* Grid 2 cols */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+  /* Mini KPI rows dentro de cards chicas */
+  .mini-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .mini-row:last-child { border-bottom: 0; }
+  .mini-row__label { font-size: 12px; color: var(--text-secondary); }
+  .mini-row__value { font-size: 14px; font-weight: 600; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+  .mini-row__sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+  /* Footer chip de salud */
+  .health-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--emerald-dim);
+    color: var(--emerald);
+    border-radius: 999px;
+    padding: 3px 10px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .health-pill__dot { width: 6px; height: 6px; border-radius: 50%; background: var(--emerald); }
+
+  /* Configurar costos — acordeón */
+  .config {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .config__head {
+    padding: 18px 22px;
+    display: flex; justify-content: space-between; align-items: center;
+    cursor: pointer;
+    user-select: none;
+  }
+  .config__head:hover { background: rgba(255,255,255,0.015); }
+  .config__head-left { display: flex; align-items: center; gap: 12px; }
+  .config__title { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+  .config__progress {
+    font-size: 11px;
+    color: var(--amber);
+    background: var(--amber-dim);
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-weight: 600;
+  }
+  .config__caret {
+    color: var(--text-muted);
+    font-size: 16px;
+    transition: transform 0.2s;
+  }
+  .config__caret.is-open { transform: rotate(180deg); }
+  .config__sub {
+    font-size: 11.5px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  /* AI footer */
+  .ai-footer { padding: 24px; opacity: 0.65; border: 1px dashed var(--card-border); border-radius: 14px; }
+  .ai-footer p { color: var(--text-muted); font-size: 12px; text-align: center; }
+
+  /* Sticky label en P&L */
+  .breakeven-vs-actual {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 14px;
+    padding-top: 14px;
+    margin-top: 6px;
+    border-top: 1px dashed rgba(255,255,255,0.06);
+  }
+  .breakeven-vs-actual__row { display: flex; justify-content: space-between; font-size: 12px; padding: 4px 0; }
+  .breakeven-vs-actual__row .label { color: var(--text-muted); }
+  .breakeven-vs-actual__row .v-min { color: var(--text-muted); font-variant-numeric: tabular-nums; }
+  .breakeven-vs-actual__row .v-actual { color: var(--emerald); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  /* Note */
+  .scratch-note {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-align: center;
+    margin-top: 12px;
+    line-height: 1.6;
+  }
+  .scratch-note strong { color: var(--text-secondary); }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div>
+    <p class="anchor">Boceto · Página Costos rediseñada</p>
+  </div>
+
+  <!-- 1. Banner condicional (solo si cobertura baja) -->
+  <div class="banner">
+    <div class="banner__left">
+      <div class="banner__icon">!</div>
+      <div class="banner__text">
+        <div class="banner__title">Tu margen es estimado, no real</div>
+        <div class="banner__sub">0 de 1.869 productos con costo cargado. Sin COGS, comisiones ni fijos, el 50% que ves arriba es ficticio.</div>
+      </div>
+    </div>
+    <button class="banner__cta">Cargar costos →</button>
+  </div>
+
+  <!-- 2. P&L visual como hero único -->
+  <div class="card pnl-hero">
+    <div class="card__header">
+      <div>
+        <div class="card__title">Estado de resultados</div>
+        <div class="card__period" style="margin-top:4px; font-size: 12px; color: var(--text-secondary);">Cómo se descompone tu facturación</div>
+      </div>
+      <div class="card__period">Últimos 30 días · 13 abr – 12 may</div>
+    </div>
+
+    <!-- Revenue -->
+    <div class="pnl-row">
+      <div class="pnl-row__label-block">
+        <span class="pnl-row__label is-primary">Facturación</span>
+      </div>
+      <div class="pnl-row__bar-track"><div class="pnl-row__bar-fill is-revenue" style="width: 100%"></div></div>
+      <div class="pnl-row__value is-revenue">$18.237.042</div>
+      <div class="pnl-row__pct" style="color: var(--text-muted);">100%</div>
+      <div></div>
+    </div>
+
+    <!-- Costos -->
+    <div class="pnl-row">
+      <div class="pnl-row__label-block">
+        <span class="pnl-row__label">– Costo de productos</span>
+      </div>
+      <div class="pnl-row__bar-track"><div class="pnl-row__bar-fill is-missing" style="width: 100%"></div></div>
+      <div class="pnl-row__value is-cost">$0</div>
+      <div class="pnl-row__pct">0%</div>
+      <div class="pnl-row__flag" title="0 productos con costo cargado">!</div>
+    </div>
+
+    <div class="pnl-row">
+      <div class="pnl-row__label-block">
+        <span class="pnl-row__label">– Comisiones y fees</span>
+      </div>
+      <div class="pnl-row__bar-track"><div class="pnl-row__bar-fill is-missing" style="width: 100%"></div></div>
+      <div class="pnl-row__value is-cost">$0</div>
+      <div class="pnl-row__pct">0%</div>
+      <div class="pnl-row__flag" title="Sin comisiones configuradas">!</div>
+    </div>
+
+    <div class="pnl-row">
+      <div class="pnl-row__label-block">
+        <span class="pnl-row__label">– Envío</span>
+      </div>
+      <div class="pnl-row__bar-track"><div class="pnl-row__bar-fill is-cost" style="width: 10.3%"></div></div>
+      <div class="pnl-row__value is-cost">$1.887.532</div>
+      <div class="pnl-row__pct">10,3%</div>
+      <div></div>
+    </div>
+
+    <div class="pnl-row">
+      <div class="pnl-row__label-block">
+        <span class="pnl-row__label">– Inversión publicitaria</span>
+      </div>
+      <div class="pnl-row__bar-track"><div class="pnl-row__bar-fill is-cost" style="width: 39.4%"></div></div>
+      <div class="pnl-row__value is-cost">$7.192.650</div>
+      <div class="pnl-row__pct">39,4%</div>
+      <div></div>
+    </div>
+
+    <div class="pnl-row">
+      <div class="pnl-row__label-block">
+        <span class="pnl-row__label">– Costos fijos</span>
+      </div>
+      <div class="pnl-row__bar-track"><div class="pnl-row__bar-fill is-missing" style="width: 100%"></div></div>
+      <div class="pnl-row__value is-cost">$0</div>
+      <div class="pnl-row__pct">0%</div>
+      <div class="pnl-row__flag" title="No hay costos fijos cargados">!</div>
+    </div>
+
+    <!-- Profit -->
+    <div class="pnl-row is-separator">
+      <div class="pnl-row__label-block">
+        <span class="pnl-row__label is-primary">Profit estimado</span>
+      </div>
+      <div class="pnl-row__bar-track"><div class="pnl-row__bar-fill is-profit" style="width: 50.2%"></div></div>
+      <div class="pnl-row__value is-profit">$9.156.860</div>
+      <div class="pnl-row__pct" style="color: var(--emerald);">50,2%</div>
+      <div class="pnl-row__flag" title="Estimado: faltan COGS, comisiones y fijos">!</div>
+    </div>
+
+    <div style="margin-top: 14px; font-size: 11.5px; color: var(--text-muted); display: flex; justify-content: space-between;">
+      <span>192 órdenes pagas · ticket promedio $94.985</span>
+      <span class="health-pill"><span class="health-pill__dot"></span> Datos respaldados · 97% órdenes</span>
+    </div>
+  </div>
+
+  <!-- 3. Grid 2 cols: Breakeven + Acción a tomar -->
+  <div class="grid-2">
+
+    <!-- Breakeven -->
+    <div class="card">
+      <div class="card__header">
+        <div>
+          <div class="card__title">Punto de equilibrio</div>
+          <div class="card__period" style="margin-top:4px; font-size: 12px; color: var(--text-secondary);">Mínimos para no perder plata con la inversión publicitaria</div>
+        </div>
+      </div>
+
+      <div class="mini-row">
+        <div>
+          <div class="mini-row__label">ROAS mínimo</div>
+          <div class="mini-row__sub">Por cada $1 invertido en ads</div>
+        </div>
+        <div class="mini-row__value">1,11×</div>
+      </div>
+      <div class="mini-row">
+        <div>
+          <div class="mini-row__label">CPA máximo</div>
+          <div class="mini-row__sub">Costo por compra tolerable</div>
+        </div>
+        <div class="mini-row__value">$85.153</div>
+      </div>
+      <div class="mini-row">
+        <div>
+          <div class="mini-row__label">Ticket mínimo</div>
+          <div class="mini-row__sub">AOV para que valga la pena</div>
+        </div>
+        <div class="mini-row__value">$10.965</div>
+      </div>
+
+      <div class="breakeven-vs-actual">
+        <div>
+          <div class="breakeven-vs-actual__row">
+            <span class="label">Hoy estás en</span>
+          </div>
+          <div class="breakeven-vs-actual__row">
+            <span class="label">ROAS</span>
+            <span><span class="v-min">mín 1,11×</span> · <span class="v-actual">real 1,27×</span></span>
+          </div>
+          <div class="breakeven-vs-actual__row">
+            <span class="label">Ticket</span>
+            <span><span class="v-min">mín $10.965</span> · <span class="v-actual">real $94.985</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lo que falta para tener verdad financiera -->
+    <div class="card">
+      <div class="card__header">
+        <div>
+          <div class="card__title">Qué falta para ver tu profit real</div>
+          <div class="card__period" style="margin-top:4px; font-size: 12px; color: var(--text-secondary);">Hoy solo medimos envío y ad spend</div>
+        </div>
+      </div>
+
+      <div class="mini-row">
+        <div>
+          <div class="mini-row__label" style="color: var(--amber);">Costo de productos</div>
+          <div class="mini-row__sub">1.869 productos · 0 con costo</div>
+        </div>
+        <div style="font-size: 11px; color: var(--text-muted);">⚠ falta</div>
+      </div>
+      <div class="mini-row">
+        <div>
+          <div class="mini-row__label" style="color: var(--amber);">Comisiones de cobro</div>
+          <div class="mini-row__sub">MercadoPago, Visa, débito, cuotas</div>
+        </div>
+        <div style="font-size: 11px; color: var(--text-muted);">⚠ falta</div>
+      </div>
+      <div class="mini-row">
+        <div>
+          <div class="mini-row__label" style="color: var(--amber);">Costos fijos</div>
+          <div class="mini-row__sub">Alquiler, sueldos, herramientas</div>
+        </div>
+        <div style="font-size: 11px; color: var(--text-muted);">⚠ falta</div>
+      </div>
+      <div class="mini-row">
+        <div>
+          <div class="mini-row__label" style="color: var(--emerald);">Costo de envío</div>
+          <div class="mini-row__sub">Calculado por orden</div>
+        </div>
+        <div style="font-size: 11px; color: var(--emerald);">✓ ok</div>
+      </div>
+      <div class="mini-row">
+        <div>
+          <div class="mini-row__label" style="color: var(--emerald);">Inversión publicitaria</div>
+          <div class="mini-row__sub">Sincronizada con Meta</div>
+        </div>
+        <div style="font-size: 11px; color: var(--emerald);">✓ ok</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 4. Configurar costos — acordeón -->
+  <div class="config">
+    <div class="config__head">
+      <div class="config__head-left">
+        <div>
+          <div class="config__title">Configurar costos</div>
+          <div class="config__sub">Productos · Comisiones · Envío · Fijos</div>
+        </div>
+        <span class="config__progress">2 de 5 cargados</span>
+      </div>
+      <span class="config__caret">▾</span>
+    </div>
+  </div>
+
+  <!-- 5. AI footer -->
+  <div class="ai-footer">
+    <p>[ Análisis asistido · ClaudeActionBar + AIAnalysisPanel ]</p>
+  </div>
+
+  <p class="scratch-note">
+    <strong>Comparación</strong> · página actual: 7 secciones, ~636 líneas, h1 redundante, P&L como tabla plana, configuración fragmentada en 3 forms apilados, integridad explicada con jerga financiera.<br>
+    <strong>Esta versión:</strong> 4 bloques visibles (1 banner condicional + P&L visual + 2 cards laterales + 1 acordeón cerrado). 0 jerga. Acción primaria clarísima desde el primer scroll.
+  </p>
+
+</div>
+</body>
+</html>

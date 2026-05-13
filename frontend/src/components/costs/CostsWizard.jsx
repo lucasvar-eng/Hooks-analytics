@@ -16,9 +16,9 @@ function buildCsv(rows) {
   return [header, ...lines].join('\n');
 }
 
-export default function CostsWizard({ storeId, onUploaded }) {
+export default function CostsWizard({ storeId, onUploaded, embedded = false }) {
   const { from, to } = useSelector((s) => s.date);
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(embedded);
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState([]);
   const [totalWithoutCost, setTotalWithoutCost] = useState(0);
@@ -88,25 +88,36 @@ export default function CostsWizard({ storeId, onUploaded }) {
     }
   };
 
+  const headerWrapClass = embedded ? '' : 'card p-5';
+
   return (
-    <div className="card p-5">
-      <div className="flex items-center justify-between gap-3 mb-3">
-        <div>
-          <p className="kpi-label">Wizard de costos · top sellers</p>
-          <p className="text-app-secondary text-[12px] mt-1">
-            Cargá los costos de los productos que más facturaron en el período. {totalWithoutCost > 0 && (
-              <>Hay <strong className="text-app-primary">{totalWithoutCost}</strong> productos sin costo cargado.</>
-            )}
-          </p>
+    <div className={headerWrapClass}>
+      {!embedded && (
+        <div className="flex items-center justify-between gap-3 mb-3">
+          <div>
+            <p className="kpi-label">Wizard de costos · top sellers</p>
+            <p className="text-app-secondary text-[12px] mt-1">
+              Cargá los costos de los productos que más facturaron en el período. {totalWithoutCost > 0 && (
+                <>Hay <strong className="text-app-primary">{totalWithoutCost}</strong> productos sin costo cargado.</>
+              )}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            className="btn-secondary text-[12px]"
+          >
+            {open ? 'Ocultar' : 'Cargar top sellers'}
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          className="btn-secondary text-[12px]"
-        >
-          {open ? 'Ocultar' : 'Cargar top sellers'}
-        </button>
-      </div>
+      )}
+      {embedded && totalWithoutCost > 0 && (
+        <p className="text-[12px] text-gray-200 mb-3">
+          Top sellers del período sin costo cargado. Cargá los más vendidos primero — son los que más impactan el margen.
+          {' '}
+          <span className="text-gray-300">{totalWithoutCost} productos sin costo en total.</span>
+        </p>
+      )}
 
       {open && (
         <>

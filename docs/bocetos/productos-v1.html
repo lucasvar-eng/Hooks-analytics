@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Boceto Productos v1 — Hooks Analytics</title>
+<style>
+  :root {
+    --bg: #0a0a0b;
+    --card: rgba(255,255,255,0.025);
+    --card-border: rgba(255,255,255,0.08);
+    --text-primary: #ffffff;
+    --text-secondary: rgba(255,255,255,0.92);
+    --text-muted: rgba(255,255,255,0.75);
+    --emerald: #34d399;
+    --red: #f87171;
+    --amber: #fbbf24;
+    --blue: #60a5fa;
+    --purple: #c084fc;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, 'Inter', system-ui, sans-serif;
+    font-size: 13px;
+    padding: 32px;
+    min-height: 100vh;
+  }
+  .container { max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+
+  .anchor { color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.18em; margin-bottom: 8px; }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    padding: 24px;
+  }
+  .card__title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--text-muted); font-weight: 600; }
+  .card__sub { font-size: 12.5px; color: var(--text-secondary); margin-top: 4px; }
+
+  /* HEALTH BAR — barra apilada visual */
+  .health { padding: 26px 28px 22px; }
+  .health__header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 18px; }
+  .health__hero {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .health__hero-num { font-size: 32px; font-weight: 700; color: var(--text-primary); }
+  .health__hero-label { color: var(--text-secondary); font-size: 13px; }
+
+  .health-bar {
+    display: flex;
+    width: 100%;
+    height: 36px;
+    border-radius: 8px;
+    overflow: hidden;
+    background: rgba(255,255,255,0.04);
+    gap: 2px;
+  }
+  .health-bar__seg {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.95);
+    transition: opacity .2s;
+    min-width: 32px;
+  }
+  .health-bar__seg.is-active { background: linear-gradient(90deg, #34d399, #10b981); }
+  .health-bar__seg.is-dead { background: linear-gradient(90deg, #fbbf24, #f59e0b); }
+  .health-bar__seg.is-out  { background: linear-gradient(90deg, #f87171, #ef4444); }
+  .health-bar__seg.is-other { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.6); }
+
+  .health-legend {
+    display: flex;
+    gap: 24px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+  }
+  .health-legend__item { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-secondary); }
+  .health-legend__dot { width: 10px; height: 10px; border-radius: 3px; }
+  .health-legend__dot.is-active { background: #34d399; }
+  .health-legend__dot.is-dead { background: #fbbf24; }
+  .health-legend__dot.is-out { background: #f87171; }
+  .health-legend__count { font-weight: 700; color: var(--text-primary); }
+
+  .health__footer { margin-top: 16px; font-size: 12px; color: var(--text-muted); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+
+  /* KPI HERO grid */
+  .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .kpi { padding: 18px 20px; }
+  .kpi__label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-muted); }
+  .kpi__value { font-size: 28px; font-weight: 700; color: var(--text-primary); margin-top: 6px; line-height: 1.1; }
+  .kpi__value.is-amber { color: var(--amber); }
+  .kpi__value.is-red { color: var(--red); }
+  .kpi__value.is-emerald { color: var(--emerald); }
+  .kpi__sub { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+
+  /* Actions grid */
+  .actions-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .action-card { padding: 22px 24px; }
+  .action-card__header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 14px; }
+  .action-card__title { font-size: 13px; font-weight: 700; color: var(--text-primary); }
+  .action-card__sub { font-size: 11.5px; color: var(--text-muted); margin-top: 2px; }
+  .action-card__cta { font-size: 11px; color: var(--blue); font-weight: 600; cursor: pointer; }
+
+  .action-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+  }
+  .action-row:last-child { border-bottom: 0; }
+  .action-row__thumb {
+    width: 32px; height: 32px;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.05);
+    flex-shrink: 0;
+  }
+  .action-row__body { flex: 1; min-width: 0; }
+  .action-row__name {
+    font-size: 12.5px;
+    color: var(--text-primary);
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .action-row__meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .action-row__value { font-size: 12.5px; font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; flex-shrink: 0; }
+  .action-row__value.is-amber { color: var(--amber); }
+  .action-row__value.is-red { color: var(--red); }
+
+  /* Filter chips */
+  .filter-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .chip {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: var(--text-secondary);
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .chip.is-active { background: rgba(96,165,250,0.15); border-color: rgba(96,165,250,0.4); color: #93c5fd; }
+  .chip__count { background: rgba(255,255,255,0.08); padding: 1px 7px; border-radius: 999px; font-size: 10px; font-weight: 600; }
+  .chip.is-active .chip__count { background: rgba(96,165,250,0.25); color: #bfdbfe; }
+
+  .search-input {
+    flex: 1;
+    min-width: 200px;
+    max-width: 280px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: var(--text-primary);
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+  }
+  .search-input::placeholder { color: var(--text-muted); }
+
+  /* Tabla */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { padding: 11px 12px; text-align: left; font-size: 12.5px; }
+  th { color: var(--text-muted); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; border-bottom: 1px solid var(--card-border); }
+  tbody tr { border-bottom: 1px solid rgba(255,255,255,0.03); }
+  tbody tr:hover { background: rgba(255,255,255,0.015); cursor: pointer; }
+  td.tn { font-variant-numeric: tabular-nums; }
+  td.tn-right { font-variant-numeric: tabular-nums; text-align: right; }
+  th.tn-right { text-align: right; }
+
+  .product-cell { display: flex; align-items: center; gap: 10px; min-width: 240px; }
+  .product-cell__thumb { width: 32px; height: 32px; border-radius: 6px; background: rgba(255,255,255,0.05); flex-shrink: 0; }
+  .product-cell__name { color: var(--text-primary); font-weight: 500; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .product-cell__sub { color: var(--text-muted); font-size: 11px; }
+
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+  .badge.is-active { background: rgba(52,211,153,0.15); color: #6ee7b7; }
+  .badge.is-dead { background: rgba(251,191,36,0.15); color: #fcd34d; }
+  .badge.is-out { background: rgba(248,113,113,0.15); color: #fca5a5; }
+  .badge.is-low { background: rgba(248,113,113,0.15); color: #fca5a5; }
+  .badge.is-over { background: rgba(192,132,252,0.15); color: #d8b4fe; }
+
+  /* Acordeón */
+  .accordion {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .accordion__head {
+    padding: 18px 22px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+  }
+  .accordion__head:hover { background: rgba(255,255,255,0.015); }
+  .accordion__title { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+  .accordion__sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .accordion__caret { color: var(--text-muted); font-size: 14px; }
+
+  /* Sticky filter row */
+  .table-card { padding: 20px 24px; }
+  .table-card__filters { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+
+  .scratch-note {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-align: center;
+    margin-top: 14px;
+    line-height: 1.6;
+  }
+  .scratch-note strong { color: var(--text-secondary); }
+</style>
+</head>
+<body>
+<div class="container">
+  <div>
+    <p class="anchor">Boceto · Página Productos rediseñada</p>
+  </div>
+
+  <!-- 1. Salud del catálogo (hero) -->
+  <div class="card health">
+    <div class="health__header">
+      <div>
+        <p class="card__title">Salud del catálogo</p>
+        <p class="card__sub">Qué porcentaje de tu surtido está realmente moviéndose</p>
+      </div>
+      <p style="font-size: 11px; color: var(--text-muted);">Últimos 30 días · 13 abr – 13 may</p>
+    </div>
+
+    <div class="health__hero">
+      <span class="health__hero-num">1.869</span>
+      <span class="health__hero-label">productos en total · 235 con venta en el período</span>
+    </div>
+
+    <!-- Barra apilada visual -->
+    <div class="health-bar">
+      <div class="health-bar__seg is-active" style="flex: 235;" title="Activos vendidos">235</div>
+      <div class="health-bar__seg is-other" style="flex: 717;" title="Activos sin venta">717</div>
+      <div class="health-bar__seg is-dead" style="flex: 829;" title="Dead stock + sin movimiento">829</div>
+      <div class="health-bar__seg is-out" style="flex: 88;" title="Sin stock">88</div>
+    </div>
+
+    <div class="health-legend">
+      <div class="health-legend__item">
+        <span class="health-legend__dot is-active"></span>
+        Vendidos en el período · <span class="health-legend__count">235</span> · 12,6%
+      </div>
+      <div class="health-legend__item">
+        <span class="health-legend__dot is-other" style="background: rgba(255,255,255,0.2);"></span>
+        Activos sin venta · <span class="health-legend__count">717</span> · 38,4%
+      </div>
+      <div class="health-legend__item">
+        <span class="health-legend__dot is-dead"></span>
+        Sin movimiento &gt;90d · <span class="health-legend__count">829</span> · 44,4%
+      </div>
+      <div class="health-legend__item">
+        <span class="health-legend__dot is-out"></span>
+        Sin stock · <span class="health-legend__count">88</span> · 4,7%
+      </div>
+    </div>
+
+    <div class="health__footer">
+      <span>$17.1M facturado · 283 unidades movidas · ticket promedio $94.985</span>
+      <span style="color: var(--amber);">⚠ 87% del catálogo está parado — concentrá esfuerzo en los 235 que mueven</span>
+    </div>
+  </div>
+
+  <!-- 2. KPI hero compactos (4) -->
+  <div class="kpi-grid">
+    <div class="card kpi">
+      <div class="kpi__label">Rotación</div>
+      <div class="kpi__value is-red">12,6%</div>
+      <div class="kpi__sub">235 de 1.869 con venta</div>
+    </div>
+    <div class="card kpi">
+      <div class="kpi__label">Sin movimiento</div>
+      <div class="kpi__value is-amber">1.634</div>
+      <div class="kpi__sub">87% del catálogo</div>
+    </div>
+    <div class="card kpi">
+      <div class="kpi__label">Sin stock</div>
+      <div class="kpi__value">88</div>
+      <div class="kpi__sub">4,7% · pérdida de venta</div>
+    </div>
+    <div class="card kpi">
+      <div class="kpi__label">Stock atrapado</div>
+      <div class="kpi__value">Sin datos</div>
+      <div class="kpi__sub">Falta cargar costos</div>
+    </div>
+  </div>
+
+  <!-- 3. Acciones recomendadas (2 cols) -->
+  <div class="actions-grid">
+    <div class="card action-card">
+      <div class="action-card__header">
+        <div>
+          <p class="action-card__title">Capital atrapado</p>
+          <p class="action-card__sub">Más stock + más tiempo sin venta — candidatos a liquidar</p>
+        </div>
+        <a href="#" class="action-card__cta">Ver todos →</a>
+      </div>
+      <div class="action-row">
+        <div class="action-row__thumb"></div>
+        <div class="action-row__body">
+          <p class="action-row__name">CAMPERA INFLABLE RUNNING UNISEX BC</p>
+          <p class="action-row__meta">18 unid. · 142 días sin venta · $89.000</p>
+        </div>
+        <span class="action-row__value is-amber">$1.6M</span>
+      </div>
+      <div class="action-row">
+        <div class="action-row__thumb"></div>
+        <div class="action-row__body">
+          <p class="action-row__name">ZAPATILLAS NEW BALANCE 530 PINK</p>
+          <p class="action-row__meta">12 unid. · 98 días sin venta · $182.000</p>
+        </div>
+        <span class="action-row__value is-amber">$2.1M</span>
+      </div>
+      <div class="action-row">
+        <div class="action-row__thumb"></div>
+        <div class="action-row__body">
+          <p class="action-row__name">CONJUNTO ADIDAS ORIGINAL BC/NG TALLE M</p>
+          <p class="action-row__meta">9 unid. · 76 días sin venta · $145.000</p>
+        </div>
+        <span class="action-row__value is-amber">$1.3M</span>
+      </div>
+      <div class="action-row">
+        <div class="action-row__thumb"></div>
+        <div class="action-row__body">
+          <p class="action-row__name">REMERA NIKE DRI-FIT LISA NEGRA</p>
+          <p class="action-row__meta">22 unid. · 65 días sin venta · $42.000</p>
+        </div>
+        <span class="action-row__value is-amber">$924k</span>
+      </div>
+    </div>
+
+    <div class="card action-card">
+      <div class="action-card__header">
+        <div>
+          <p class="action-card__title">Hay que reponer</p>
+          <p class="action-card__sub">Vendiendo bien y con stock para menos de 7 días</p>
+        </div>
+        <a href="#" class="action-card__cta">Ver todos →</a>
+      </div>
+      <div class="action-row">
+        <div class="action-row__thumb"></div>
+        <div class="action-row__body">
+          <p class="action-row__name">ZAPATILLAS SALOMON ALPHAGLIDE M CT/PTR</p>
+          <p class="action-row__meta">2 unid. · vende 1,2/día · 1,7 días de stock</p>
+        </div>
+        <span class="action-row__value is-red">⚠ 2d</span>
+      </div>
+      <div class="action-row">
+        <div class="action-row__thumb"></div>
+        <div class="action-row__body">
+          <p class="action-row__name">CALZAS NIKE UNIVERSA HIGH RISE</p>
+          <p class="action-row__meta">3 unid. · vende 0,8/día · 3,8 días de stock</p>
+        </div>
+        <span class="action-row__value is-red">⚠ 4d</span>
+      </div>
+      <div class="action-row">
+        <div class="action-row__thumb"></div>
+        <div class="action-row__body">
+          <p class="action-row__name">PELOTA FUTBOL GALAXY N3</p>
+          <p class="action-row__meta">5 unid. · vende 0,9/día · 5,5 días de stock</p>
+        </div>
+        <span class="action-row__value">5d</span>
+      </div>
+      <div class="action-row">
+        <div class="action-row__thumb"></div>
+        <div class="action-row__body">
+          <p class="action-row__name">CAMPERA REEBOK ALG IDENTITY FLEECE</p>
+          <p class="action-row__meta">4 unid. · vende 0,6/día · 6,7 días de stock</p>
+        </div>
+        <span class="action-row__value">7d</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Tabla con filtros chip -->
+  <div class="card table-card">
+    <div class="table-card__filters">
+      <span class="chip is-active">Todos <span class="chip__count">1.869</span></span>
+      <span class="chip">Vendidos <span class="chip__count">235</span></span>
+      <span class="chip">Sin movimiento <span class="chip__count">1.634</span></span>
+      <span class="chip">Sin stock <span class="chip__count">88</span></span>
+      <span class="chip">Sobrestock <span class="chip__count">1.751</span></span>
+      <span class="chip">Sin costo <span class="chip__count">1.869</span></span>
+      <input class="search-input" placeholder="Buscar producto o SKU..." />
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th>Estado</th>
+            <th class="tn-right">Precio</th>
+            <th class="tn-right">Stock</th>
+            <th class="tn-right">Vendidos</th>
+            <th class="tn-right">Ingresos</th>
+            <th>Salud</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              <div class="product-cell">
+                <div class="product-cell__thumb"></div>
+                <div>
+                  <div class="product-cell__name">ZAPATILLAS NEW BALANCE U530 7VI LIL/BC/BEI</div>
+                  <div class="product-cell__sub">NB0472017 · DAMA · Calzado</div>
+                </div>
+              </div>
+            </td>
+            <td><span class="badge is-active">Activo</span></td>
+            <td class="tn-right">$182.000</td>
+            <td class="tn-right">2</td>
+            <td class="tn-right">28</td>
+            <td class="tn-right">$5.096.000</td>
+            <td><span class="badge is-low">Stock bajo</span></td>
+            <td style="color: var(--text-muted);">→</td>
+          </tr>
+          <tr>
+            <td>
+              <div class="product-cell">
+                <div class="product-cell__thumb"></div>
+                <div>
+                  <div class="product-cell__name">PELOTA FUTBOL GALAXY N3</div>
+                  <div class="product-cell__sub">PG0049 · DEPORTES · Fútbol</div>
+                </div>
+              </div>
+            </td>
+            <td><span class="badge is-active">Activo</span></td>
+            <td class="tn-right">$31.900</td>
+            <td class="tn-right">25</td>
+            <td class="tn-right">6</td>
+            <td class="tn-right">$191.400</td>
+            <td></td>
+            <td style="color: var(--text-muted);">→</td>
+          </tr>
+          <tr>
+            <td>
+              <div class="product-cell">
+                <div class="product-cell__thumb"></div>
+                <div>
+                  <div class="product-cell__name">CAMPERA INFLABLE RUNNING UNISEX BC</div>
+                  <div class="product-cell__sub">RUN0218 · UNISEX · Running</div>
+                </div>
+              </div>
+            </td>
+            <td><span class="badge is-active">Activo</span></td>
+            <td class="tn-right">$89.000</td>
+            <td class="tn-right">18</td>
+            <td class="tn-right">0</td>
+            <td class="tn-right">—</td>
+            <td><span class="badge is-dead">Dead stock</span></td>
+            <td style="color: var(--text-muted);">→</td>
+          </tr>
+          <tr>
+            <td>
+              <div class="product-cell">
+                <div class="product-cell__thumb"></div>
+                <div>
+                  <div class="product-cell__name">CALZAS NIKE UNIVERSA HIGH RISE NEGRO</div>
+                  <div class="product-cell__sub">NK0892 · DAMA · Running</div>
+                </div>
+              </div>
+            </td>
+            <td><span class="badge is-active">Activo</span></td>
+            <td class="tn-right">$54.000</td>
+            <td class="tn-right">3</td>
+            <td class="tn-right">22</td>
+            <td class="tn-right">$1.188.000</td>
+            <td><span class="badge is-low">Stock bajo</span></td>
+            <td style="color: var(--text-muted);">→</td>
+          </tr>
+          <tr>
+            <td>
+              <div class="product-cell">
+                <div class="product-cell__thumb"></div>
+                <div>
+                  <div class="product-cell__name">REMERA NIKE DRI-FIT LISA NEGRA TALLE L</div>
+                  <div class="product-cell__sub">NK0451-L · UNISEX · Running</div>
+                </div>
+              </div>
+            </td>
+            <td><span class="badge is-active">Activo</span></td>
+            <td class="tn-right">$42.000</td>
+            <td class="tn-right">0</td>
+            <td class="tn-right">14</td>
+            <td class="tn-right">$588.000</td>
+            <td><span class="badge is-out">Sin stock</span></td>
+            <td style="color: var(--text-muted);">→</td>
+          </tr>
+          <tr>
+            <td>
+              <div class="product-cell">
+                <div class="product-cell__thumb"></div>
+                <div>
+                  <div class="product-cell__name">ZAPATILLAS SALOMON ALPHAGLIDE M CT/PTR</div>
+                  <div class="product-cell__sub">SLM0237 · HOMBRE · Calzado</div>
+                </div>
+              </div>
+            </td>
+            <td><span class="badge is-active">Activo</span></td>
+            <td class="tn-right">$160.000</td>
+            <td class="tn-right">2</td>
+            <td class="tn-right">2</td>
+            <td class="tn-right">$320.000</td>
+            <td><span class="badge is-low">Stock bajo</span></td>
+            <td style="color: var(--text-muted);">→</td>
+          </tr>
+          <tr>
+            <td>
+              <div class="product-cell">
+                <div class="product-cell__thumb"></div>
+                <div>
+                  <div class="product-cell__name">CONJUNTO ADIDAS ORIGINAL BC/NG TALLE M</div>
+                  <div class="product-cell__sub">AD9921-M · UNISEX · Conjuntos</div>
+                </div>
+              </div>
+            </td>
+            <td><span class="badge is-active">Activo</span></td>
+            <td class="tn-right">$145.000</td>
+            <td class="tn-right">9</td>
+            <td class="tn-right">0</td>
+            <td class="tn-right">—</td>
+            <td><span class="badge is-dead">Dead stock</span></td>
+            <td style="color: var(--text-muted);">→</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p style="margin-top: 14px; font-size: 11.5px; color: var(--text-muted); text-align: center;">
+      Mostrando 7 de 1.869 · click en una fila para drill-down con simulador de margen
+    </p>
+  </div>
+
+  <!-- 5. Acordeón "Detalle por categoría" cerrado -->
+  <div class="accordion">
+    <div class="accordion__head">
+      <div>
+        <p class="accordion__title">Detalle por categoría</p>
+        <p class="accordion__sub">Surtido, cobertura y margen por categoría · aging del stock</p>
+      </div>
+      <span class="accordion__caret">▾</span>
+    </div>
+  </div>
+
+  <p class="scratch-note">
+    <strong>Página actual:</strong> ~528 líneas, h1 redundante, 10 secciones, "dead stock" repetido 3 veces en 3 formatos distintos, sin filtros en tabla principal, sin acciones recomendadas, info de cobertura/conciliación que ya vive en Costos.<br>
+    <strong>Esta versión:</strong> 5 bloques (1 hero visual + 4 KPIs + 2 listas accionables + tabla filtrable + acordeón cerrado). Insight clave (12,6% rotación) arriba. Filtros chip que matchean el lenguaje de Salud. Capital atrapado y reposición como CTAs concretos.
+  </p>
+</div>
+</body>
+</html>

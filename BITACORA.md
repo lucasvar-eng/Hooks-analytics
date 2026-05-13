@@ -5,6 +5,73 @@ La bitácora se ordena de **arriba hacia abajo** por orden cronológico inverso 
 
 ---
 
+## 2026-05-13 — Mover Topic Map + Lenguaje a Creativos
+
+**Branch**: `codex/universal-dashboard-builder` (continúa)
+**Tienda usada para validar**: Límite Deportes
+
+### Trabajo hecho
+
+Cierra la decisión tomada en sesión: TopicMap + LanguageBank tenían 0 entries en TODA la base (≠ Competencia que sí le ve valor). Los movemos a tabs/bloques dentro de Creativos (donde realmente se usan los hooks y los ángulos) y los sacamos del sidebar.
+
+**Componentes nuevos** en `frontend/src/components/creativos/`:
+
+- `HipotesisAngulos.jsx` — bloque embebido para registrar ángulos creativos que estás probando.
+  - Form simplificado: nombre + status + stage + ángulo + hipótesis + nota performance. Reducido de 15 → 6 campos vs la página standalone original.
+  - Grid de 3 cols con cards livianas (badges status/stage/ángulo + hipótesis + nota).
+  - Empty state explicativo con ejemplo concreto (ángulo precio vs autoridad).
+  - Consume `/api/stores/:id/topic-maps` (sin cambios backend).
+
+- `HooksFrases.jsx` — banco de frases comerciales reutilizables.
+  - 4 tipos: Hook · Objeción · Frase · Vocabulario (badges de color por tipo).
+  - Form simplificado: tipo + texto + tags + response (solo objeciones). Reducido de 10 → 4 campos.
+  - Filtros chip por tipo con conteos dinámicos.
+  - **Click en una card copia el texto al portapapeles** (con feedback "✓ Copiado"). Si es objeción, copia "frase + Respuesta: …".
+  - Empty state explicativo con ejemplos por tipo.
+  - Consume `/api/stores/:id/language-bank` (sin cambios backend).
+
+**Cambios en `Creativos.jsx`**: suma `HipotesisAngulos` y `HooksFrases` al `SortableLayout` existente, después de `AnglePerformanceTable`. Los 5 bloques quedan reordenables.
+
+**Cambios en `StoreLayout.jsx`**:
+- Saco `topic-map` y `language-bank` de `NAV_ITEMS` y sus íconos del map.
+- Muevo Competencia de grupo "Contenido" a "Marketing" (queda junto a Meta Ads + Creativos).
+- El grupo "Contenido" desaparece — todo lo creativo vive ahora en Marketing.
+
+**Cambios en `App.jsx`**:
+- Saco los imports de `TopicMap` y `LanguageBank` (las páginas standalone).
+- Las routes `/topic-map` y `/language-bank` ahora son `<Navigate to="../creativos" replace />` para no romper bookmarks viejos.
+
+**Archivos eliminados** (vacíos después de la migración):
+- `frontend/src/pages/TopicMap.jsx` (367 líneas)
+- `frontend/src/pages/LanguageBank.jsx` (342 líneas)
+
+Los modelos, controllers, routes y services del backend (TopicMap, LanguageBank, contentStrategyService) siguen intactos — el contexto AI los sigue usando, los endpoints siguen respondiendo, y los componentes nuevos consumen los mismos endpoints.
+
+**Validación en runtime** (Límite, seeds temporales):
+- Sidebar limpio: Marketing ahora incluye Meta Ads · Creativos · Competencia. Topic Map y Lenguaje no aparecen.
+- `/topic-map` y `/language-bank` redirigen a `/creativos`.
+- Creativos renderiza con 5 bloques: KPIs · galería · performance por ángulo · hipótesis · hooks/frases.
+- Empty states se muestran con CTA centrales cuando no hay data.
+- Con 1 hipótesis seed: la card renderea con badges Borrador/Testing/autoridad + texto de hipótesis.
+- Con 3 frases seed (hook/objeción/frase): filtros chip con conteos correctos, cada card muestra tipo, texto, tags y "click para copiar". Objeción muestra respuesta con borde verde lateral.
+- Build frontend: clean, sin nuevos warnings.
+- Seeds eliminados al cerrar — quedan empty states.
+
+### Decisión de diseño clave
+
+**Reducción agresiva del schema visible**: TopicMap tenía 15 campos cargables, LanguageBank tenía 10. Los nuevos componentes muestran 6 y 4 respectivamente. Los campos del schema completo (awareness, avatar, territory, symptom, objection, etc.) siguen existiendo en la DB pero se ocultan en el form para no fricción. Si se necesitan, se rescatan los archivos standalone del git history y se reactivan.
+
+### Pendientes (actualiza backlog)
+
+- [x] **Mover TopicMap + LanguageBank** — listo.
+- [x] **Sacar bloque AI viejo** de TopicMap y LanguageBank — listo por consecuencia (las páginas standalone se eliminaron).
+- [ ] **Scraping automático URL competidor**: aún pendiente.
+- [ ] **Snapshot temporal competidor** + diff entre análisis.
+- [ ] **Auto-extracción de objeciones desde comments Meta Ads** → llena LanguageBank automáticamente.
+- [ ] **Endpoint detalle cliente** `/customers/:id/orders` para enriquecer modal de perfil.
+
+---
+
 ## 2026-05-13 — Competencia (rediseño operativo)
 
 **Branch**: `codex/universal-dashboard-builder` (continúa)

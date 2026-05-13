@@ -12,8 +12,6 @@ import Productos from './pages/Productos';
 import Clientes from './pages/Clientes';
 import Creativos from './pages/Creativos';
 import Competencia from './pages/Competencia';
-import TopicMap from './pages/TopicMap';
-import LanguageBank from './pages/LanguageBank';
 import Simulador from './pages/Simulador';
 import Reportes from './pages/Reportes';
 import ReportBuilder from './pages/ReportBuilder';
@@ -60,8 +58,9 @@ export default function App() {
         <Route path="productos" element={<Productos />} />
         <Route path="clientes" element={<Clientes />} />
         <Route path="creativos" element={<Creativos />} />
-        <Route path="topic-map" element={<TopicMap />} />
-        <Route path="language-bank" element={<LanguageBank />} />
+        {/* Backwards compat: TopicMap y LanguageBank ahora viven como bloques dentro de Creativos */}
+        <Route path="topic-map" element={<Navigate to="../creativos" replace />} />
+        <Route path="language-bank" element={<Navigate to="../creativos" replace />} />
         <Route path="competencia" element={<Competencia />} />
         <Route path="simulador" element={<Simulador />} />
         <Route path="reportes" element={<Reportes />} />

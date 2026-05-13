@@ -9,6 +9,8 @@ import AdGallery from '../components/creativos/AdGallery';
 import AdCompareModal from '../components/creativos/AdCompareModal';
 import AdAnalysisModal from '../components/creativos/AdAnalysisModal';
 import AnglePerformanceTable from '../components/creativos/AnglePerformanceTable';
+import HipotesisAngulos from '../components/creativos/HipotesisAngulos';
+import HooksFrases from '../components/creativos/HooksFrases';
 import {
   CREATIVOS_METRICS,
   CREATIVOS_DEFAULTS,
@@ -151,6 +153,16 @@ export default function Creativos() {
       id: 'angles-table',
       label: 'Performance por ángulo',
       node: <AnglePerformanceTable data={anglesData} />,
+    },
+    {
+      id: 'hipotesis',
+      label: 'Hipótesis y ángulos planificados',
+      node: <HipotesisAngulos storeId={storeId} />,
+    },
+    {
+      id: 'hooks-frases',
+      label: 'Hooks y frases',
+      node: <HooksFrases storeId={storeId} />,
     },
   ];
 

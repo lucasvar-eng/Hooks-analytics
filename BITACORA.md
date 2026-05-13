@@ -11,11 +11,15 @@ La bitácora se ordena de **arriba hacia abajo** por orden cronológico inverso 
 **Tienda usada para validar**: Límite Deportes (`69cadede3936709190d773b8`)
 **Stack**: backend Node/Express/MongoDB Atlas · frontend React 18 + Vite + Tailwind
 
-### Trabajo hecho — 1 commit
+### Trabajo hecho — 5 commits pusheados
 
 | Hash | Tier | Resumen |
 |---|---|---|
 | `36ce356` | T14 | feat(costos): rediseño operativo con P&L visual y configuración unificada |
+| `324ed34` | T15 | docs: entrada inicial de bitácora 2026-05-13 |
+| `61e97e8` | T16 | feat(costos): tab "Comisiones y fees" en el acordeón — IBB, fee plataforma, comisiones por medio de pago |
+| `db99416` | T17 | chore(ui): sacar bloque "Análisis asistido" de 9 páginas (Tienda, Meta, Creativos, Cashflow, Costos, Productos, Clientes, Competencia, Dashboard). Tenía mucho texto y no estaba bien armado — se va a re-introducir más limpio |
+| `26a635c` | T18 | feat(productos): rediseño operativo con tabla principal arriba, sort, scroll vertical interno, KPIs configurables |
 
 ### Detalle
 
@@ -40,11 +44,43 @@ Aplicar el patrón del 2026-05-12 (Tienda/Meta/Creativos/Cashflow) a Costos. La 
 
 **Bocetos**: `docs/bocetos/costos-v1.html` (HTML standalone usado para iterar diseño con Lucas antes de implementar).
 
+### Detalle T16 — Tab Comisiones y fees (`61e97e8`)
+
+`CommissionsPanel` con form para `Store.tasaIBB`, `Store.feePlataformaPct`, y tabla CRUD para `Store.comisionPagoConfig[]`. Persiste contra `PUT /api/stores/:id/costos` que ya existía. Tab agregado al `CostsConfigAccordion` entre "Top sellers" y "Importar CSV".
+
+`CostCoverageChecklist` ahora linkea cada fila faltante al tab correcto del acordeón (cogs → wizard, paymentCommission → commissions, fixedCosts → fixed, shippingCost → csv). `Costos.jsx` dispatch `fetchStoreMetrics` después del save para refrescar coverage en Redux sin reload.
+
+### Detalle T17 — Cleanup AI block (`db99416`)
+
+Saqué `<ClaudeActionBar>` + `<AIAnalysisPanel>` de 9 páginas. Lucas: "tiene mucho texto y no está bien armado todo eso, lo deberíamos sacar y después vemos bien como sumamos la parte de IA". LanguageBank y TopicMap quedaron pendientes — su bloque AI vive en cambios de otra sesión todavía no commiteados, no los toqué.
+
+### Detalle T18 — Productos rediseñado (`26a635c`)
+
+Iteración con bocetos `docs/bocetos/productos-{v1,v2,v3}.html`:
+- v1: salud catálogo como hero arriba + 4 KPIs + acciones + tabla.
+- v2: feedback de Lucas — la tabla es lo más importante, va arriba; agregar ID y categoría; centrado; sort visible; rediseñar cards nativas con color (Aging, Concentración, Comercial por categoría).
+- v3: tabla más ancha (1640px) con scroll vertical interno (max 720px) + header sticky; 25 filas por defecto; KPIs configurables vía picker (4 de 10 métricas disponibles, persist localStorage).
+
+**Componentes nuevos en `components/productos/`** (8 archivos):
+- `ProductsTable` — 15 columnas, filtros chip con conteo dinámico, búsqueda, sort por columna (asc/desc cycle), paginación cliente (10/25/50/100), scroll vertical interno.
+- `ProductsMetricsRow` + `productosMetricsCatalog` — picker con 10 métricas: Rotación / Sin movimiento / Sin stock / Stock atrapado / Sobrestock / Productos totales / Ingresos período / Unidades vendidas / Ticket promedio / Cobertura costos. Defaults: 4 primeras.
+- `ActionCards` (Capital atrapado + Hay que reponer) — derivadas en cliente de `products`.
+- `CatalogHealth` — barra apilada con 4 buckets exclusivos (sin stock incluye los que vendieron pero quedaron en 0, evita overlap).
+- `CategoryTable`, `AgingChart`, `ConcentrationChart` — rediseño con color y barras visuales.
+- `ProductProfileModal` extraído de la página vieja.
+
+**Página**: 528 → 104 líneas, solo orquesta componentes. Removido: h1 redundante, card "Conciliación con tienda" (vive en Costos), card "Cobertura de costos" (vive en Costos), grid 3 cards Top sellers / Stock lento / Dead stock-bajo retorno, assortmentMatrix (4 cards), stockHealth (4 cards). La tabla con filtros chip cubre los mismos cortes con menos clicks.
+
+**Bug menor del backend pendiente**: `commercial.categoryConcentration[].stockSharePct` devuelve 0% cuando no hay COGS — la sub-barra "Stock" en `ConcentrationChart` queda plana en Límite. Cuando se carguen costos se acomoda. Si queremos mostrarlo siempre, habría que fallback a stockUnits-share en frontend o cambiar el cálculo backend.
+
 ### Pendientes (actualiza el backlog de 2026-05-12)
 
 - [x] **Costos** — listo.
-- [ ] **Productos** — sigue. Hoy dead stock 1742 con definición laxa; aplicar tones + filtros por tipo de problema + lista accionable.
+- [x] **Productos** — listo.
 - [ ] **Clientes** — sigue. Segmentos RFM con CTA por segmento.
+- [ ] **IA**: re-introducir Claude/análisis en una versión más limpia (acción de chat + reporte guardado en MCP). Definir copy + ubicación primero.
+- [ ] **LanguageBank y TopicMap**: sacar bloque "Análisis asistido" — quedó pendiente porque sus archivos tienen cambios previos no commiteados.
+- [ ] **Bug `stockSharePct`** en `commercial.categoryConcentration` cuando no hay COGS — la barra de stock queda en 0%.
 
 ---
 

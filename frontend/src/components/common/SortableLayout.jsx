@@ -58,13 +58,11 @@ export default function SortableLayout({
 
   const handleDragStart = (e, id) => {
     setDraggingId(id);
+    // setData es OBLIGATORIO en Firefox y algunos navegadores para que dispare
+    // los siguientes eventos (dragover, drop). Sin esto el drag empieza pero
+    // el browser cancela todo silenciosamente.
+    try { e.dataTransfer.setData('text/plain', id); } catch {}
     e.dataTransfer.effectAllowed = 'move';
-    // Usar un dragImage transparente para no ver fantasma horrible
-    try {
-      const img = new Image();
-      img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
-      e.dataTransfer.setDragImage(img, 0, 0);
-    } catch {}
   };
 
   const handleDragOver = (e, id) => {
@@ -155,22 +153,31 @@ export default function SortableLayout({
         return (
           <div
             key={item.id}
-            draggable={editMode}
-            onDragStart={editMode ? (e) => handleDragStart(e, item.id) : undefined}
-            onDragOver={editMode ? (e) => handleDragOver(e, item.id) : undefined}
-            onDrop={editMode ? (e) => handleDrop(e, item.id) : undefined}
-            onDragEnd={editMode ? handleDragEnd : undefined}
             className={`relative transition-all duration-150
-              ${editMode ? 'cursor-grab' : ''}
               ${isDragging ? 'opacity-40' : ''}
               ${isOver ? 'ring-2 ring-blue-500/60 ring-offset-2 ring-offset-[#0a0a0b] rounded-2xl' : ''}`}
           >
+            {/* Contenido normal del bloque (sin interferir con events) */}
+            <div className={editMode ? 'select-none' : ''}>
+              {item.node}
+            </div>
+
+            {/* Overlay draggable: solo en modo edit, captura mouse y drag events */}
             {editMode && (
               <div
-                className="absolute -left-9 top-1/2 -translate-y-1/2 z-10 flex items-center gap-1.5 cursor-grab active:cursor-grabbing pointer-events-none"
-                aria-hidden
+                draggable
+                onDragStart={(e) => handleDragStart(e, item.id)}
+                onDragOver={(e) => handleDragOver(e, item.id)}
+                onDrop={(e) => handleDrop(e, item.id)}
+                onDragEnd={handleDragEnd}
+                className="absolute inset-0 z-20 cursor-grab active:cursor-grabbing rounded-2xl bg-blue-500/[0.02] hover:bg-blue-500/[0.06] transition"
+                title={item.label ? `Arrastrar "${item.label}"` : 'Arrastrar bloque'}
               >
-                <div className="flex items-center justify-center w-7 h-7 rounded-full bg-blue-500/20 border border-blue-500/45 text-blue-200 shadow-md">
+                {/* Handle visual (fuera del card a la izquierda) */}
+                <div
+                  className="absolute -left-9 top-1/2 -translate-y-1/2 flex items-center justify-center w-7 h-7 rounded-full bg-blue-500/20 border border-blue-500/45 text-blue-200 shadow-md pointer-events-none"
+                  aria-hidden
+                >
                   <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
                     <circle cx="8" cy="6" r="1.5" /><circle cx="8" cy="12" r="1.5" /><circle cx="8" cy="18" r="1.5" />
                     <circle cx="16" cy="6" r="1.5" /><circle cx="16" cy="12" r="1.5" /><circle cx="16" cy="18" r="1.5" />
@@ -178,9 +185,6 @@ export default function SortableLayout({
                 </div>
               </div>
             )}
-            <div className={editMode ? 'pointer-events-none select-none' : ''}>
-              {item.node}
-            </div>
           </div>
         );
       })}

@@ -4,6 +4,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { fetchStoreMetrics } from '../store/storeSlice';
 import api from '../services/api';
 import SourceMetricsRow from '../components/resumen/SourceMetricsRow';
+import RoasTimelineChart from '../components/resumen/RoasTimelineChart';
 import AttentionPanel from '../components/resumen/AttentionPanel';
 import HighlightCard from '../components/resumen/HighlightCard';
 import { META_METRICS, TN_METRICS, PNL_METRICS, DEFAULTS } from '../components/resumen/metricsCatalog';
@@ -57,6 +58,7 @@ export default function Dashboard() {
 
   const [productOverview, setProductOverview] = useState(null);
   const [campaigns, setCampaigns] = useState([]);
+  const [dailyMetrics, setDailyMetrics] = useState([]);
 
   useEffect(() => {
     if (storeId && from && to) {
@@ -73,6 +75,9 @@ export default function Dashboard() {
     api.get(`/api/stores/${storeId}/meta/campaigns?from=${from}&to=${to}`)
       .then(({ data }) => { if (!cancelled) setCampaigns(Array.isArray(data) ? data : (data?.campaigns || [])); })
       .catch(() => {});
+    api.get(`/api/stores/${storeId}/daily-metrics?from=${from}&to=${to}`)
+      .then(({ data }) => { if (!cancelled) setDailyMetrics(Array.isArray(data) ? data : []); })
+      .catch(() => { if (!cancelled) setDailyMetrics([]); });
     return () => { cancelled = true; };
   }, [storeId, from, to]);
 
@@ -134,6 +139,8 @@ export default function Dashboard() {
         defaultSelected={DEFAULTS.tn}
         maxSelected={6}
       />
+
+      <RoasTimelineChart data={dailyMetrics} periodLabel={periodLbl} />
 
       <SourceMetricsRow
         sourceKey="pnl"

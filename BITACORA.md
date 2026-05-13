@@ -5,6 +5,49 @@ La bitácora se ordena de **arriba hacia abajo** por orden cronológico inverso 
 
 ---
 
+## 2026-05-13 — Costos (rediseño operativo)
+
+**Branch**: `codex/universal-dashboard-builder` (continúa)
+**Tienda usada para validar**: Límite Deportes (`69cadede3936709190d773b8`)
+**Stack**: backend Node/Express/MongoDB Atlas · frontend React 18 + Vite + Tailwind
+
+### Trabajo hecho — 1 commit
+
+| Hash | Tier | Resumen |
+|---|---|---|
+| `36ce356` | T14 | feat(costos): rediseño operativo con P&L visual y configuración unificada |
+
+### Detalle
+
+Aplicar el patrón del 2026-05-12 (Tienda/Meta/Creativos/Cashflow) a Costos. La página pasó de 636 líneas + 7 secciones planas a 116 líneas + 7 componentes nuevos en `components/costs/`.
+
+**Nueva estructura**:
+1. `TopInsightBar`
+2. `CoverageBanner` — banner amber condicional (cobertura < 40%). En Límite hoy: "0 de 1.869 productos con costo cargado". CTA "Cargar costos" abre el acordeón en tab Top sellers.
+3. `PnLBreakdown` — hero visual con barras horizontales proporcionales sobre facturación. Líneas con valor 0 cuya cobertura está marcada como ausente se renderizan con patrón rayado amber en lugar de barra roja diminuta. Profit estimado al final con `!` cuando hay faltantes. Chip de salud del dato derivado de `dataSource === 'orders'`.
+4. `BreakevenCard` — 3 mínimos (ROAS / CPA / Ticket) + comparación mín vs real abajo. Tone (verde/amber/rojo) según ratio actual/mínimo. Hace la lectura "estoy bien o no" inmediata.
+5. `CostCoverageChecklist` — 5 filas (cogs, comisiones, fijos, envío, ads), con `⚠ falta` clickeable que abre el acordeón.
+6. `CostsConfigAccordion` — colapsable con tabs internas: **Top sellers** (CostsWizard con prop nuevo `embedded`), **Importar CSV** (CSVUploadPanel extraído), **Costos fijos** (FixedCostsPanel extraído). `forwardRef` expone `open(tab)` para que banner/checklist puedan abrirlo + scroll suave.
+7. `ClaudeActionBar` + `AIAnalysisPanel` (footer).
+
+**Decisiones**:
+- Costos = vista global de la operación. El detalle por SKU (margen unitario, productos sin costo individual, dead stock) queda para Productos (próxima pantalla).
+- Alto contraste explícito sin tocar tokens globales: `text-gray-200/300` directos en componentes nuevos. No prendí `data-contrast='high'` global para no afectar Tienda/Cashflow.
+- `additionalProperties: true` mental: el conteo "X de 5 cargados" del acordeón se sincronizó con el checklist (4 components de coverage + Meta connected).
+- No toqué los ~29 cambios pendientes en otros archivos (aiService.js, syncMeta, etc.).
+
+**Validación en runtime**: 7d (rango actual), Límite Deportes. Banner aparece, conteo "2 de 5" matchea checklist (Envío + Ads ✓), Click en CTA abre acordeón con scroll suave al elemento, tabs cambian, ClaudeActionBar conectado al final con `mode="costos"`.
+
+**Bocetos**: `docs/bocetos/costos-v1.html` (HTML standalone usado para iterar diseño con Lucas antes de implementar).
+
+### Pendientes (actualiza el backlog de 2026-05-12)
+
+- [x] **Costos** — listo.
+- [ ] **Productos** — sigue. Hoy dead stock 1742 con definición laxa; aplicar tones + filtros por tipo de problema + lista accionable.
+- [ ] **Clientes** — sigue. Segmentos RFM con CTA por segmento.
+
+---
+
 ## 2026-05-12 — Tienda + Meta Ads + Creativos + Cashflow (rediseño operativo de 4 pantallas)
 
 **Branch**: `codex/universal-dashboard-builder` (continúa)

@@ -35,6 +35,7 @@ router.post('/:id/targets', requirePermission(PERMISSIONS.SETTINGS_WRITE), setti
 
 router.get('/:id/import-batches', requirePermission(PERMISSIONS.SETTINGS_READ), settingsController.getImportBatches);
 router.post('/:id/recalculate', requirePermission(PERMISSIONS.SYNC_TRIGGER), settingsController.recalculate);
+router.post('/:id/recalculate-metrics', requirePermission(PERMISSIONS.SYNC_TRIGGER), settingsController.recalculateMetrics);
 
 router.post('/:id/connect-tn-manual', requirePermission(PERMISSIONS.CONNECTIONS_WRITE), settingsController.connectTNManual);
 router.post('/:id/connect-shopify-manual', requirePermission(PERMISSIONS.CONNECTIONS_WRITE), settingsController.connectShopifyManual);

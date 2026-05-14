@@ -522,4 +522,27 @@ async function aggregateRange(storeId, from, to) {
   };
 }
 
-module.exports = { recalculateDailyMetric, aggregateRange };
+/**
+ * Recalcula DailyMetric día por día para los últimos `daysBack` días.
+ * Sirve como "safety net" después de un sync inicial o para curar gaps
+ * cuando un sync en background quedó a mitad de camino.
+ */
+async function recalculateDailyMetricsForRange(storeId, daysBack = 90) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  let ok = 0;
+  let failed = 0;
+  for (let i = 0; i < daysBack; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    try {
+      await recalculateDailyMetric(storeId, d);
+      ok += 1;
+    } catch (err) {
+      failed += 1;
+    }
+  }
+  return { ok, failed, daysBack };
+}
+
+module.exports = { recalculateDailyMetric, recalculateDailyMetricsForRange, aggregateRange };

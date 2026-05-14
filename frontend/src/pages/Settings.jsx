@@ -1177,6 +1177,21 @@ export default function Settings() {
                     >
                       {syncingMeta ? 'Sincronizando...' : 'Sincronizar Meta ahora'}
                     </button>
+                    <button
+                      onClick={async () => {
+                        setMessage(null);
+                        try {
+                          const { data } = await api.post(`/api/stores/${storeId}/recalculate-metrics`, { daysBack: 90 });
+                          setMessage(data.message);
+                        } catch (err) {
+                          setMessage(`Error: ${err.response?.data?.error || err.message}`);
+                        }
+                      }}
+                      className="btn-ghost text-[12px]"
+                      title="Recalcula las métricas diarias (revenue, spend, ROAS) usando los datos ya sincronizados. Útil si los KPIs del Resumen quedaron en 0 después de conectar."
+                    >
+                      Recalcular métricas
+                    </button>
                     <Link to={`/store/${storeId}/meta-ads`} className="btn-ghost text-[12px]">
                       Abrir pestaña Meta Ads
                     </Link>

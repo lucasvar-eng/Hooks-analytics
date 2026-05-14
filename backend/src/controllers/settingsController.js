@@ -1,6 +1,6 @@
 const Store = require('../models/Store');
 const { recalculateAllOrders } = require('../services/orderFinancials');
-const { recalculateDailyMetric } = require('../services/metricCalculator');
+const { recalculateDailyMetric, recalculateDailyMetricsForRange } = require('../services/metricCalculator');
 const { syncOrders, syncProducts } = require('../services/syncTiendanube');
 const { syncShopifyOrders, syncShopifyProducts } = require('../services/syncShopify');
 const { syncMetaStructure, syncMetaInsights } = require('../services/syncMeta');
@@ -245,12 +245,17 @@ exports.connectTNManual = async (req, res, next) => {
         : 'TiendaNube conectada. Sincronización iniciada...',
     });
 
-    syncOrders(store).catch((err) => {
-      logger.error(`Initial TN orders sync failed: ${err.message}`);
-    });
-    syncProducts(store).catch((err) => {
-      logger.error(`Initial TN products sync failed: ${err.message}`);
-    });
+    (async () => {
+      try {
+        await syncOrders(store);
+        await syncProducts(store);
+        const result = await recalculateDailyMetricsForRange(store._id, 90);
+        logger.info(`Initial TN sync + recalc done for ${store.nombre}: ${result.ok} days OK, ${result.failed} failed`);
+      } catch (err) {
+        logger.error(`Initial TN sync failed for ${store.nombre}: ${err.message}`);
+        try { await recalculateDailyMetricsForRange(store._id, 90); } catch {}
+      }
+    })();
   } catch (error) {
     next(error);
   }
@@ -337,8 +342,10 @@ exports.connectShopifyManual = async (req, res, next) => {
       try {
         await syncShopifyProducts(store);
         await syncShopifyOrders(store);
+        await recalculateDailyMetricsForRange(store._id, 90);
       } catch (err) {
         logger.error(`Initial Shopify sync failed: ${err.message}`);
+        try { await recalculateDailyMetricsForRange(store._id, 90); } catch {}
       }
     })();
   } catch (error) {
@@ -496,8 +503,13 @@ exports.connectMetaManual = async (req, res, next) => {
       try {
         await syncMetaStructure(store);
         await syncMetaInsights(store, 30);
+        const result = await recalculateDailyMetricsForRange(store._id, 90);
+        logger.info(`Initial Meta sync + recalc done for ${store.nombre}: ${result.ok} days OK, ${result.failed} failed`);
       } catch (err) {
         logger.error(`Initial Meta sync failed for ${store.nombre}: ${err.message}`);
+        // Safety net: aunque el sync haya fallado a mitad, intentar recalcular con
+        // lo que sí se haya guardado.
+        try { await recalculateDailyMetricsForRange(store._id, 90); } catch {}
       }
     })();
   } catch (error) {
@@ -535,10 +547,33 @@ exports.syncMetaManual = async (req, res, next) => {
       try {
         await syncMetaStructure(store);
         await syncMetaInsights(store, daysBack);
+        await recalculateDailyMetricsForRange(store._id, Math.max(daysBack, 30));
       } catch (err) {
         logger.error(`Manual Meta sync failed for ${store.nombre}: ${err.message}`);
+        try { await recalculateDailyMetricsForRange(store._id, Math.max(daysBack, 30)); } catch {}
       }
     })();
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * POST /api/stores/:id/recalculate-metrics — barre días recalculando DailyMetric.
+ * Útil cuando un sync inicial quedó a mitad o cuando los datos crudos están bien
+ * pero el agregado nunca se computó.
+ */
+exports.recalculateMetrics = async (req, res, next) => {
+  try {
+    const store = await Store.findById(req.params.id);
+    if (!store) return res.status(404).json({ error: 'Store not found' });
+    const daysBack = Math.max(1, Math.min(Number(req.body?.daysBack || 90), 365));
+    const result = await recalculateDailyMetricsForRange(store._id, daysBack);
+    res.json({
+      success: true,
+      message: `Recalculados ${result.ok} días (${result.failed} fallaron) de los últimos ${daysBack}.`,
+      ...result,
+    });
   } catch (error) {
     next(error);
   }

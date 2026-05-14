@@ -10,6 +10,7 @@ import CatalogHealth from '../components/productos/CatalogHealth';
 import CategoryTable from '../components/productos/CategoryTable';
 import AgingChart from '../components/productos/AgingChart';
 import ConcentrationChart from '../components/productos/ConcentrationChart';
+import ProductMonthlyHeatmap from '../components/productos/ProductMonthlyHeatmap';
 import ProductProfileModal from '../components/productos/ProductProfileModal';
 import SortableLayout from '../components/common/SortableLayout';
 import {
@@ -152,6 +153,11 @@ export default function Productos() {
       id: 'catalog-health',
       label: 'Salud del catálogo',
       node: <CatalogHealth products={products} summary={overview?.summary} />,
+    },
+    {
+      id: 'monthly-matrix',
+      label: 'Producto × mes',
+      node: <ProductMonthlyHeatmap />,
     },
     ...(commercial?.categories ? [{
       id: 'category-table',

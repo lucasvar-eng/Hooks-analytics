@@ -107,6 +107,22 @@ export const PRODUCTOS_METRICS = [
     getTone: () => null,
   },
   {
+    key: 'valorizado',
+    defaultLabel: 'Stock valorizado',
+    coverageAware: true,
+    getValue: (d) => {
+      const v = d?.summary?.stockValue;
+      if (!v || v <= 0) return 'Sin datos';
+      return fmtMoneyShort(v);
+    },
+    getSub: (d) => {
+      const units = d?.summary?.stockUnits || 0;
+      if (units === 0) return 'Falta cargar costos';
+      return `${fmtNum(units)} unidades en stock`;
+    },
+    getTone: () => null,
+  },
+  {
     key: 'sobrestock',
     defaultLabel: 'Sobrestock',
     getValue: (d) => fmtNum(d?.summary?.overstockCount),

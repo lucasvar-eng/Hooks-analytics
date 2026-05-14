@@ -10,6 +10,7 @@ router.use('/stores/:id', auth, storeContext);
 router.get('/stores/:id/products', auth, asyncHandler(productController.list));
 router.get('/stores/:id/products/overview', auth, asyncHandler(productController.overview));
 router.get('/stores/:id/products/commercial', auth, asyncHandler(productController.commercial));
+router.get('/stores/:id/products/monthly-matrix', auth, asyncHandler(productController.monthlyMatrix));
 router.get('/stores/:id/products/alerts', auth, asyncHandler(productController.alerts));
 router.get('/stores/:id/products/cost-load-priority', auth, asyncHandler(productController.costLoadPriority));
 router.get('/stores/:id/products/:productId/profile', auth, asyncHandler(productController.profile));

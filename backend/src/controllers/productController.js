@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const Product = require('../models/Product');
 const Order = require('../models/Order');
-const { getProductsWithMetrics, getProductProfile, simulateProduct, getStockAlerts, getProductOverview, getCommercialOverview } = require('../services/productService');
+const { getProductsWithMetrics, getProductProfile, simulateProduct, getStockAlerts, getProductOverview, getCommercialOverview, getMonthlyMatrix } = require('../services/productService');
 const { buildBusinessSourceDateMatch } = require('../utils/businessDate');
 
 exports.list = async (req, res) => {
@@ -38,6 +38,13 @@ exports.commercial = async (req, res) => {
   const { from, to } = req.query;
   const overview = await getCommercialOverview(req.params.id, from, to);
   res.json(overview);
+};
+
+exports.monthlyMatrix = async (req, res) => {
+  const months = Math.min(Math.max(parseInt(req.query.months, 10) || 12, 3), 24);
+  const topN = Math.min(Math.max(parseInt(req.query.top, 10) || 20, 5), 50);
+  const result = await getMonthlyMatrix(req.params.id, { months, topN });
+  res.json(result);
 };
 
 // Devuelve los top N productos SIN costo cargado, ordenados por revenue del período.

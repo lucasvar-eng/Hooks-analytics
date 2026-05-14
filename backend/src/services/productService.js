@@ -446,6 +446,96 @@ async function getCommercialOverview(storeId, from, to) {
   };
 }
 
+/**
+ * Matriz "producto × mes": para los top N productos por revenue del último año,
+ * devuelve unidades vendidas mes a mes durante los últimos `months` meses.
+ *
+ * Estructura: { months: ['2025-06', ..., '2026-05'], products: [{ tnProductId, nombre, stock, monthly: { '2025-06': 12, ... }, total }] }
+ */
+async function getMonthlyMatrix(storeId, { months = 12, topN = 20 } = {}) {
+  const storeObjectId = new mongoose.Types.ObjectId(storeId);
+  const now = new Date();
+  const periodStart = new Date(now);
+  periodStart.setMonth(periodStart.getMonth() - months);
+  periodStart.setDate(1);
+  periodStart.setHours(0, 0, 0, 0);
+
+  // Ventana de tiempo total considerada
+  const orderMatch = {
+    storeId: storeObjectId,
+    estado: { $nin: ['cancelled'] },
+    fechaCreacion: { $gte: periodStart, $lte: now },
+  };
+
+  // Una agregación: agrupa por (producto, mes) → unidades + revenue
+  const rows = await Order.aggregate([
+    { $match: orderMatch },
+    { $unwind: '$lineItems' },
+    { $match: { 'lineItems.tnProductId': { $exists: true, $ne: null, $ne: '' } } },
+    {
+      $group: {
+        _id: {
+          productId: '$lineItems.tnProductId',
+          month: { $dateToString: { format: '%Y-%m', date: '$fechaCreacion', timezone: 'America/Argentina/Buenos_Aires' } },
+        },
+        unidades: { $sum: '$lineItems.cantidad' },
+        revenue: { $sum: '$lineItems.subtotal' },
+      },
+    },
+  ]);
+
+  // Generar lista de meses cubiertos (siempre los últimos N)
+  const monthLabels = [];
+  for (let i = months - 1; i >= 0; i--) {
+    const d = new Date(now);
+    d.setMonth(d.getMonth() - i);
+    monthLabels.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+  }
+
+  // Agrupar por producto, sumar total
+  const byProduct = new Map();
+  for (const row of rows) {
+    const pid = row._id.productId;
+    const month = row._id.month;
+    if (!byProduct.has(pid)) {
+      byProduct.set(pid, { tnProductId: pid, monthly: {}, totalUnits: 0, totalRevenue: 0 });
+    }
+    const item = byProduct.get(pid);
+    item.monthly[month] = { units: row.unidades, revenue: row.revenue };
+    item.totalUnits += row.unidades;
+    item.totalRevenue += row.revenue;
+  }
+
+  // Hidratar con nombre/stock/precio del producto
+  const ids = [...byProduct.keys()];
+  const products = await Product.find({ storeId: storeObjectId, tnProductId: { $in: ids } })
+    .select('tnProductId nombre stock precio imagenUrl categoria costoUnitario')
+    .lean();
+  const productMap = new Map(products.map((p) => [p.tnProductId, p]));
+
+  const enriched = [...byProduct.values()].map((item) => {
+    const p = productMap.get(item.tnProductId) || {};
+    return {
+      tnProductId: item.tnProductId,
+      nombre: p.nombre || 'Producto desconocido',
+      stock: p.stock || 0,
+      precio: p.precio || 0,
+      imagenUrl: p.imagenUrl || null,
+      categoria: p.categoria || '',
+      stockValue: (p.stock || 0) * ((p.costoUnitario || 0) || (p.precio || 0) * 0.5),
+      monthly: item.monthly,
+      totalUnits: item.totalUnits,
+      totalRevenue: item.totalRevenue,
+    };
+  });
+
+  // Top N por revenue total del período
+  enriched.sort((a, b) => b.totalRevenue - a.totalRevenue);
+  const top = enriched.slice(0, topN);
+
+  return { months: monthLabels, products: top, totalProductsWithSales: enriched.length };
+}
+
 module.exports = {
   getProductsWithMetrics,
   getProductProfile,
@@ -454,4 +544,5 @@ module.exports = {
   getProductOverview,
   getCommercialOverview,
   refreshProductDerivedMetrics,
+  getMonthlyMatrix,
 };

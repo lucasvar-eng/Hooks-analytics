@@ -174,12 +174,12 @@ export default function RoasTimelineChart({ data = [], periodLabel = '' }) {
       <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
         <div className="flex items-center gap-5 text-[11.5px] text-gray-200">
           <span className="inline-flex items-center gap-2">
-            <span className="w-3 h-3 rounded-sm" style={{ background: 'linear-gradient(180deg, #60a5fa, #1d4ed8)' }} />
-            Ventas (Tienda Nube)
-          </span>
-          <span className="inline-flex items-center gap-2">
             <span className="w-3 h-3 rounded-sm" style={{ background: 'linear-gradient(180deg, #f87171, #b91c1c)' }} />
             Inversión (Meta Ads)
+          </span>
+          <span className="inline-flex items-center gap-2">
+            <span className="w-3 h-3 rounded-sm" style={{ background: 'linear-gradient(180deg, #60a5fa, #1d4ed8)' }} />
+            Ventas (Tienda Nube)
           </span>
           <span className="inline-flex items-center gap-2">
             <span className="w-3 h-[2px] rounded-sm bg-amber-400" />
@@ -313,8 +313,8 @@ export default function RoasTimelineChart({ data = [], periodLabel = '' }) {
             const spd = Number(d.adSpend || 0);
             const hovered = hoverIdx === i;
             const xCenter = padLeft + step * i + step / 2;
-            const xRev = xCenter - barWidth - 0.5;
-            const xSpd = xCenter + 0.5;
+            const xSpd = xCenter - barWidth - 0.5;
+            const xRev = xCenter + 0.5;
             const yRev = padTop + innerH - (rev / maxMoney) * innerH;
             const ySpd = padTop + innerH - (spd / maxMoney) * innerH;
             const hRev = (rev / maxMoney) * innerH;
@@ -509,11 +509,11 @@ export default function RoasTimelineChart({ data = [], periodLabel = '' }) {
             <p className="text-white font-semibold mb-1">
               {shortDate(hoverItem.date)} <span className="text-gray-300 font-normal">· {dayOfWeek(hoverItem.date)}</span>
             </p>
-            <p className="flex items-center justify-between gap-4 text-blue-300">
-              <span>Ventas</span><span className="tabular-nums font-semibold">{fmtMoney(hoverItem.revenue)}</span>
-            </p>
             <p className="flex items-center justify-between gap-4 text-red-300">
               <span>Spend</span><span className="tabular-nums font-semibold">{fmtMoney(hoverItem.adSpend)}</span>
+            </p>
+            <p className="flex items-center justify-between gap-4 text-blue-300">
+              <span>Ventas</span><span className="tabular-nums font-semibold">{fmtMoney(hoverItem.revenue)}</span>
             </p>
             <p className="flex items-center justify-between gap-4 text-amber-300 mt-0.5 pt-1 border-t border-white/[0.06]">
               <span>ROAS {roasMode === 'true' ? 'real' : 'bruto'}</span>

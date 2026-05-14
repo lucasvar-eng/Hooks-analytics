@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const storeController = require('../controllers/storeController');
 const settingsController = require('../controllers/settingsController');
-const storeAIContext = require('../controllers/storeAIContextController');
 const teamRoutes = require('./teamRoutes');
 const { auth, requireRole } = require('../middleware/auth');
 const storeContext = require('../middleware/storeContext');
@@ -48,11 +47,6 @@ router.get('/:id/daily-metrics', requirePermission(PERMISSIONS.METRICS_READ), st
 router.get('/:id/financial-consistency', requirePermission(PERMISSIONS.METRICS_READ), storeController.getFinancialConsistency);
 
 router.post('/:id/generate-verdict-thresholds', requirePermission(PERMISSIONS.SETTINGS_WRITE), storeController.generateVerdictThresholds);
-
-router.get('/:id/ai-context', requirePermission(PERMISSIONS.SETTINGS_READ), storeAIContext.getAIContext);
-router.put('/:id/ai-context', requirePermission(PERMISSIONS.SETTINGS_WRITE), storeAIContext.updateAIContext);
-router.post('/:id/ai-context/files', requirePermission(PERMISSIONS.SETTINGS_WRITE), storeAIContext.uploadStoreFile);
-router.delete('/:id/ai-context/files/:filename', requirePermission(PERMISSIONS.SETTINGS_WRITE), storeAIContext.deleteStoreFile);
 
 // Team management bajo /api/stores/:id/team (los handlers usan req.storeId del middleware)
 router.use('/:id/team', teamRoutes);

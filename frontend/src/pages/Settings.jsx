@@ -16,122 +16,6 @@ function SectionCard({ title, children }) {
   );
 }
 
-function AIConfigSection() {
-  return (
-    <SectionCard title="AI">
-      <p className="text-[12px] text-gray-600 mb-3">
-        La configuración de proveedor AI, API key y modelos se gestiona desde tu perfil de usuario.
-      </p>
-      <Link to="/profile" className="btn-primary inline-block text-[12px]">
-        Ir a mi perfil
-      </Link>
-    </SectionCard>
-  );
-}
-
-function StoreAIContextSection({ storeId }) {
-  const [instructions, setInstructions] = useState('');
-  const [files, setFiles] = useState([]);
-  const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [msg, setMsg] = useState(null);
-
-  useEffect(() => { loadContext(); }, [storeId]);
-
-  const loadContext = async () => {
-    try {
-      const { data } = await api.get(`/api/stores/${storeId}/ai-context`);
-      setInstructions(data.instructions || '');
-      setFiles(data.files || []);
-    } catch {}
-  };
-
-  const saveInstructions = async () => {
-    setSaving(true); setMsg(null);
-    try {
-      await api.put(`/api/stores/${storeId}/ai-context`, { instructions });
-      setMsg({ ok: true, text: 'Instrucciones guardadas' });
-    } catch (err) {
-      setMsg({ ok: false, text: err.response?.data?.error || 'Error al guardar' });
-    }
-    setSaving(false);
-  };
-
-  const uploadFile = async () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.txt,.md,.csv';
-    input.onchange = async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      setUploading(true);
-      try {
-        const content = await file.text();
-        await api.post(`/api/stores/${storeId}/ai-context/files`, { filename: file.name, content });
-        await loadContext();
-      } catch (err) {
-        alert(err.response?.data?.error || 'Error al subir archivo');
-      }
-      setUploading(false);
-    };
-    input.click();
-  };
-
-  const deleteFile = async (filename) => {
-    if (!confirm(`Eliminar "${filename}"?`)) return;
-    try {
-      await api.delete(`/api/stores/${storeId}/ai-context/files/${encodeURIComponent(filename)}`);
-      setFiles(files.filter((f) => f.filename !== filename));
-    } catch (err) {
-      alert(err.response?.data?.error || 'Error al eliminar');
-    }
-  };
-
-  return (
-    <SectionCard title="Contexto AI de la tienda">
-      <p className="text-[12px] text-gray-600 mb-3">
-        Instrucciones específicas para esta tienda. Se suman a tus instrucciones globales de perfil.
-      </p>
-      <textarea
-        value={instructions}
-        onChange={(e) => setInstructions(e.target.value)}
-        rows={4}
-        maxLength={10000}
-        placeholder="Ej: Esta tienda vende ropa deportiva. El ticket promedio objetivo es $45.000..."
-        className="input-dark w-full resize-y mb-2"
-      />
-      <div className="flex items-center justify-between mb-4">
-        <span className="text-[11px] text-gray-600">{instructions.length}/10,000</span>
-        <div className="flex items-center gap-3">
-          {msg && <span className={`text-[12px] font-medium ${msg.ok ? 'text-emerald-400' : 'text-red-400'}`}>{msg.text}</span>}
-          <button onClick={saveInstructions} disabled={saving} className="btn-primary text-[12px] disabled:opacity-50">
-            {saving ? 'Guardando...' : 'Guardar instrucciones'}
-          </button>
-        </div>
-      </div>
-
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-[12px] text-gray-500">Archivos de contexto (max 5)</span>
-        <button onClick={uploadFile} disabled={uploading || files.length >= 5} className="btn-ghost text-[12px] disabled:opacity-50">
-          {uploading ? 'Subiendo...' : '+ Subir'}
-        </button>
-      </div>
-      {files.length === 0 ? (
-        <p className="text-[12px] text-gray-600">Sin archivos.</p>
-      ) : (
-        <div className="space-y-1.5">
-          {files.map((f) => (
-            <div key={f.filename} className="flex items-center justify-between py-2 px-3 bg-white/[0.03] rounded-lg border border-white/[0.05]">
-              <span className="text-[12px] text-gray-300">{f.filename}</span>
-              <button onClick={() => deleteFile(f.filename)} className="text-[11px] text-red-500 hover:text-red-400 transition">Eliminar</button>
-            </div>
-          ))}
-        </div>
-      )}
-    </SectionCard>
-  );
-}
-
 function GoogleSheetsSection({ storeId }) {
   const [spreadsheetId, setSpreadsheetId] = useState('');
   const [enabled, setEnabled] = useState(false);
@@ -1221,8 +1105,6 @@ export default function Settings() {
         </div>
       </SectionCard>
 
-      <AIConfigSection />
-      <StoreAIContextSection storeId={storeId} />
       <GoogleSheetsSection storeId={storeId} />
       <ObjetivosPanel storeId={storeId} />
       <CotizacionDolarPanel storeId={storeId} />

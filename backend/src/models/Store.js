@@ -135,16 +135,6 @@ const storeSchema = new mongoose.Schema(
       recipients: [String],
     },
 
-    // AI context per store
-    aiContext: {
-      instructions: { type: String, default: '' },
-      files: [{
-        filename: { type: String },
-        content: { type: String },
-        uploadedAt: { type: Date, default: Date.now },
-      }],
-    },
-
     // Google Sheets
     googleSheets: {
       spreadsheetId: { type: String, default: '' },

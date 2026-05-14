@@ -60,23 +60,6 @@ const userSchema = new mongoose.Schema(
       },
     },
 
-    // AI configuration per user
-    aiConfig: {
-      provider: { type: String, enum: ['anthropic', 'openai'], default: 'anthropic' },
-      apiKeyEncrypted: { type: String, select: false },
-      apiKeyIV: { type: String, select: false },
-      apiKeyAuthTag: { type: String, select: false },
-      modelAnalysis: { type: String },
-      modelChat: { type: String },
-      modelReports: { type: String },
-      // Global AI instructions (apply to all stores)
-      globalInstructions: { type: String, default: '' },
-      globalFiles: [{
-        filename: { type: String },
-        content: { type: String, select: false },
-        uploadedAt: { type: Date, default: Date.now },
-      }],
-    },
   },
   {
     timestamps: true,
@@ -96,18 +79,6 @@ userSchema.methods.comparePassword = async function (candidatePassword) {
 userSchema.methods.toJSON = function () {
   const obj = this.toObject();
   delete obj.password;
-  if (obj.aiConfig) {
-    delete obj.aiConfig.apiKeyEncrypted;
-    delete obj.aiConfig.apiKeyIV;
-    delete obj.aiConfig.apiKeyAuthTag;
-    // Strip file content from serialization (keep filenames)
-    if (obj.aiConfig.globalFiles) {
-      obj.aiConfig.globalFiles = obj.aiConfig.globalFiles.map((f) => ({
-        filename: f.filename,
-        uploadedAt: f.uploadedAt,
-      }));
-    }
-  }
   return obj;
 };
 

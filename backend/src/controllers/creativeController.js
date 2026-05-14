@@ -1,7 +1,7 @@
 const Store = require('../models/Store');
 const { autoClassifyAds, getCampaignResults, getFrameworkOverview, getCreativePipeline, getCreativeMasterSheet } = require('../services/creativeService');
 const { isGoogleSheetsConfigured, normalizeSpreadsheetId, syncMasterSheet, getSpreadsheet } = require('../services/googleSheetsService');
-const { analyzeAdsBatch, getAngleStats, getAllAnalyses } = require('../services/adAnalysisService');
+const { getAngleStats, getAllAnalyses } = require('../services/adAnalysisService');
 
 exports.getCreativos = async (req, res) => {
   const { from, to } = req.query;
@@ -33,30 +33,8 @@ exports.getCreativeMasterSheet = async (req, res) => {
 };
 
 /**
- * Analiza un batch de anuncios con Claude. Cachea resultados.
- * Body: { metaIds: string[], force?: boolean }
- */
-exports.analyzeAds = async (req, res, next) => {
-  try {
-    const { id: storeId } = req.params;
-    const metaIds = Array.isArray(req.body?.metaIds) ? req.body.metaIds : [];
-    if (metaIds.length === 0) return res.status(400).json({ error: 'metaIds requerido' });
-    if (metaIds.length > 50) return res.status(400).json({ error: 'máximo 50 ads por batch' });
-
-    const result = await analyzeAdsBatch({
-      storeId,
-      metaIds,
-      userId: req.user?.id,
-      force: !!req.body?.force,
-    });
-    res.json(result);
-  } catch (error) {
-    next(error);
-  }
-};
-
-/**
  * Performance agregada por ángulo (de los ads ya analizados).
+ * El análisis se hace desde MCP — este endpoint solo lee resultados cacheados.
  */
 exports.getAngles = async (req, res, next) => {
   try {

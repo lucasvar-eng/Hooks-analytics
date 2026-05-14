@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import DateRangePicker from './DateRangePicker';
+import LastUpdateChip from './LastUpdateChip';
 import {
   applyAppearance,
   buildAccentColors,
@@ -226,8 +227,9 @@ export default function Header() {
           </div>
         </div>
 
-        {/* Date Range */}
-        <div className="min-w-0 xl:flex-1 xl:flex xl:justify-center">
+        {/* Last update + Date Range */}
+        <div className="min-w-0 xl:flex-1 xl:flex xl:items-center xl:justify-center xl:gap-3">
+          <LastUpdateChip />
           <DateRangePicker />
         </div>
 

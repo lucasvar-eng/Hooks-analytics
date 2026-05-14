@@ -9,6 +9,37 @@
  * para la definición del modelo de evaluación.
  */
 
+/**
+ * Verdict determinístico por ángulo. Reglas simples sobre ROAS + spend share:
+ *  - ESCALAR: ROAS >= 2.5 con al menos 2 ads (señal sostenida)
+ *  - PAUSAR:  ROAS < 1 (perdiendo plata) con spend share >= 5% (significativo)
+ *  - TESTEAR: ROAS 1-2 con ads < 3 (poca data)
+ *  - REVISAR: ROAS 1-2 con ads >= 3 (volumen pero performance media)
+ *  - MANTENER: ROAS 2-2.5 (estable, no escalar todavía)
+ */
+function verdictForRow(row, totalSpend) {
+  const roas = Number(row.roas || 0);
+  const ads = Number(row.ads || 0);
+  const sharePct = totalSpend > 0 ? (row.spend / totalSpend) * 100 : 0;
+
+  if (roas >= 2.5 && ads >= 2) {
+    return { label: 'Escalar', color: 'text-emerald-300', bg: 'bg-emerald-500/15', border: 'border-emerald-500/25' };
+  }
+  if (roas < 1 && sharePct >= 5) {
+    return { label: 'Pausar', color: 'text-red-300', bg: 'bg-red-500/15', border: 'border-red-500/25' };
+  }
+  if (roas < 1 && sharePct < 5) {
+    return { label: 'Pausar', color: 'text-red-300', bg: 'bg-red-500/15', border: 'border-red-500/25' };
+  }
+  if (roas >= 1 && roas < 2 && ads < 3) {
+    return { label: 'Testear', color: 'text-blue-300', bg: 'bg-blue-500/15', border: 'border-blue-500/25' };
+  }
+  if (roas >= 1 && roas < 2) {
+    return { label: 'Revisar', color: 'text-amber-300', bg: 'bg-amber-500/15', border: 'border-amber-500/25' };
+  }
+  return { label: 'Mantener', color: 'text-app-secondary', bg: 'bg-white/[0.04]', border: 'border-white/[0.08]' };
+}
+
 const ANGLE_EMOJI = {
   'producto-urgencia': '⚡',
   'social-proof': '👥',
@@ -81,15 +112,36 @@ export default function AnglePerformanceTable({ data }) {
 
   const totalSpend = angles.reduce((s, a) => s + Number(a.spend || 0), 0);
 
+  // Spend "desperdiciado": ads agrupados con ROAS < 1.5x
+  const wastedSpend = angles
+    .filter((a) => Number(a.roas || 0) < 1.5)
+    .reduce((s, a) => s + Number(a.spend || 0), 0);
+  const wastedPct = totalSpend > 0 ? (wastedSpend / totalSpend) * 100 : 0;
+  const wastedTone =
+    wastedPct >= 30 ? 'text-red-300' : wastedPct >= 15 ? 'text-amber-300' : 'text-emerald-300';
+
   return (
     <div className="card p-5 space-y-4">
-      {/* Header */}
-      <div>
-        <h3 className="text-white text-[15px] font-semibold">Performance por ángulo de comunicación</h3>
-        <p className="text-app-secondary text-[12px] mt-1">
-          {totalAnalyzed} anuncios clasificados · {angles.length} ángulos detectados · ordenado por ROAS.
-          Vista comparativa sin recomendaciones — los criterios de evaluación se ajustan por tienda.
-        </p>
+      {/* Header con KPI de spend desperdiciado */}
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h3 className="text-white text-[15px] font-semibold">Performance por ángulo de comunicación</h3>
+          <p className="text-app-secondary text-[12px] mt-1">
+            {totalAnalyzed} anuncios clasificados · {angles.length} ángulos · ordenado por ROAS.
+            Veredicto determinístico por umbrales (ROAS + ads + share de spend).
+          </p>
+        </div>
+        {totalSpend > 0 && (
+          <div className="text-right">
+            <p className="text-app-muted text-[10px] uppercase tracking-[0.16em]">Spend en ROAS &lt; 1.5x</p>
+            <p className={`text-[20px] font-bold tabular-nums leading-none mt-1 ${wastedTone}`}>
+              {wastedPct.toFixed(0)}%
+            </p>
+            <p className="text-app-muted text-[11px] mt-1">
+              {fmtMoneyShort(wastedSpend)} de {fmtMoneyShort(totalSpend)}
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Tabla */}
@@ -102,7 +154,8 @@ export default function AnglePerformanceTable({ data }) {
               <th className="text-center font-semibold pb-3 px-3">Spend</th>
               <th className="text-center font-semibold pb-3 px-3">Revenue</th>
               <th className="text-center font-semibold pb-3 px-3">ROAS prom.</th>
-              <th className="text-center font-semibold pb-3 pl-3">CTR prom.</th>
+              <th className="text-center font-semibold pb-3 px-3">CTR prom.</th>
+              <th className="text-center font-semibold pb-3 pl-3">Veredicto</th>
             </tr>
           </thead>
           <tbody>
@@ -147,13 +200,29 @@ export default function AnglePerformanceTable({ data }) {
                       </div>
                     </div>
                   </td>
-                  <td className="py-3.5 pl-3 text-center text-app-secondary tabular-nums">{fmtPct(a.ctr)}</td>
+                  <td className="py-3.5 px-3 text-center text-app-secondary tabular-nums">{fmtPct(a.ctr)}</td>
+                  <td className="py-3.5 pl-3 text-center">
+                    {(() => {
+                      const v = verdictForRow(a, totalSpend);
+                      return (
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded text-[11px] font-semibold border ${v.bg} ${v.color} ${v.border}`}>
+                          {v.label}
+                        </span>
+                      );
+                    })()}
+                  </td>
                 </tr>
               );
             })}
           </tbody>
         </table>
       </div>
+
+      <p className="text-[10.5px] text-app-muted">
+        Las dimensiones Formato (video/imagen/carrusel) y Protagonista no se calculan
+        automáticamente — requieren cargar categorías por ad. Se sumarán como tabs cuando
+        el modelo de creativos tenga esos campos.
+      </p>
     </div>
   );
 }

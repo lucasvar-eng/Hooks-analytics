@@ -669,6 +669,61 @@ exports.getExecutiveOverview = async (req, res, next) => {
   }
 };
 
+/**
+ * GET /stores/:id/connections — devuelve estado de las integraciones (TN, Meta, Shopify)
+ * sin exponer el token. Incluye expiresAt, daysLeft, lastError, status, metadata pública.
+ * Sirve para mostrar en Settings y disparar warnings de "re-conectar".
+ */
+exports.getConnections = async (req, res, next) => {
+  try {
+    const list = await storeConnections.listConnections(req.params.id, { includeRevoked: true });
+    const now = Date.now();
+    const result = list.map((conn) => {
+      const meta = conn.metadata || {};
+      const expiresAt = conn.expiresAt || null;
+      const daysLeft = expiresAt
+        ? Math.round((new Date(expiresAt).getTime() - now) / (1000 * 60 * 60 * 24))
+        : null;
+      let health = 'ok';
+      if (conn.status === 'revoked') health = 'revoked';
+      else if (conn.lastError) health = 'error';
+      else if (daysLeft != null && daysLeft <= 0) health = 'expired';
+      else if (daysLeft != null && daysLeft <= 7) health = 'expiring_soon';
+
+      return {
+        provider: conn.provider,
+        status: conn.status,
+        health,
+        expiresAt,
+        daysLeft,
+        lastUsedAt: conn.lastUsedAt,
+        lastError: conn.lastError || null,
+        connectedAt: conn.connectedAt,
+        connectedByUser: conn.connectedByUser,
+        // metadata pública (sin tokens): IDs de cuentas, dominios, etc.
+        metadata: {
+          adAccountId: meta.adAccountId,
+          adAccounts: (meta.adAccounts || []).map((a) => ({
+            id: a.id,
+            accountId: a.accountId,
+            name: a.name,
+            currency: a.currency,
+            isPrimary: a.isPrimary,
+          })),
+          shopDomain: meta.shopDomain,
+          shopName: meta.shopName,
+          tnStoreId: meta.tnStoreId,
+          tnNombre: meta.tnNombre,
+          tokenSource: meta.tokenSource,
+        },
+      };
+    });
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
 exports.getFinancialConsistency = async (req, res, next) => {
   try {
     const { from, to } = req.query;

@@ -4,6 +4,8 @@ const StoreInvitation = require('../models/StoreInvitation');
 const StoreAccess = require('../models/StoreAccess');
 const permissions = require('../services/permissions');
 const { logAudit } = require('../services/auditLogService');
+const { sendEmail, buildInvitationEmail } = require('../services/emailService');
+const { email: emailConfig } = require('../config/environment');
 const logger = require('../utils/logger');
 
 const INVITE_TTL_DAYS = 7;
@@ -89,11 +91,36 @@ exports.invite = async (req, res, next) => {
 
     logger.info(`Invitation created for ${email} → store ${store.nombre} (${role}) by ${req.user.email}`);
 
-    // TODO: enviar mail. Por ahora se devuelve el token en el response para que
-    // quien invitó pueda pasárselo manualmente mientras el servicio de email no esté listo.
+    const acceptUrl = `${emailConfig.appUrl}/invitations/accept?token=${token}`;
+    const emailTemplate = buildInvitationEmail({
+      invitedByName: req.user.nombre,
+      invitedByEmail: req.user.email,
+      storeName: store.nombre,
+      role,
+      acceptUrl,
+      expiresAt,
+    });
+
+    const emailResult = await sendEmail({
+      to: email,
+      subject: emailTemplate.subject,
+      html: emailTemplate.html,
+      text: emailTemplate.text,
+    });
+
+    if (emailResult.ok) {
+      logger.info(`Invitation email sent to ${email} (resend id: ${emailResult.id})`);
+    } else if (emailResult.skipped) {
+      logger.warn(`Invitation email NOT sent (Resend disabled). acceptUrl: ${acceptUrl}`);
+    } else {
+      logger.error(`Failed to send invitation email to ${email}: ${emailResult.error}`);
+    }
+
     res.status(201).json({
       invitation: publicInvitation(invitation),
-      acceptUrl: `/invitations/accept?token=${token}`,
+      acceptUrl,
+      emailSent: emailResult.ok === true,
+      emailError: emailResult.ok ? null : emailResult.skipped ? 'email_disabled' : emailResult.error,
     });
   } catch (error) {
     next(error);

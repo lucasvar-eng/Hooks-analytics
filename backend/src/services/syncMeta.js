@@ -4,10 +4,16 @@ const MetaDailyInsight = require('../models/MetaDailyInsight');
 const MetaProductInsight = require('../models/MetaProductInsight');
 const Product = require('../models/Product');
 const SyncLog = require('../models/SyncLog');
+const User = require('../models/User');
 const { recalculateDailyMetric } = require('./metricCalculator');
 const { toBusinessDateLabel, addDaysToLabel } = require('../utils/businessDate');
 const storeConnections = require('./storeConnections');
+const { sendEmail, buildTokenExpiringEmail } = require('./emailService');
+const { email: emailConfig } = require('../config/environment');
 const logger = require('../utils/logger');
+
+const WARN_WINDOW_DAYS = 7;
+const WARN_COOLDOWN_HOURS = 24;
 
 function normalizeProductName(name) {
   return String(name || '').toUpperCase().replace(/\s+/g, ' ').trim();
@@ -436,4 +442,79 @@ async function refreshMetaTokens(store) {
   }
 }
 
-module.exports = { syncMetaStructure, syncMetaInsights, syncMetaProductInsights, refreshMetaTokens };
+/**
+ * Health check del token Meta. Si está a menos de 7 días de expirar o si
+ * hay un lastError reciente, manda email al user que conectó (o al fallback
+ * de la tienda) avisando que hay que regenerar el token.
+ *
+ * Cooldown: máximo 1 email cada 24h por (store, provider).
+ */
+async function checkMetaTokenHealth(store) {
+  const conn = await storeConnections.getConnection(store._id, 'meta');
+  if (!conn) return { skipped: 'no_connection' };
+  if (!conn.expiresAt) return { skipped: 'no_expires_at' };
+
+  const now = new Date();
+  const daysLeft = Math.round((conn.expiresAt - now) / (1000 * 60 * 60 * 24));
+  const hasError = !!conn.lastError;
+  const needsWarning = hasError || daysLeft <= WARN_WINDOW_DAYS;
+  if (!needsWarning) return { skipped: 'healthy', daysLeft };
+
+  const meta = conn.metadata || {};
+  const lastWarnAt = meta.lastWarnSentAt ? new Date(meta.lastWarnSentAt) : null;
+  if (lastWarnAt && (now - lastWarnAt) / (1000 * 60 * 60) < WARN_COOLDOWN_HOURS) {
+    return { skipped: 'cooldown', daysLeft };
+  }
+
+  let recipientEmail = null;
+  if (conn.connectedByUser) {
+    const user = await User.findById(conn.connectedByUser).select('email notificationEmail');
+    if (user) recipientEmail = user.notificationEmail || user.email;
+  }
+  if (!recipientEmail) {
+    logger.warn(`checkMetaTokenHealth: ${store.nombre} sin recipient (no connectedByUser). Skip.`);
+    return { skipped: 'no_recipient' };
+  }
+
+  const reconnectUrl = `${emailConfig.appUrl}/store/${store._id}/settings`;
+  const template = buildTokenExpiringEmail({
+    storeName: store.nombre,
+    provider: 'Meta Ads',
+    daysLeft: Math.max(daysLeft, 0),
+    expiresAt: conn.expiresAt,
+    reconnectUrl,
+  });
+
+  const result = await sendEmail({
+    to: recipientEmail,
+    subject: template.subject,
+    html: template.html,
+    text: template.text,
+  });
+
+  if (result.ok) {
+    await storeConnections.setConnection(store._id, 'meta', {
+      // setConnection requiere accessToken; en su lugar marcamos vía metadata merge
+      // — usamos setConnection con el token actual descifrado.
+      accessToken: await storeConnections.getToken(store._id, 'meta'),
+      expiresAt: conn.expiresAt,
+      metadata: { ...meta, lastWarnSentAt: now.toISOString() },
+      status: conn.status,
+    });
+    logger.info(`Token expiring email sent for ${store.nombre} → ${recipientEmail} (${daysLeft}d left)`);
+  } else if (result.skipped) {
+    logger.warn(`Token expiring email NOT sent for ${store.nombre} (email disabled)`);
+  } else {
+    logger.error(`Token expiring email failed for ${store.nombre}: ${result.error}`);
+  }
+
+  return { sent: result.ok === true, daysLeft, recipient: recipientEmail };
+}
+
+module.exports = {
+  syncMetaStructure,
+  syncMetaInsights,
+  syncMetaProductInsights,
+  refreshMetaTokens,
+  checkMetaTokenHealth,
+};

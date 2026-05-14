@@ -46,6 +46,8 @@ router.get('/:id/orders/:orderId', requirePermission(PERMISSIONS.METRICS_READ), 
 router.get('/:id/daily-metrics', requirePermission(PERMISSIONS.METRICS_READ), storeController.getDailyMetrics);
 router.get('/:id/financial-consistency', requirePermission(PERMISSIONS.METRICS_READ), storeController.getFinancialConsistency);
 
+router.get('/:id/connections', requirePermission(PERMISSIONS.CONNECTIONS_READ), storeController.getConnections);
+
 router.post('/:id/generate-verdict-thresholds', requirePermission(PERMISSIONS.SETTINGS_WRITE), storeController.generateVerdictThresholds);
 
 // Team management bajo /api/stores/:id/team (los handlers usan req.storeId del middleware)

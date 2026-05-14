@@ -45,4 +45,11 @@ module.exports = {
   mcp: {
     defaultAuthorEmail: process.env.MCP_DEFAULT_AUTHOR_EMAIL || 'lucas@hooks.com.ar',
   },
+
+  email: {
+    resendApiKey: process.env.RESEND_API_KEY || '',
+    from: process.env.EMAIL_FROM || 'Hooks Analytics <onboarding@resend.dev>',
+    replyTo: process.env.EMAIL_REPLY_TO || '',
+    appUrl: process.env.APP_PUBLIC_URL || 'http://localhost:5173',
+  },
 };

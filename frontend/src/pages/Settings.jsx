@@ -16,6 +16,65 @@ function SectionCard({ title, children }) {
   );
 }
 
+function ConnectionHealthBanner({ conn, onReconnect }) {
+  if (!conn || conn.health === 'ok') {
+    if (conn?.expiresAt) {
+      return (
+        <p className="text-[11px] text-emerald-300/80 mt-2">
+          Token activo · vence el {new Date(conn.expiresAt).toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' })} ({conn.daysLeft} días)
+        </p>
+      );
+    }
+    return null;
+  }
+
+  const config = {
+    expiring_soon: {
+      tone: 'border-amber-500/30 bg-amber-500/[0.08] text-amber-200',
+      label: `Vence en ${Math.max(conn.daysLeft || 0, 0)} día${conn.daysLeft === 1 ? '' : 's'} (${new Date(conn.expiresAt).toLocaleDateString('es-AR', { day: '2-digit', month: 'long' })})`,
+      cta: 'Regenerá el token y re-conectá antes de que expire.',
+    },
+    expired: {
+      tone: 'border-red-500/30 bg-red-500/[0.08] text-red-200',
+      label: 'Token expirado',
+      cta: 'La sincronización dejó de funcionar. Re-conectá ahora.',
+    },
+    error: {
+      tone: 'border-red-500/30 bg-red-500/[0.08] text-red-200',
+      label: 'Token con errores',
+      cta: conn.lastError || 'El último intento de sync falló. Re-conectá.',
+    },
+    revoked: {
+      tone: 'border-gray-500/30 bg-gray-500/[0.08] text-gray-300',
+      label: 'Token revocado',
+      cta: 'Se revocó la conexión. Volvé a conectar para reanudar.',
+    },
+  }[conn.health] || {
+    tone: 'border-white/10 bg-white/[0.04] text-gray-300',
+    label: 'Estado desconocido',
+    cta: '',
+  };
+
+  return (
+    <div className={`mt-2 px-3 py-2 rounded-md border text-[12px] ${config.tone}`}>
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="font-semibold">{config.label}</p>
+          {config.cta && <p className="text-[11px] mt-0.5 opacity-80 truncate">{config.cta}</p>}
+        </div>
+        {onReconnect && (
+          <button
+            onClick={onReconnect}
+            className="text-[11px] font-semibold px-2.5 py-1 rounded bg-white/[0.08] hover:bg-white/[0.14] transition whitespace-nowrap"
+          >
+            Re-conectar
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function GoogleSheetsSection({ storeId }) {
   const [spreadsheetId, setSpreadsheetId] = useState('');
   const [enabled, setEnabled] = useState(false);
@@ -504,6 +563,7 @@ export default function Settings() {
   };
 
   const [store, setStore] = useState(null);
+  const [connections, setConnections] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -531,6 +591,12 @@ export default function Settings() {
   const [feePlataformaPct, setFeePlataformaPct] = useState(0);
   const [comisiones, setComisiones] = useState([]);
 
+  const loadConnections = () => {
+    api.get(`/api/stores/${storeId}/connections`)
+      .then(({ data }) => setConnections(Array.isArray(data) ? data : []))
+      .catch(() => setConnections([]));
+  };
+
   useEffect(() => {
     setLoadError(null);
     api.get(`/api/stores/${storeId}`).then(({ data }) => {
@@ -549,7 +615,10 @@ export default function Settings() {
       setLoadError(msg);
       setLoading(false);
     });
+    loadConnections();
   }, [storeId]);
+
+  const findConn = (provider) => connections.find((c) => c.provider === provider) || null;
 
   // Detectar resultado del callback OAuth en la URL y mostrar banner. Limpia los query params.
   useEffect(() => {
@@ -568,9 +637,10 @@ export default function Settings() {
     // Limpiar los params para que el banner no reaparezca al recargar.
     navigate(location.pathname, { replace: true });
 
-    // Refrescar el store si conectó.
+    // Refrescar el store + connections si conectó.
     if (tnOk || metaOk) {
       api.get(`/api/stores/${storeId}`).then(({ data }) => setStore(data)).catch(() => {});
+      loadConnections();
     }
   }, [location.search, location.pathname, navigate, storeId]);
 
@@ -624,6 +694,7 @@ export default function Settings() {
   const refreshStore = async () => {
     const { data } = await api.get(`/api/stores/${storeId}`);
     setStore(data);
+    loadConnections();
     const connectedMetaIds = extractMetaAccountIds(data);
     setMetaAccountIdsInput(connectedMetaIds);
     setMetaPrimaryAccountId(data.metaAdAccountId || connectedMetaIds[0] || '');
@@ -713,6 +784,8 @@ export default function Settings() {
               )}
             </div>
 
+            <ConnectionHealthBanner conn={findConn('tiendanube')} onReconnect={startTnOAuth} />
+
             {!store?.integrationStatus?.tiendanube?.connected && (
               <div className="mt-3 p-4 rounded-lg bg-white/[0.03] border border-white/[0.06] space-y-3">
                 <button
@@ -758,6 +831,7 @@ export default function Settings() {
                           setMessage(data.message);
                           const { data: updated } = await api.get(`/api/stores/${storeId}`);
                           setStore(updated);
+                          loadConnections();
                         } catch (err) {
                           setMessage(`Error: ${err.response?.data?.error || err.message}`);
                         }
@@ -809,6 +883,8 @@ export default function Settings() {
               )}
             </div>
 
+            <ConnectionHealthBanner conn={findConn('shopify')} />
+
             {!store?.integrationStatus?.shopify?.connected && (
               <div className="mt-3 p-4 rounded-lg bg-white/[0.03] border border-white/[0.06] space-y-3">
                 <p className="text-[12px] text-gray-500">
@@ -834,6 +910,7 @@ export default function Settings() {
                       setMessage(data.message);
                       const { data: updated } = await api.get(`/api/stores/${storeId}`);
                       setStore(updated);
+                      loadConnections();
                     } catch (err) {
                       setMessage(`Error: ${err.response?.data?.error || err.message}`);
                     }
@@ -869,6 +946,8 @@ export default function Settings() {
                 <span className="text-[11px] text-gray-600">No conectada</span>
               )}
             </div>
+
+            <ConnectionHealthBanner conn={findConn('meta')} onReconnect={startMetaOAuth} />
 
             <div className="mt-3 p-4 rounded-lg bg-white/[0.03] border border-white/[0.06] space-y-3">
               {!store?.integrationStatus?.metaAds?.connected && (

@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Hooks Analytics — Tour completo</title>
+<style>
+  :root {
+    --bg-base: #0a0a0a;
+    --bg-card: #161616;
+    --bg-elev: #1e1e1e;
+    --text: #f5f5f5;
+    --text-2: #b8b8b8;
+    --text-3: #888;
+    --accent: #3b82f6;
+    --accent-hover: #2563eb;
+    --good: #10b981;
+    --warn: #f59e0b;
+    --bad: #ef4444;
+    --border: rgba(255,255,255,0.08);
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg-base);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif;
+    line-height: 1.55;
+    margin: 0;
+    padding: 0;
+  }
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+  }
+  h1 {
+    font-size: 36px;
+    margin: 0 0 8px;
+    letter-spacing: -0.02em;
+    background: linear-gradient(180deg, #fff, #888);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .subtitle {
+    color: var(--text-3);
+    font-size: 14px;
+    margin: 0 0 40px;
+  }
+  h2 {
+    font-size: 22px;
+    margin: 56px 0 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    color: #fff;
+  }
+  h3 {
+    font-size: 16px;
+    margin: 28px 0 8px;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+  }
+  p { color: var(--text-2); margin: 0 0 12px; font-size: 14px; }
+  ul { color: var(--text-2); font-size: 14px; padding-left: 22px; margin: 0 0 12px; }
+  li { margin-bottom: 6px; }
+  code, .mono {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 12px;
+    background: var(--bg-elev);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: #ffd479;
+  }
+  .toc {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 28px;
+    margin: 24px 0 40px;
+  }
+  .toc h2 { margin-top: 0; border: none; padding: 0; font-size: 14px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.08em; }
+  .toc ol { columns: 2; padding-left: 18px; }
+  .toc a { color: var(--text-2); text-decoration: none; font-size: 13px; }
+  .toc a:hover { color: var(--accent); }
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 16px 0;
+  }
+  .ui-preview {
+    background: linear-gradient(180deg, #0c0c0c, #050505);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 12px 0;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 12px;
+    color: var(--text-2);
+    line-height: 1.7;
+  }
+  .ui-preview .row { display: flex; align-items: center; gap: 12px; padding: 2px 0; }
+  .ui-preview .label { color: var(--text-3); min-width: 80px; }
+  .pill {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-right: 4px;
+  }
+  .pill-good { background: rgba(16,185,129,0.15); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.3); }
+  .pill-warn { background: rgba(245,158,11,0.15); color: #fcd34d; border: 1px solid rgba(245,158,11,0.3); }
+  .pill-bad  { background: rgba(239,68,68,0.15); color: #fca5a5; border: 1px solid rgba(239,68,68,0.3); }
+  .pill-info { background: rgba(59,130,246,0.15); color: #93c5fd; border: 1px solid rgba(59,130,246,0.3); }
+  .callout {
+    border-left: 3px solid var(--accent);
+    background: rgba(59,130,246,0.05);
+    padding: 12px 16px;
+    margin: 16px 0;
+    border-radius: 0 8px 8px 0;
+    font-size: 13px;
+  }
+  .callout.warn { border-color: var(--warn); background: rgba(245,158,11,0.05); }
+  .callout.bad { border-color: var(--bad); background: rgba(239,68,68,0.05); }
+  .callout.good { border-color: var(--good); background: rgba(16,185,129,0.05); }
+  .callout strong { color: #fff; }
+  .step {
+    display: flex;
+    gap: 16px;
+    margin: 16px 0;
+  }
+  .step-num {
+    background: var(--accent);
+    color: #fff;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+  .step-body { flex: 1; padding-top: 2px; }
+  .step-body h4 { margin: 0 0 6px; font-size: 14px; color: #fff; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin: 12px 0;
+  }
+  th, td {
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  th { color: var(--text-3); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; }
+  td { color: var(--text-2); }
+  .hero {
+    background: linear-gradient(135deg, rgba(59,130,246,0.12), rgba(168,85,247,0.08));
+    border: 1px solid rgba(59,130,246,0.2);
+    border-radius: 16px;
+    padding: 32px;
+    margin-bottom: 32px;
+  }
+  .hero h1 { background: none; -webkit-text-fill-color: initial; color: #fff; }
+  .hero-meta { color: var(--text-3); font-size: 13px; margin-top: 16px; }
+  hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+  .kbd {
+    display: inline-block;
+    padding: 2px 6px;
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-family: ui-monospace, monospace;
+    font-size: 11px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="hero">
+  <h1>Bienvenida a Hooks Analytics</h1>
+  <p style="color:#cbd5e1;font-size:15px;margin-bottom:0;">
+    Tour completo de la app. Está pensado para que lo leas de arriba a abajo la primera vez, y después uses el índice para volver a la página que te interese.
+  </p>
+  <div class="hero-meta">
+    Tiempo estimado de lectura: 25-30 min · No hace falta tocar nada hasta el final.
+  </div>
+</div>
+
+<div class="toc">
+  <h2>Índice</h2>
+  <ol>
+    <li><a href="#que-es">¿Qué es Hooks Analytics?</a></li>
+    <li><a href="#login">Login y primer acceso</a></li>
+    <li><a href="#home">Home — "Tus Tiendas"</a></li>
+    <li><a href="#header">Header global</a></li>
+    <li><a href="#sidebar">Sidebar de la tienda</a></li>
+    <li><a href="#resumen">Resumen (Dashboard)</a></li>
+    <li><a href="#insights">Insights automáticos</a></li>
+    <li><a href="#tienda">Tienda</a></li>
+    <li><a href="#productos">Productos</a></li>
+    <li><a href="#clientes">Clientes</a></li>
+    <li><a href="#meta-ads">Meta Ads</a></li>
+    <li><a href="#creativos">Creativos</a></li>
+    <li><a href="#competencia">Competencia</a></li>
+    <li><a href="#cashflow">Cashflow</a></li>
+    <li><a href="#costos">Costos</a></li>
+    <li><a href="#simulador">Simulador</a></li>
+    <li><a href="#reportes">Reportes</a></li>
+    <li><a href="#alertas">Alertas</a></li>
+    <li><a href="#equipo">Equipo</a></li>
+    <li><a href="#settings">Settings</a></li>
+    <li><a href="#profile">Mi Perfil</a></li>
+    <li><a href="#flujo-diario">Tu flujo diario sugerido</a></li>
+    <li><a href="#errores">Errores comunes</a></li>
+  </ol>
+</div>
+
+<h2 id="que-es">1. ¿Qué es Hooks Analytics?</h2>
+<p>
+  Una app interna del equipo para <strong>centralizar la lectura comercial de tiendas e-commerce</strong>. Conecta:
+</p>
+<ul>
+  <li><strong>Tienda Nube</strong> → órdenes, productos, clientes, medios de pago, devoluciones.</li>
+  <li><strong>Meta Ads</strong> → spend, ROAS, creativos, embudo, frecuencia de ads.</li>
+</ul>
+<p>
+  La cruza todo y te devuelve métricas de negocio reales: <code>ROAS real</code>, <code>profit margin</code>, <code>CAC</code>, <code>LTV</code>, recurrencia, segmentación RFM de clientes, capital atrapado en stock, etc.
+</p>
+<p>
+  Hay <strong>una sola app multi-tienda</strong>. Cada usuario ve solamente las tiendas a las que tiene acceso explícito (algunos miembros del equipo ven todas, otros solo las suyas).
+</p>
+
+<div class="callout good">
+  <strong>Importante:</strong> la app <strong>no genera análisis con IA por su cuenta</strong>. Cuando querés un análisis profundo (informe mensual, briefing creativo, plan de acción), abrís Claude Desktop o Codex y le pedís que use el MCP de Hooks para leer los datos de la tienda. Hooks le da el contexto, la IA redacta. Hablamos de eso en el archivo <code>claude-context.md</code>.
+</div>
+
+<h2 id="login">2. Login y primer acceso</h2>
+
+<p>URL: la que te haya pasado Lucas (algo tipo <code>https://hooks-analytics-production-XXXX.up.railway.app/login</code>).</p>
+
+<div class="step">
+  <div class="step-num">1</div>
+  <div class="step-body">
+    <h4>Entrá con tu email + password temporal</h4>
+    <p>Lucas te pasó por privado tu password de primer ingreso. Es temporal; idealmente cambiala apenas entres (TODO: el flujo de cambio de password se va a sumar pronto a la app).</p>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">2</div>
+  <div class="step-body">
+    <h4>Marcá "Keep me signed in for 30 days" si querés evitar relogear todos los días</h4>
+    <p>La sesión JWT dura por default 7 días sin tildar la caja; 30 días con ella tildada.</p>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">3</div>
+  <div class="step-body">
+    <h4>Click "Iniciar sesión"</h4>
+    <p>Si todo va bien te lleva al home con tus tiendas. Si te tira "Internal server error", avisanos en privado — algo del backend; no es algo que vos hayas hecho mal.</p>
+  </div>
+</div>
+
+<h2 id="home">3. Home — "Tus Tiendas"</h2>
+
+<p>Lo primero que ves al entrar. Es un grid con todas las tiendas a las que tenés acceso. Cada tarjeta tiene:</p>
+
+<div class="ui-preview">
+<div class="row"><span class="label">[Logo]</span> <strong>Nombre de la Tienda</strong> · <span style="color:#888;">TIENDA NUBE</span> · <span style="color:#888;">domino.com ↗</span></div>
+<div class="row"><span class="label"></span> <span class="pill pill-good">OK</span> · sync hace 3h</div>
+<div class="row"><span class="label">VENTAS</span> 63 <span style="color:#6ee7b7;">↑ 23.5%</span></div>
+<div class="row"><span class="label">INGRESOS</span> $5.9M <span style="color:#6ee7b7;">↑ 30.2%</span></div>
+<div class="row"><span class="label">TRUE ROAS</span> 2,74x <span style="color:#6ee7b7;">↑ 43.0%</span></div>
+<div class="row"><span class="label">CVR</span> 0,24% <span style="color:#6ee7b7;">↑ 71.8%</span></div>
+<div class="row"><span class="label">AD SPEND</span> $2.0M <span style="color:#fca5a5;">↓ 7.2%</span></div>
+<div class="row"><span class="pill pill-good">TN</span> <span class="pill pill-info">META</span> <span style="color:#fcd34d;">1 devoluciones recientes</span></div>
+</div>
+
+<p>Las cosas que importan:</p>
+<ul>
+  <li><strong>Status dot</strong> a la izquierda del logo: verde = OK · ámbar = atención · rojo = crítico · gris = sin objetivos cargados.</li>
+  <li><strong>Deltas</strong> (↑/↓): comparación con el período anterior del mismo tamaño. Verde = mejora, rojo = empeora.</li>
+  <li><strong>Chips de integración</strong> al pie: TN = TiendaNube conectada, META = Meta Ads conectada, Meta·N = N cuentas Meta conectadas.</li>
+  <li><strong>Click en la tarjeta</strong> → te lleva al <a href="#resumen">Resumen de esa tienda</a>.</li>
+  <li><strong>Click en el dominio (↗)</strong> → abre la tienda pública en una pestaña nueva (sin entrar a Hooks).</li>
+</ul>
+
+<div class="callout">
+  Si todavía no ves ninguna tienda, es porque Lucas no te asignó acceso. Pedile que vaya a <code>/admin/users</code> y agregue las tiendas que vas a manejar.
+</div>
+
+<h2 id="header">4. Header global</h2>
+
+<p>Está arriba de todo en todas las pantallas. De izquierda a derecha:</p>
+
+<table>
+<tr><th>Elemento</th><th>Para qué</th></tr>
+<tr><td><strong>HOOKS ANALYTICS</strong> (logo)</td><td>Click → te lleva al home.</td></tr>
+<tr><td><strong>Actualizado hace X</strong> con dot verde</td><td>Cuánto tiempo pasó desde la última sincronización con Meta/TN. El círculo a la derecha es <strong>el botón refresh</strong>: dispara un sync manual ahora. Tarda 1-3 minutos en propagar.</td></tr>
+<tr><td><strong>RANGO / Últimos 7 días</strong> y presets (Hoy/Ayer/7d/30d/Mes/Mes ant.)</td><td>Selector de fechas. Afecta a TODAS las páginas de la app — toda métrica se recalcula con este rango. El chevron <strong>v</strong> abre un calendario para elegir rango custom.</td></tr>
+<tr><td><strong>Aa</strong> (apariencia)</td><td>Cambia colores de acento (azul/cian/verde/hex) y contraste. Es preferencia personal — no afecta a los datos.</td></tr>
+<tr><td><strong>🔔 Campana</strong></td><td>Notificaciones. Si hay un número en rojo, son <strong>invitaciones pendientes</strong> + <strong>alertas activas</strong>. Click abre dropdown.</td></tr>
+<tr><td><strong>Usuarios</strong> <em>(solo si sos admin global)</em></td><td>Panel de admin para gestionar todos los usuarios del sistema.</td></tr>
+<tr><td><strong>Tu avatar + nombre</strong></td><td>Click → te lleva a <a href="#profile">tu perfil</a>.</td></tr>
+<tr><td><strong>↪ Salir</strong></td><td>Cierra sesión.</td></tr>
+</table>
+
+<h2 id="sidebar">5. Sidebar de la tienda</h2>
+
+<p>Cuando entrás a una tienda específica, aparece el sidebar a la izquierda. Está agrupado por áreas:</p>
+
+<table>
+<tr><th>Grupo</th><th>Items</th><th>Para qué</th></tr>
+<tr><td><strong>GENERAL</strong></td><td>Resumen · Insights</td><td>Dashboard + auto-conclusiones</td></tr>
+<tr><td><strong>VENTAS</strong></td><td>Tienda · Productos · Clientes</td><td>Lectura comercial de TN</td></tr>
+<tr><td><strong>MARKETING</strong></td><td>Meta Ads · Creativos · Competencia</td><td>Performance publicitaria + competidores</td></tr>
+<tr><td><strong>FINANZAS</strong></td><td>Cashflow · Costos</td><td>Tesorería + P&L</td></tr>
+<tr><td><strong>ANÁLISIS</strong></td><td>Simulador · Reportes</td><td>What-if y reportes guardados</td></tr>
+<tr><td><strong>OPERACIÓN</strong></td><td>Alertas</td><td>Alertas activas, reconocer y resolver</td></tr>
+<tr><td><strong>CONFIG</strong></td><td>Equipo · Settings</td><td>Miembros de la tienda + configuración</td></tr>
+</table>
+
+<h2 id="resumen">6. Resumen (Dashboard)</h2>
+
+<p>La página inicial de cada tienda. Es el "panel ejecutivo": ves de un vistazo cómo viene el negocio.</p>
+
+<h3>Pills de health arriba</h3>
+<p>4 chips: <span class="pill pill-good">Acq · ok</span> <span class="pill pill-good">Conv · ok</span> <span class="pill pill-good">Profit · ok</span> <span class="pill pill-warn">Cash · warning</span>. Cada uno resume el estado del área correspondiente — si alguno está en warning/critical, abrí la página específica para ver qué pasa.</p>
+
+<h3>KPIs de Meta Ads (caja azul)</h3>
+<p>Ad Spend, Revenue atribuido, ROAS, CPA, Compras. Con delta vs período anterior. Si una métrica está pintada en rojo es porque está mal vs objetivo o vs período anterior.</p>
+
+<h3>KPIs de Tienda Nube (caja verde)</h3>
+<p>Revenue, Órdenes, AOV (ticket promedio), CVR (conversión web), % NC (% de clientes nuevos vs recurrentes). Si la columna está pintada en rojo es alerta — significa que esa métrica está por debajo de los thresholds que cargó Lucas en Settings → Objetivos.</p>
+
+<h3>Chart "Ventas, inversión y ROAS por día"</h3>
+<p>Dos barras por día: roja = inversión Meta (gasto en ads), azul = ventas TN. Línea naranja = ROAS bruto (ventas / inversión). La línea ROAS se lee con el eje derecho. Toggle entre "ROAS bruto" y "ROAS real" arriba a la derecha.</p>
+
+<div class="callout">
+  <strong>ROAS bruto</strong>: revenue total / spend. Pinta bonito pero infla porque cuenta ventas a clientes recurrentes que probablemente hubieran vuelto sin el ad. <br>
+  <strong>ROAS real</strong>: revenue de clientes nuevos / spend. El número que importa para decidir si escalar.
+</div>
+
+<h3>Embudo de adquisición</h3>
+<p>El cono cinco-pasos: Alcance → Clicks → Add to Cart → Checkout iniciado → Compras. Cada paso muestra:</p>
+<ul>
+  <li>Cantidad de usuarios que llegaron.</li>
+  <li>Costo unitario por etapa ("$X c/u") — cuánto te cuesta por cada usuario que llega ahí.</li>
+  <li>% de conversión vs el paso anterior. Si una etapa cae mucho, se pinta de rojo con badge <strong>"CUELLO"</strong>.</li>
+</ul>
+<p>Al pie del embudo:</p>
+<ul>
+  <li><strong>Carritos perdidos</strong>: ATC - Compras, con estimación del revenue potencial perdido.</li>
+  <li><strong>Gap de atribución</strong>: cuántas compras te atribuyó Meta vs cuántas órdenes reales hubo en TN. Si Meta sobre-reporta más del 20%, se pinta en rojo (señal de que la atribución está inflada).</li>
+</ul>
+
+<h2 id="insights">7. Insights automáticos</h2>
+
+<p>Página nueva del sidebar (debajo de Resumen). Genera "wins, problemas y configuración pendiente" automáticamente, sin IA. Son reglas determinísticas sobre los datos del período seleccionado.</p>
+
+<p>Tres contadores arriba:</p>
+<ul>
+  <li><span class="pill pill-good">WINS</span> — cosas que están funcionando bien y conviene replicar.</li>
+  <li><span class="pill pill-bad">PROBLEMAS</span> — cuellos de botella, fugas de revenue, métricas debajo de objetivo.</li>
+  <li><span class="pill pill-info">PARA CONFIGURAR</span> — datos que faltan cargar (KPIs target, costos) para que la app pueda detectar más cosas.</li>
+</ul>
+
+<p>Cada tarjeta tiene:</p>
+<ul>
+  <li>Título corto (ej. "Cuello de botella en el checkout").</li>
+  <li>Descripción narrada (ej. "Sólo 6.8% de los carritos terminan en compra. Estás perdiendo ~655 carritos = $60.1M de revenue potencial.").</li>
+  <li>Métrica clave a la derecha (ej. "CVR carrito→compra: 6.8%").</li>
+  <li><strong>Botón CTA</strong> que te lleva a la página relacionada (ej. "Ver embudo →").</li>
+</ul>
+
+<p>Click en <strong>↻ Refrescar</strong> arriba a la derecha para forzar recálculo.</p>
+
+<h2 id="tienda">8. Tienda</h2>
+
+<p>Vista comercial de Tienda Nube. Bloques principales:</p>
+
+<h3>KPIs Tienda</h3>
+<p>Órdenes, Facturación, Ticket, Devoluciones %, % NC. Con sus deltas vs período anterior.</p>
+
+<h3>Ventas y facturación por día</h3>
+<p>Chart de barras + línea. Barra = órdenes del día, línea = facturación.</p>
+
+<h3>Medios de pago + Estados</h3>
+<p>Donut con tabs:</p>
+<ul>
+  <li><strong>Por medio</strong>: cómo te están pagando (Mercado Pago, Modo, etc.) + cuántas cuotas promedio + qué comisión total.</li>
+  <li><strong>Por estado</strong>: cuántas órdenes pagadas/pendientes/anuladas/reembolsadas. Tasa de cancelación arriba a la derecha (verde si <2%, rojo si >5%).</li>
+</ul>
+
+<h3>Canales</h3>
+<p>Por dónde entraron las ventas (Web, App, manual, etc.).</p>
+
+<h3>Distribución temporal</h3>
+<p>Tabs:</p>
+<ul>
+  <li><strong>Por día</strong>: cuánto vendés cada día de la semana. Top 3 en verde, bottom 3 en rojo.</li>
+  <li><strong>Por hora</strong>: heatmap 24h. Ayuda a programar campañas en las ventanas que rinden mejor.</li>
+</ul>
+
+<h3>Atribución UTM</h3>
+<p>De qué <code>utm_source</code> / <code>utm_medium</code> / <code>utm_campaign</code> vinieron las ventas. Si tu tienda no etiqueta los ads con UTM, esta tabla aparece vacía con un banner explicando cómo activarlo.</p>
+
+<h3>Detalle diario</h3>
+<p>Tabla día a día con: cantidad de órdenes, facturación, ticket, devoluciones, extras (top producto del día, top medio de pago).</p>
+
+<h2 id="productos">9. Productos</h2>
+
+<p>Auditoría completa del catálogo. Bloques:</p>
+
+<h3>Tabla principal</h3>
+<p>Filtros por chip: Todos / Vendidos / Sin movimiento / Sin stock / Sobrestock / Sin costo. Columnas:</p>
+<ul>
+  <li><strong>Producto</strong> con SKU.</li>
+  <li><strong>Estado</strong> de TN (activo/inactivo).</li>
+  <li><strong>Categoría/Subcategoría</strong>.</li>
+  <li><strong>Precio · COGS · Margen %</strong>.</li>
+  <li><strong>Stock</strong>: en rojo si es 0 o muy bajo.</li>
+</ul>
+<p>Click en una fila abre el <strong>profile del producto</strong> con: ventas históricas, último cambio de precio, alertas específicas (out of stock, sobrestock, etc.).</p>
+
+<h3>Indicadores rápidos</h3>
+<p>Cards con: Rotación %, Sin movimiento, Sin stock, Stock atrapado (capital plata invertida que no rota), Stock valorizado (valuación total del inventario al costo).</p>
+
+<h3>Matriz producto × mes (heatmap)</h3>
+<p>Top 20 productos por revenue × últimos 12 meses. Cada celda = unidades vendidas ese mes. Cuanto más fuerte el azul, más vendió. <strong>Click en cualquier columna del header (nombre, cualquier mes, Total, Stock) ordena la tabla</strong>. Sirve para ver estacionalidad o detectar caídas.</p>
+
+<h3>Salud del catálogo</h3>
+<p>Barra apilada con la composición: activos, inactivos, dead stock, overstock, en promo.</p>
+
+<h3>Comercial por categoría</h3>
+<p>Por categoría: ventas, margen %, ROI, días de cobertura.</p>
+
+<h3>Aging + Concentración</h3>
+<p>Distribución por antigüedad (cuándo fue la última venta) y concentración Pareto en top categorías.</p>
+
+<h2 id="clientes">10. Clientes</h2>
+
+<p>Análisis de la base de clientes con modelo RFM (Recency, Frequency, Monetary).</p>
+
+<h3>KPIs principales</h3>
+<p>Clientes totales · Mejores + Fieles · En riesgo a recuperar · Tasa de recompra. Hovereá el ícono ⓘ de cada KPI para ver la definición.</p>
+
+<h3>Insights del período (nuevo)</h3>
+<p>Panel con 4 mini-KPIs + Top compradores + histograma:</p>
+<ul>
+  <li><strong>Recurrencia %</strong>: cuánta gente compró más de una vez en el período. Verde si >25%, ámbar 15-25%, rojo <15%.</li>
+  <li><strong>CAC del período</strong>: ad spend Meta / nuevos compradores del período.</li>
+  <li><strong>LTV promedio</strong>: valor lifetime promedio de todos los clientes.</li>
+  <li><strong>Ratio CAC / LTV</strong>: cuánta porción del LTV gastás en captarlos. <strong>≤ 0.3 sano</strong>, 0.3-0.5 aceptable, >0.5 caro.</li>
+  <li><strong>Top 10 compradores del período</strong>: lista ordenada por gasto.</li>
+  <li><strong>Histograma "días desde última compra"</strong>: cuántos clientes te compraron en últimos 7d, 30d, 60d, 90d, 180d, 365d, +365d. Los buckets >60d son candidatos a campañas de retención.</li>
+</ul>
+
+<h3>Mapa de segmentos RFM</h3>
+<p>8 segmentos coloreados según valor. Click en uno filtra la tabla:</p>
+<ul>
+  <li>🟢 <strong>Mejores</strong>: los más valiosos. Cuidarlos.</li>
+  <li>🔵 <strong>Fieles</strong>: recompran seguido. Cross-sell y promo de productos relacionados.</li>
+  <li>🟡 <strong>En riesgo</strong>: gastaron mucho pero hace tiempo. Recuperarlos antes que se vayan.</li>
+  <li>🟣 <strong>Potenciales</strong>: tickets altos pero pocas compras. Subir frecuencia con remarketing.</li>
+  <li>🟢 <strong>Prometedores</strong>: compraron hace poco, empujar a la segunda.</li>
+  <li>🔵 <strong>Nuevos</strong>: una sola compra reciente. Convertir en Fieles.</li>
+  <li>⚫ <strong>Dormidos</strong>: una compra hace mucho. Re-engagement.</li>
+  <li>🔴 <strong>Perdidos</strong>: compraban seguido y se fueron.</li>
+</ul>
+
+<h3>Tabla de clientes</h3>
+<p>Buscador + filtro por segmento. Columnas: Cliente, Compras, Gasto Total, Ticket Promedio, Última Compra, Días sin Comprar, Score RFM. Click en una fila abre el profile del cliente con todo su historial.</p>
+
+<h3>Pareto + Cohortes</h3>
+<p>Pareto = qué % de tu facturación viene del top 20% de clientes. Cohortes = matriz de retención: si alguien compró en mayo, qué % volvió a comprar en junio, julio, etc.</p>
+
+<h2 id="meta-ads">11. Meta Ads</h2>
+
+<p>Performance publicitaria de Meta. Bloques:</p>
+
+<h3>KPIs</h3>
+<p>Spend, Impressions, Clicks, CTR, CPC, Conversions, CVR, ROAS, Revenue, CPA.</p>
+
+<h3>Embudo</h3>
+<p>Igual que el del Resumen pero más grande. Acá podés ver mejor los costos por etapa.</p>
+
+<h3>Gasto vs facturación por día</h3>
+<p>Chart con barra Spend + barra Revenue + línea ROAS.</p>
+
+<h3>Resultados por campaña</h3>
+<p>Tabla con filtros (Todas / Activas / Pausadas / Con gasto) y filtro por veredicto. <strong>Por default arranca filtrada en "Activas"</strong>. Columnas:</p>
+<ul>
+  <li><strong>Estado</strong>: activa/pausada/archivada.</li>
+  <li><strong>Campaña</strong>: nombre + objetivo + metaId.</li>
+  <li><strong>Gasto · % spend</strong> con minibar.</li>
+  <li><strong>Revenue ads · ROAS · Compras · CPA · CPC · CTR · Alcance</strong>.</li>
+  <li><strong>Frec.</strong> = impresiones / alcance. Si supera 2.5 se pinta en ámbar (empieza fatiga), >3 en rojo (creativo quemado).</li>
+  <li><strong>Hook %</strong> = video views / impresiones. >30% verde (gancho fuerte), 15-30% ámbar, <15% rojo. Tooltip muestra el drop-off del video (% que llegó al 25% y al 50%).</li>
+  <li><strong>Veredicto</strong>: Escalar / Pausar / Testear / Revisar / Mantener. Generado por reglas determinísticas.</li>
+</ul>
+
+<h3>Importar CSV</h3>
+<p>Si la sync por API falla o querés histórico anterior a la conexión, podés importar el reporte CSV de Meta Ads.</p>
+
+<h2 id="creativos">12. Creativos</h2>
+
+<p>Análisis de los ads en sí (no las campañas).</p>
+
+<h3>KPIs</h3>
+<p>Cantidad ads, Spend, Impressions, Clicks, Conversions, CVR, ROAS, Revenue.</p>
+
+<h3>Galería de ads</h3>
+<p>Tarjetas 2D con thumbnail + métrica principal (ROAS o CVR) + estado. Seleccionables — podés marcar 2-4 y comparar lado a lado.</p>
+
+<h3>Performance por ángulo de comunicación</h3>
+<p>Tabla con cada ángulo (producto-urgencia, social-proof, descuento-general, educativo, transformación, branding, otro) con:</p>
+<ul>
+  <li>Cantidad de ads, Spend total, Revenue, ROAS promedio, CTR.</li>
+  <li><strong>Veredicto</strong> nuevo: Escalar / Pausar / Testear / Revisar / Mantener según ROAS + cantidad + share de spend.</li>
+</ul>
+<p>KPI arriba a la derecha: <strong>"Spend en ROAS &lt; 1.5×"</strong> — porcentaje del presupuesto que se está yendo a ads que no recuperan ni el costo del ad. Rojo si >30%.</p>
+
+<h3>Hipótesis de ángulos</h3>
+<p>Tabla editable para registrar qué hipótesis se está probando con cada ángulo.</p>
+
+<h3>Hooks y frases</h3>
+<p>Repositorio de hooks/frases que funcionaron, para reutilizar en próximos creativos.</p>
+
+<h2 id="competencia">13. Competencia</h2>
+
+<p>Análisis de competidores. Solo se llena con datos que vos cargás manualmente o por scraping puntual.</p>
+
+<h3>Tarjetas de competidores</h3>
+<p>Cada una con: nombre, URL, ángulos detectados, oferta principal, status (analizado/pendiente).</p>
+
+<h3>Acciones</h3>
+<ul>
+  <li><strong>+ Agregar competidor</strong>: cargás manualmente nombre, URL, ángulos, oferta, posicionamiento.</li>
+  <li><strong>Analizar</strong>: la IA externa (vía MCP) toma el competidor y arma un análisis markdown.</li>
+  <li><strong>Scrape</strong>: extrae automáticamente del sitio el catálogo, precios, ángulos visibles.</li>
+  <li><strong>Comparar</strong>: 2-3 competidores lado a lado.</li>
+</ul>
+
+<h2 id="cashflow">14. Cashflow</h2>
+
+<p>Proyección de tesorería.</p>
+
+<h3>Saldos por cuenta bancaria</h3>
+<p>Editables. Cada cuenta tiene saldo actual + última actualización.</p>
+
+<h3>Movimientos manuales</h3>
+<p>CRUD de movimientos puntuales: pagos a proveedores, sueldos, impuestos, etc. Categorizables.</p>
+
+<h3>Proyección unificada</h3>
+<p>Chart con saldo proyectado para los próximos 60 días (default — ajustable con slider).</p>
+
+<h2 id="costos">15. Costos</h2>
+
+<p>P&L y configuración de costos variables/fijos.</p>
+
+<h3>KPIs</h3>
+<p>Revenue, Costo Ads, Costo COGS, Costos fijos, Margen Bruto $, Margen %, Ganancia Neta $, Coverage % (cuánto de tus costos están bien cargados).</p>
+
+<h3>Breakeven</h3>
+<p>Punto de equilibrio en unidades, AOV y ad spend.</p>
+
+<h3>Coverage checklist</h3>
+<p>Lo que falta cargar para que las cuentas estén bien: comisiones, COGS por producto, costos fijos.</p>
+
+<h3>Setup wizard / Upload CSV</h3>
+<p>Para cargar comisiones de pasarelas, costos por producto vía CSV, y costos fijos mensuales.</p>
+
+<h2 id="simulador">16. Simulador</h2>
+
+<p>Calcula qué pasaría si cambian las palancas principales. Cinco sliders:</p>
+<ul>
+  <li><strong>CPM</strong>: costo por mil impresiones.</li>
+  <li><strong>CTR</strong>: % de impresiones que generan click.</li>
+  <li><strong>CVR</strong>: % de clicks que convierten.</li>
+  <li><strong>AOV</strong>: ticket promedio.</li>
+  <li><strong>Presupuesto</strong>: cuánto invertís en ads.</li>
+</ul>
+<p>Outputs: Impresiones, Clicks, Conversiones, Revenue, ROAS, CPA, Ganancia Neta. Comparación actual vs simulado con delta %.</p>
+
+<h2 id="reportes">17. Reportes</h2>
+
+<p>Bandeja de reportes guardados y templates disponibles.</p>
+
+<h3>Templates</h3>
+<p>"Plantillas estructuradas" que la IA externa usa cuando le pedís un informe. Tipos: <code>executive</code>, <code>weekly-review</code>, <code>monthly-close</code>, <code>product-performance</code>, <code>customer-cohorts</code>. Cada uno define qué secciones tiene que cubrir y qué métricas pre-calculadas usar.</p>
+
+<h3>Reportes generados</h3>
+<p>Lista de los reportes que la IA ya escribió. Buscador + tabla. Click en uno abre el detalle con TOC (table of contents) sticky.</p>
+
+<h3>Generar briefing</h3>
+<p>Click en un template → "Generar briefing" → copia un JSON al portapapeles que pegás en Claude/Codex. La IA arma el reporte con eso y lo sube via MCP.</p>
+
+<h2 id="alertas">18. Alertas</h2>
+
+<p>Alertas activas detectadas por el cron de diagnostics (corre cada 6h) o por la regla "ROAS negativo" siempre.</p>
+
+<h3>Tabs</h3>
+<ul>
+  <li><strong>Activas</strong>: las que están sin resolver.</li>
+  <li><strong>Reconocidas</strong>: ya las vio alguien del equipo y las puso "en revisión".</li>
+  <li><strong>Resueltas</strong>: ya fueron arregladas.</li>
+</ul>
+
+<h3>Cada alerta</h3>
+<p>Barra de severidad a la izquierda (rojo crítico / ámbar warning / azul info). Título, descripción, métricas, fecha. Acciones: Reconocer o Resolver.</p>
+
+<h3>Correr diagnóstico ahora</h3>
+<p>Botón arriba a la derecha. Dispara las reglas sin esperar al próximo cron.</p>
+
+<h3>Sin objetivos cargados</h3>
+<p>Si la tienda no tiene KPIs target configurados (en Settings → Objetivos), aparece un banner amarillo. Las reglas contra target (ROAS, CPA, margen) no disparan; las anomalías y caídas sí.</p>
+
+<h2 id="equipo">19. Equipo</h2>
+
+<p>Gestión de quién tiene acceso a la tienda específica (no del sistema en general). Solo aparece si tu rol en esa tienda es owner o admin.</p>
+
+<h3>Invitar miembro</h3>
+<p>Email + rol (admin/editor/viewer) + Enviar. La invitación dura 7 días. Si Resend está configurado, manda el mail; si no, te devuelve el link para que se lo pases por privado.</p>
+
+<h3>Miembros actuales</h3>
+<p>Lista con sus roles. Podés cambiar el rol (excepto el owner, que queda fijo) o quitar a alguien (excepto al último owner — protegido).</p>
+
+<h3>Invitaciones pendientes</h3>
+<p>Si hay alguien que invitaste y no aceptó, aparece acá con botón "Revocar".</p>
+
+<h3>Roles por tienda</h3>
+<ul>
+  <li><strong>Owner</strong>: todo + eliminar la tienda + transferir ownership.</li>
+  <li><strong>Admin</strong>: todo menos eliminar la tienda.</li>
+  <li><strong>Editor</strong>: leer + modificar config no sensible (targets, costos). No conecta integraciones ni invita gente.</li>
+  <li><strong>Viewer</strong>: solo lectura.</li>
+</ul>
+
+<h2 id="settings">20. Settings</h2>
+
+<p>Configuración de la tienda. Es largo, por bloques:</p>
+
+<h3>Integraciones</h3>
+<p>Conectar/desconectar:</p>
+<ul>
+  <li><strong>Tienda Nube</strong>: OAuth o token manual.</li>
+  <li><strong>Shopify</strong>: dominio + Admin API token.</li>
+  <li><strong>Meta Ads</strong>: OAuth o token manual + selección de ad accounts (podés conectar varias).</li>
+</ul>
+<p>Cada bloque muestra el status: "Token activo · vence el X (N días)" o badge de error si está por expirar. Si vencen, te llega un mail recordatorio 7 días antes.</p>
+
+<h3>Google Sheets (opcional)</h3>
+<p>Conectar un spreadsheet para que el pipeline creativo se sincronice ahí también.</p>
+
+<h3>Objetivos</h3>
+<p>Setear los KPIs target de la tienda: ROAS target, CPA máximo, margen mínimo, AOV target, CVR target, etc. Sin estos cargados, las alertas contra target no se disparan (las anomalías y caídas sí).</p>
+
+<h3>Cotización dólar</h3>
+<p>Para conversiones de moneda en reportes.</p>
+
+<h3>Umbrales de Ads</h3>
+<p>Configura los thresholds para la clasificación verdict (Escalar/Pausar/Testear/etc.).</p>
+
+<h3>Configuración financiera</h3>
+<p>Tasa IBB, fee de plataforma, comisiones por pasarela, costos de envío, costos adicionales.</p>
+
+<h3>Métricas del Home</h3>
+<p>Qué KPIs mostrar en la card de esta tienda en el home.</p>
+
+<h2 id="profile">21. Mi Perfil</h2>
+
+<p>Tu config personal. Acceso: click en tu avatar arriba a la derecha.</p>
+
+<h3>Cuenta</h3>
+<p>Nombre, email, rol global. (Read-only por ahora.)</p>
+
+<h3>Notificaciones</h3>
+<p>Email donde recibir alertas + preferencias:</p>
+<ul>
+  <li><strong>Alertas en tiempo real</strong>: ON/OFF + severidad mínima (info / warning / critical).</li>
+  <li><strong>Digests</strong>: diario / semanal.</li>
+  <li><strong>Reportes</strong>: avisarme cuando se publique un reporte en mis tiendas.</li>
+</ul>
+
+<h3>Email service (Resend) ← IMPORTANTE</h3>
+<p>Cada miembro trae su propia API key de Resend para recibir mails. <strong>Sin esto configurado, no te llegan alertas ni recordatorios.</strong></p>
+<p>Tutorial expandible adentro del propio panel + ver también <code>3-vincular-tienda.html</code>.</p>
+
+<h3>Mis tiendas</h3>
+<p>Lista de tiendas a las que tenés acceso con el rol que tenés en cada una.</p>
+
+<h3>Tutorial Meta</h3>
+<p>Sección expandible al final con el paso a paso para generar tu access token de Meta. <strong>Vas a necesitar esto antes de conectar tu primera tienda.</strong> Está cubierto en detalle en <code>2-tutorial-meta-access-token.html</code>.</p>
+
+<h2 id="flujo-diario">22. Tu flujo diario sugerido</h2>
+
+<p>No hay una manera "correcta" de usar la app. Pero un flujo típico:</p>
+
+<div class="step">
+  <div class="step-num">1</div>
+  <div class="step-body">
+    <h4>Lo primero: revisar Insights</h4>
+    <p>Entrá a la tienda → click "Insights" en el sidebar. Mirá Problemas y Wins. Si hay algo crítico (cuello, ROAS&lt;1, caída fuerte de revenue), eso marca la prioridad del día.</p>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">2</div>
+  <div class="step-body">
+    <h4>Revisar alertas activas</h4>
+    <p>Sidebar → Alertas. Reconocé las que ya estás trabajando, resolvé las que ya pasaron.</p>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">3</div>
+  <div class="step-body">
+    <h4>Mirar Meta Ads</h4>
+    <p>Sidebar → Meta Ads. Tabla de campañas activas: ¿hay alguna con verdict "Pausar"? ¿Frecuencia &gt;3? ¿Hook% &lt;15%? Actuar.</p>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">4</div>
+  <div class="step-body">
+    <h4>Tienda / Productos / Clientes según prioridad</h4>
+    <p>Si Insights detectó algo de tienda (devoluciones altas, ticket bajo en mobile, recurrencia baja), abrí esa página y revisá.</p>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">5</div>
+  <div class="step-body">
+    <h4>Reporte semanal (lunes / viernes)</h4>
+    <p>Reportes → "Generar briefing" del template <code>weekly-review</code> → copiar → pegar en Claude → la IA arma el reporte → se sube vía MCP. Lo compartís con el cliente.</p>
+  </div>
+</div>
+
+<h2 id="errores">23. Errores comunes</h2>
+
+<table>
+<tr><th>Síntoma</th><th>Probable causa</th><th>Fix</th></tr>
+<tr><td>Página se queda en "Cargando…"</td><td>Backend lento o sync corriendo</td><td>Esperar 10-15s. Si sigue, refrescar con <span class="kbd">Cmd+R</span></td></tr>
+<tr><td>Datos viejos en una tienda</td><td>El sync no corrió todavía</td><td>Click "↻ Forzar sincronización" en el header. Tarda 1-3 min</td></tr>
+<tr><td>No te llegan mails de alertas</td><td>Te falta API key de Resend en /profile</td><td>Ver tutorial dedicado en <code>3-vincular-tienda.html</code></td></tr>
+<tr><td>"Sin objetivos cargados" en alertas</td><td>La tienda no tiene KPI targets</td><td>Settings → Objetivos. Cargar al menos ROAS target, CPA máximo, margen mínimo</td></tr>
+<tr><td>Una campaña Meta no aparece</td><td>Está pausada y filtraste "Activas"</td><td>Cambiar filtro a "Todas"</td></tr>
+<tr><td>Heatmap de productos sale vacío</td><td>No hay ventas en los últimos 12 meses</td><td>Esperar a que entren órdenes. La query no usa el rango del header, mira siempre últimos 12 meses</td></tr>
+<tr><td>UTM Attribution vacío</td><td>Las orders de TN no tienen <code>utm_*</code> populado</td><td>Configurar UTMs en los ads de Meta. El destino de las URLs debe llevar <code>?utm_source=meta&utm_medium=cpc&utm_campaign=...</code></td></tr>
+<tr><td>Login da "Internal server error"</td><td>Algo del backend</td><td>Avisar a Lucas en privado con la hora del error. Puede pasar después de un deploy</td></tr>
+</table>
+
+<hr>
+
+<p style="text-align:center;color:var(--text-3);font-size:13px;">
+  Fin del tour. Cualquier duda, preguntá en el grupo del equipo.
+</p>
+
+</div>
+</body>
+</html>

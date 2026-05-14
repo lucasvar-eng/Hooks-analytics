@@ -5,6 +5,157 @@ La bitácora se ordena de **arriba hacia abajo** por orden cronológico inverso 
 
 ---
 
+## 2026-05-14 — Sprint largo: separación de credenciales + ACL + análisis nuevos + deploy a Railway
+
+**Branch**: `codex/universal-dashboard-builder` → mergeado a `main` y desplegado en Railway (`hooks-analytics-production-36b6.up.railway.app`).
+
+### Trabajo hecho
+
+Sprint largo que cerró todo lo necesario para invitar al equipo afuera. Doce bloques temáticos:
+
+**1) Separación de credenciales del Store + ACL granular (`StoreConnection` + `StoreAccess`)**
+
+- `StoreConnection` collection nuevo — tokens encriptados de TN/Meta/Shopify ahora viven acá, no en el doc del Store. Schema: `storeId`, `provider`, `accessTokenEncrypted/IV/AuthTag`, `expiresAt`, `metadata`, `connectedByUser`, `status`, `lastError`, `lastUsedAt`. Defensa: `select: false` + `toJSON()` defensivo.
+- `services/storeConnections.js`: API async `getToken / setConnection / clearConnection / listConnections / markUsed / markError / findActiveStoresByProvider`. Reemplaza `utils/tokenAccess.js` (eliminado).
+- `scripts/migrateStoreTokensToConnections.js`: migra los tokens viejos de Store → StoreConnection (idempotente, --dry-run). Migrados 2 Meta. `scripts/cleanupLegacyTokenFields.js` borra los campos viejos del Store schema (corrido, limpio).
+- Store schema: removidos los 12 campos legacy de tokens. Removido también el `toJSON()` defensivo (ya no tiene tokens que ocultar).
+- 11 consumers actualizados: `syncTiendanube`, `syncMeta`, `syncShopify`, `creativeService`, `cronJobs`, `metaController`, `settingsController`, `storeController`, `tnOAuthController`.
+- `StoreAccess` collection nuevo — reemplaza `User.storeAccess[]`. Schema: `userId`, `storeId`, `role` (owner/admin/editor/viewer), `permissions[]` (overrides granulares), `invitedBy`, `acceptedAt`. Roles canónicos definidos en `services/permissions.js` con 13 permissions (`metrics:read`, `connections:write`, `team:invite`, etc.). Middleware `requirePermission(perm)` para endpoints sensibles.
+- `scripts/migrateUserStoreAccessToAcl.js`: convierte `User.storeAccess[]` → `StoreAccess` docs con role `owner` para el primer user (más antiguo) y `admin` para el resto. Corrido, migrados 2 accesos.
+- `storeContext` middleware reescrito async usando `hasAnyAccess()` del nuevo permissions service. `/auth/me` devuelve `storeAccess` (compat) + `storeAccessDetailed` con role + permissions por tienda.
+- 18+ endpoints sensibles de `storeRoutes` migrados de `requireRole` (rol global) a `requirePermission(PERMISSIONS.*)` (granular por tienda).
+- `userManagementController` rehecho — listado/edición de users ahora hidrata desde `StoreAccess` (no del array viejo). Sync helper `syncUserStoreAccesses(userId, desired, invitedBy)`.
+
+**2) Sistema de invitaciones (`StoreInvitation`)**
+
+- Modelo nuevo con `email`, `role`, `token` random 64 hex, `expiresAt` 7d, `status` (pending/accepted/expired/revoked), `invitedBy`, `acceptedByUser`.
+- `controllers/teamController.js` nuevo: endpoints `invite`, `listTeam`, `removeMember`, `updateMember`, `revokeInvitation`, `lookupInvitation` (público), `acceptInvitation`, `listMyInvitations`.
+- Owner protegido: si es el último, no se puede degradar/quitar. Solo después de transferir ownership.
+- Rutas montadas en `/api/stores/:id/team/*` (auth + storeContext + requirePermission) y `/api/invitations/*` (lookup público + accept con auth + mine para feed del header).
+
+**3) Notificaciones del usuario (`User.notificationEmail` + preferences)**
+
+- Campo `notificationEmail` (con fallback al `email` de login) + `notificationPreferences` (alerts.enabled/minSeverity, digests.daily/weekly, reports.onPublish).
+- Endpoints `GET/PUT /api/user/notifications`. `getAlertRecipients()` filtra users con preferences activas y severity >= minSeverity.
+
+**4) Email service multi-tenant (Resend)**
+
+- `services/emailService.js` con Resend SDK + cache de clientes por API key.
+- Cada user trae **su propia** API key (`User.resendApiKey*` encrypted AES-256-GCM). `sendEmailForUser(user, ...)` resuelve la key del user; fallback a la global del `.env`.
+- 3 templates HTML responsive: invitación, token Meta por expirar, alerta operativa.
+- Endpoints `/api/user/resend-config` (get/put/test). El test usa `notificationEmail` como destinatario (para sortear restricción de Resend free sin dominio verificado).
+- Hooks:
+  - `teamController.invite` manda mail con la key del que invita.
+  - `syncMeta.checkMetaTokenHealth` manda mail con la key del `connectedByUser` cuando expiresAt < 7d o hay lastError. Cooldown 24h via metadata.
+  - `diagnosticsService.notifyAlertRecipients` manda mail a cada recipient con SU API key.
+- UI `/profile` → sección "Email service (Resend)" con tutorial expandible paso a paso (crear cuenta → generar key → pegar → probar).
+
+**5) Sistema de alertas reactivado**
+
+- `diagnosticsService.runDiagnostics`: 8 reglas determinísticas (cuello funnel, ROAS, profit margin, spend desperdiciado, frecuencia/fatiga, recurrencia, capital atrapado, caída revenue con narrativa).
+- Hook email en cada alerta creada via `notifyAlertRecipients`.
+- Cron diagnostics: saca el filtro `objetivos.kpis: { $exists: true }` (matcheaba aunque kpis fuera `{}`). Ahora corre para toda store con integración activa. Anomaly detection funciona sin KPIs.
+- Endpoint nuevo `POST /api/stores/:id/alerts/run` on-demand. UI `/alertas`: botón "Correr diagnóstico ahora" + banner amarillo "Sin objetivos cargados" con link a Settings.
+- Cron Meta token health-check a las 11am ART diario.
+
+**6) Limpieza IA interna obsoleta (pivot a MCP completo)**
+
+- Removido `User.aiConfig` + endpoints `/user/ai-config|ai-instructions|ai-files|ai-test`.
+- Removido `Store.aiContext` + endpoints `/stores/:id/ai-context*` + `storeAIContextController` (archivo borrado).
+- `aiProviders.js` borrado. `adAnalysisService` ahora solo expone `getAngleStats` y `getAllAnalyses` (lectura de análisis cacheados que la IA externa vía MCP guardará).
+- Endpoint `POST /creativos/analyze` que llamaba a Anthropic eliminado.
+- UI `/profile` rehecho: Cuenta + Notificaciones + Mis tiendas + Tutorial Meta detallado.
+- `AIConfigSection` y `StoreAIContextSection` removidos de Settings.
+
+**7) Header funcional**
+
+- `LastUpdateChip` nuevo a la izquierda del DateRangePicker: "Actualizado hace X min/h/d" con dot pulsante. Botón refresh dispara `POST /sync/now` y hace poll del lastSync cada 6s (max 2min) hasta detectar el cambio. Snapshot vs baseline para no quedarse colgado.
+- `NotificationsBell` funcional: dropdown con count, lista de invitaciones pendientes (botón "Aceptar" inline), alertas activas agrupadas por tienda (link a `/alertas`). Auto-refresh cada 60s.
+- Sol/luna (ThemeToggle) eliminado — no hacía nada (0 usos de `dark:` en JSX).
+- Botón "?" decorativo eliminado.
+- PWA básica: `manifest.webmanifest`, `icon.svg` (gradient azul "H"), `sw.js` con 3 estrategias (cache-first assets hashed, stale-while-revalidate shell, network-only `/api/*`). `index.html` con apple-mobile-web-app-*, registro de SW solo fuera de localhost.
+
+**8) Análisis nuevos por página (6 commits, alineados con lo que tenían las planillas viejas)**
+
+Para cada item, dónde se metió en componentes existentes vs componentes nuevos:
+
+- **Funnel mejorado** (MetaFunnel existente): cost-per-etapa debajo de cada barra, cuello de botella con barra roja + badge "CUELLO", carritos perdidos en $ + revenue potencial al pie, gap de atribución Meta vs TN cuando se pasa `tnPurchases`.
+- **CampaignsTableRich**: columnas Frec. (con tone por fatiga >2.5) + Hook % (videoViews/impressions). Backend `aggregateInsightMap` enriquece con frequency, videoViews, videoViewsPct25/50.
+- **PaymentMethodsChart**: tabs "Por medio" / "Por estado" — donut cambia composición + KPI cabecero rota entre comisión total y tasa cancelación.
+- **TemporalDistributionChart** (nuevo, en Tienda): tabs "Por día semana" (barras Lun-Dom con top3/bottom3) y "Por hora" (heatmap 24h grid).
+- **UtmAttributionTable** (nuevo, en Tienda): tabs source/medium/campaign. Banner explicativo si no hay UTMs cargados.
+- **ProductMonthlyHeatmap** (nuevo, en Productos): matriz top 20 productos × últimos 12 meses, celdas heatmap, fila Total, tooltip hover. Cada columna (incluido cada mes) clickeable para ordenar.
+- Métrica nueva "Stock valorizado" en `productosMetricsCatalog` (distinta de "Stock atrapado").
+- **PeriodInsightsPanel** (nuevo, en Clientes): 4 KPIs (Recurrencia, CAC, LTV promedio, ratio CAC/LTV con veredicto), top 10 compradores del período, histograma horizontal días desde última compra.
+- **AnglePerformanceTable**: KPI "Spend en ROAS<1.5×" en header con tone semántico, columna "Veredicto" con verdict determinístico (Escalar/Pausar/Testear/Revisar/Mantener) por umbrales.
+- Backend: `getMonthlyMatrix` en `productService`, `getPeriodInsights` en `customerService`, `getTiendaBreakdown` extendido con `byPaymentStatus`, `byUtmSource/Medium/Campaign`, `byDayOfWeek`, `byHourOfDay` (en TZ Argentina).
+- `CampaignsTableRich.statusFilter` default cambiado de 'all' a 'active' (al entrar a Meta Ads se ven solo activas).
+
+**9) Sidebar "Insights" (Auto-Insights determinísticos)**
+
+- `autoInsightsService.js` con 9 reglas determinísticas — sin IA. Reglas: cuello funnel ATC→checkout, ROAS negativo/sólido, profit margin vs target, % spend desperdiciado, frecuencia/fatiga, recurrencia baja/alta, capital atrapado, caída revenue con narrativa pricing/volumen, recordatorios de config faltante (objetivos KPI, costos).
+- Endpoint `GET /api/stores/:id/auto-insights?from=&to=`.
+- Página `/store/:id/insights` con cards Wins/Problemas/Recordatorios + contadores arriba + botón refrescar.
+- Item nuevo en sidebar (grupo General, debajo de Resumen).
+- Reemplaza el viejo menú lateral con IA interna que se eliminó.
+
+**10) Hardening pre-deploy (Fase A del plan-mobile-first-mcp)**
+
+- `server.js`: `trust proxy: 1` (necesario para rate-limit detrás de Railway), JSON body limit reducido a 1MB con override 10MB para CSV/MCP/reports.
+- MCP write tools (`create_report`, `save_analysis`, `create_team_note`): `additionalProperties: false` + `maxLength` en cada campo + enum/pattern en `tipo` y fechas + min/max en confidence.
+- AuditLog cableado en: `auth.login.success/failed/inactive`, `auth.user.registered`, `integration.tiendanube.oauth_connected`, `store.created`, `store.deleted`, `mcp.report.created`, `mcp.team_note.created` (con `source: 'mcp'`).
+- `utils/errorReporting.js`: wrapper opt-in para Sentry (lazy require de `@sentry/node`). Si `SENTRY_DSN` está, instala request handler + error handler de Express + captura `unhandledRejection` y `uncaughtException`. Sin DSN: no-op.
+- `.env.example` rehecho con todas las vars actuales (ENCRYPTION_KEY, JWT_SECRET, CORS_ORIGIN, APP_PUBLIC_URL, RESEND_*, SENTRY_DSN) y comentarios sobre hardening de Atlas (IP allowlist, user scoped, backups).
+- `DEPLOY.md` nuevo: guía operativa con checklist pre-deploy, env vars en raw editor, hardening Atlas, decisión de crons, verificación post-deploy, troubleshooting.
+
+**11) Dockerfile + Railway**
+
+- Dockerfile: `node:18-alpine` → `node:20-alpine`. `npm install` → `npm ci`. Tini como PID 1 para signal handling correcto en Railway.
+
+**12) Deploy productivo a Railway**
+
+- Merge de `codex/universal-dashboard-builder` → `main` y push.
+- Servicio nuevo en Railway, dominio generado: `hooks-analytics-production-36b6.up.railway.app`.
+- Variables productivas configuradas (raw editor): NODE_ENV, PORT, MONGODB_URI, ENCRYPTION_KEY (mismo que local), JWT_SECRET, APP_PUBLIC_URL, CORS_ORIGIN, RESEND_API_KEY, MCP_DEFAULT_AUTHOR_EMAIL, etc.
+- Mongo Atlas: agregado `0.0.0.0/0` temporal al IP Access List (cluster en Sao Paulo, replica set 3 nodes). User Mongo `hooks` con role `atlasAdmin`.
+- Healthcheck `/health` responde 200 OK. Login funciona end-to-end con `lucas@hooks.com.ar`.
+
+### Stats sprint
+
+- ~25 commits en `codex/universal-dashboard-builder` (de `b7b9aec` a `20403c2`).
+- ~50 archivos backend tocados (controllers, services, models, routes, middleware, scripts).
+- ~25 archivos frontend tocados/creados (pages, components, hooks, store).
+- 4 modelos Mongo nuevos (StoreConnection, StoreAccess, StoreInvitation, ¿?).
+- 12+ servicios nuevos (storeConnections, permissions, emailService, autoInsightsService).
+- 3 migrations one-shot ejecutadas contra producción.
+
+### Pendientes inmediatos (post-deploy)
+
+- [ ] **IP Access List Mongo Atlas**: reemplazar `0.0.0.0/0` por las IPs estáticas de Railway específicamente (más seguro).
+- [ ] **Apagar nodemon local**: si queda corriendo en local + Railway, los crons se ejecutan 2x (alertas duplicadas, syncs duplicados).
+- [ ] **User Mongo scoped**: crear user con `readWrite` solo a `ecom-analytics` en lugar del actual con `atlasAdmin`.
+- [ ] **Sentry**: crear proyecto en sentry.io y pegar el DSN para empezar a recibir errors no manejados.
+- [ ] **`User.storeAccess[]` cleanup**: borrar del schema tras unos días de runtime con `StoreAccess` estable.
+- [ ] **Dominio propio**: si querés algo más prolijo que `*.up.railway.app`, comprar dominio + apuntar CNAME + actualizar `APP_PUBLIC_URL` y `CORS_ORIGIN`.
+- [ ] **Verificar dominio Resend**: para mandar invitaciones a otros emails (no solo a la cuenta de signup).
+- [ ] **Sumar invitación a Germán**: una vez que tengamos dominio verificado en Resend, la primer prueba real con un externo.
+
+### Pendientes de plan-mobile-first-mcp (Fases C-F)
+
+- [ ] **Fase C** — Mobile command center: rediseño mobile-first de Home/Store/Alertas. Hoy la app es responsive pero desktop-first. Estimado 2-3 semanas si se hace completo.
+- [ ] **Fase D** — Notificaciones por WhatsApp (email ya está). Web Push después.
+- [ ] **Fase E** — Remote MCP seguro: modelo `ApiToken` con scopes, hash SHA-256+pepper, expiración 90d. Para que Claude/Codex conecten sin JWT humano.
+- [ ] **Fase F** — Tools MCP nuevas on-demand (`get_alerts`, `get_cashflow_projection`, etc.).
+
+### Decisiones de producto del sprint
+
+- **No hacemos OAuth público de Meta/TN**: el flujo manual con tutorial detallado en `/profile` alcanza para el equipo. Meta requiere App Review (2-6 semanas) que no compensa para un equipo chico.
+- **Cada user trae su API key de Resend** en vez de un Resend centralizado: evita el bloqueante de tener que verificar dominio. Cada uno recibe sus alertas en su cuenta.
+- **PWA antes que app nativa**: instalable como app desde Safari/Chrome con "Add to Home Screen". Si se valida adopción mobile en 3-6 meses se evalúa Capacitor.
+- **Plan de Acción + Templates de reporte**: por ahora no implementado. La IA externa vía MCP arma los reportes con `reportTemplateService` cuando el usuario los pide.
+
+---
+
 ## 2026-05-14 — Pre-deploy: encriptación de tokens + hardening de seguridad
 
 **Branch**: `codex/universal-dashboard-builder` (continúa)

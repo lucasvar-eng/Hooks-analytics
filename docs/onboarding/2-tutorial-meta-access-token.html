@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Tutorial Meta — Generar tu access token</title>
+<style>
+  :root {
+    --bg-base: #0a0a0a;
+    --bg-card: #161616;
+    --bg-elev: #1e1e1e;
+    --text: #f5f5f5;
+    --text-2: #b8b8b8;
+    --text-3: #888;
+    --accent: #3b82f6;
+    --good: #10b981;
+    --warn: #f59e0b;
+    --bad: #ef4444;
+    --meta: #1877f2;
+    --border: rgba(255,255,255,0.08);
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg-base);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif;
+    line-height: 1.6;
+    margin: 0;
+  }
+  .container { max-width: 880px; margin: 0 auto; padding: 48px 24px 80px; }
+  h1 { font-size: 32px; margin: 0 0 8px; color: #fff; letter-spacing: -0.02em; }
+  .subtitle { color: var(--text-3); font-size: 14px; margin: 0 0 32px; }
+  h2 {
+    font-size: 22px;
+    margin: 48px 0 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    color: #fff;
+  }
+  h3 { font-size: 16px; margin: 24px 0 8px; color: var(--accent); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; }
+  p { color: var(--text-2); font-size: 14px; margin: 0 0 12px; }
+  ul, ol { color: var(--text-2); font-size: 14px; padding-left: 22px; margin: 0 0 12px; }
+  li { margin-bottom: 6px; }
+  code, .mono {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 12px;
+    background: var(--bg-elev);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: #ffd479;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .hero {
+    background: linear-gradient(135deg, rgba(24,119,242,0.15), rgba(24,119,242,0.04));
+    border: 1px solid rgba(24,119,242,0.3);
+    border-radius: 16px;
+    padding: 32px;
+    margin-bottom: 32px;
+  }
+  .hero h1 { color: #fff; }
+  .callout {
+    border-left: 3px solid var(--accent);
+    background: rgba(59,130,246,0.05);
+    padding: 12px 16px;
+    margin: 16px 0;
+    border-radius: 0 8px 8px 0;
+    font-size: 13px;
+    color: var(--text-2);
+  }
+  .callout.warn { border-color: var(--warn); background: rgba(245,158,11,0.05); color: #fde68a; }
+  .callout.bad { border-color: var(--bad); background: rgba(239,68,68,0.05); color: #fca5a5; }
+  .callout.good { border-color: var(--good); background: rgba(16,185,129,0.05); color: #6ee7b7; }
+  .callout strong { color: #fff; }
+  .step {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin: 16px 0;
+  }
+  .step-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 12px;
+  }
+  .step-num {
+    background: var(--meta);
+    color: #fff;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+  .step h3 { margin: 0; color: #fff; font-size: 17px; text-transform: none; letter-spacing: 0; }
+  .scope-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin: 12px 0;
+  }
+  .scope-table th, .scope-table td {
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  .scope-table th { color: var(--text-3); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; }
+  .scope-table td { color: var(--text-2); vertical-align: top; }
+  .scope-table td:first-child { font-family: ui-monospace, monospace; color: #ffd479; white-space: nowrap; }
+  hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+  .check {
+    color: #6ee7b7;
+    font-weight: 700;
+    margin-right: 6px;
+  }
+  .cross {
+    color: #fca5a5;
+    font-weight: 700;
+    margin-right: 6px;
+  }
+  details {
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin: 12px 0;
+  }
+  summary {
+    cursor: pointer;
+    color: var(--accent);
+    font-size: 13px;
+    font-weight: 600;
+  }
+  details[open] summary { margin-bottom: 8px; }
+  .toc-list {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 28px;
+    margin: 0 0 32px;
+  }
+  .toc-list ol { padding-left: 20px; }
+  .toc-list a { color: var(--text-2); font-size: 13px; }
+  .toc-list a:hover { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="hero">
+  <h1>Tutorial — Generar tu access token de Meta</h1>
+  <p style="color:#cbd5e1;font-size:15px;margin:8px 0 0;">
+    Necesitás un access token de Meta para conectar tus ad accounts a Hooks. Cada miembro del equipo genera el suyo propio porque cada uno tiene acceso a ad accounts distintas.
+  </p>
+  <p style="color:var(--text-3);font-size:13px;margin-top:16px;">
+    Tiempo estimado: 15-25 min. Necesitás permisos en el Business Manager de Meta de la tienda que vas a manejar.
+  </p>
+</div>
+
+<div class="toc-list">
+  <strong style="color:var(--text-3);text-transform:uppercase;letter-spacing:0.08em;font-size:11px;">Índice</strong>
+  <ol>
+    <li><a href="#contexto">Contexto: ¿qué es esto y por qué lo necesitamos?</a></li>
+    <li><a href="#pre">Antes de empezar: pre-requisitos</a></li>
+    <li><a href="#metodo-a">Método A — System User (recomendado, sin expiración)</a></li>
+    <li><a href="#metodo-b">Método B — Token personal (alternativa rápida, expira 60 días)</a></li>
+    <li><a href="#vincular">Vincular el token a tu tienda en Hooks</a></li>
+    <li><a href="#renovar">Renovar / re-generar el token</a></li>
+    <li><a href="#troubleshooting">Problemas frecuentes</a></li>
+  </ol>
+</div>
+
+<h2 id="contexto">1. Contexto: ¿qué es esto y por qué lo necesitamos?</h2>
+
+<p>
+  Meta (Facebook Ads) tiene una API. Para que Hooks pueda leer tus campañas, gasto, creativos, etc., necesita una "credencial" autorizada: el <strong>access token</strong>. Es una cadena larga que empieza con <code>EAA...</code> que actúa como una "llave" — quien la tiene, lee tus datos.
+</p>
+
+<div class="callout warn">
+  <strong>Por qué cada miembro tiene la suya:</strong> Meta vincula el access token al user que lo genera. Si Lucas te pasa el suyo, vos vas a poder ver SOLO las cuentas que él tiene en su Business Manager. Tus propias cuentas (de tus clientes) no van a aparecer. Por eso cada uno tiene que generar su token con su cuenta de Facebook personal.
+</div>
+
+<div class="callout">
+  <strong>Dos métodos posibles:</strong> el "System User" (sin expiración, recomendado) y el "token personal" (más simple pero expira a los 60 días). Decidí cuál usar después de leer la sección de cada uno.
+</div>
+
+<h2 id="pre">2. Antes de empezar: pre-requisitos</h2>
+
+<p>Necesitás tener resueltos estos puntos primero. Si no, los pasos posteriores no van a funcionar.</p>
+
+<h3>2.1. Acceso al Business Manager (BM) de la tienda</h3>
+<p>
+  Entrá a <a href="https://business.facebook.com/" target="_blank">business.facebook.com</a> con tu cuenta personal de Facebook. Tenés que ver el Business Manager de la tienda en cuestión. Si entrás y no ves nada, alguien con acceso al BM (el dueño de la tienda o un admin) tiene que invitarte primero.
+</p>
+
+<h3>2.2. Tu cuenta tiene rol "Empleado" o "Admin" en el BM</h3>
+<p>
+  Andá a <strong>Configuración del negocio → Usuarios → Personas</strong>. Tu nombre tiene que aparecer ahí. Si no, pedile al admin del BM que te agregue.
+</p>
+
+<h3>2.3. Las ad accounts están asignadas al BM</h3>
+<p>
+  En <strong>Configuración del negocio → Cuentas → Cuentas publicitarias</strong>, deberías ver la(s) ad account(s) que vas a conectar a Hooks. Si no aparecen, hay que reclamarlas o asignarlas primero al BM.
+</p>
+
+<h3>2.4. Tenés permiso "Analizar resultados" en cada ad account</h3>
+<p>
+  Como mínimo. Si vas a usar funciones de escritura en el futuro (no las usamos ahora pero por las dudas), también "Administrar campañas". Esto se asigna desde <strong>Configuración del negocio → Cuentas publicitarias → [tu cuenta] → Asignar personas</strong>.
+</p>
+
+<div class="callout good">
+  ✓ Si llegaste hasta acá y todo está OK, podés generar el token.
+</div>
+
+<hr>
+
+<h2 id="metodo-a">3. Método A — System User (recomendado)</h2>
+
+<p>
+  Una <strong>System User</strong> es un "usuario virtual" del Business Manager pensado para uso programático (apps que leen datos automáticamente). Su access token <strong>no expira</strong> a los 60 días como el token personal, lo cual evita el dolor de tener que renovar cada 2 meses.
+</p>
+
+<p>Pasos:</p>
+
+<div class="step">
+  <div class="step-header">
+    <span class="step-num">1</span>
+    <h3>Entrar al Business Manager</h3>
+  </div>
+  <p>
+    <a href="https://business.facebook.com/" target="_blank">business.facebook.com</a> → click el ícono de engranaje arriba a la derecha (Configuración del negocio).
+  </p>
+</div>
+
+<div class="step">
+  <div class="step-header">
+    <span class="step-num">2</span>
+    <h3>Crear la System User</h3>
+  </div>
+  <ul>
+    <li>Sidebar izquierdo: <strong>Usuarios → Usuarios del sistema</strong>.</li>
+    <li>Click <strong>"+ Agregar"</strong>.</li>
+    <li>Nombre sugerido: <code>hooks-analytics</code> (algo que identifique para qué la usás).</li>
+    <li>Rol: <strong>Empleado</strong> (no Admin — principio de menor privilegio).</li>
+    <li>Confirmar.</li>
+  </ul>
+</div>
+
+<div class="step">
+  <div class="step-header">
+    <span class="step-num">3</span>
+    <h3>Asignar las ad accounts a la System User</h3>
+  </div>
+  <ul>
+    <li>Click sobre la System User recién creada (queda seleccionada con fondo azul).</li>
+    <li>Botón <strong>"Asignar activos"</strong> a la derecha.</li>
+    <li>Tipo de activo: <strong>Cuentas publicitarias</strong>.</li>
+    <li>Marcá las cuentas que vas a conectar a Hooks.</li>
+    <li>Permisos: <strong>Administrar cuenta publicitaria</strong> (te recomiendo este, da lectura completa + escritura preventiva). Si solo querés lectura: <strong>Ver rendimiento</strong>.</li>
+    <li>Guardar.</li>
+  </ul>
+  <div class="callout">
+    Opcional: si vas a sincronizar Página de Facebook o Instagram también (para creativos), asignále también el activo <strong>Páginas</strong> con permiso "Crear contenido" o "Analizar resultados".
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-header">
+    <span class="step-num">4</span>
+    <h3>Generar el access token</h3>
+  </div>
+  <ul>
+    <li>Con la System User seleccionada, click <strong>"Generar nuevo token"</strong> (botón a la derecha, dentro del panel de la System User).</li>
+    <li>App: si no tenés una app propia, podés usar <strong>Marketing API</strong> (que aparece por default) o cualquier app que muestre. Si te pide elegir y no sabés, elegí "Marketing API" o "Hooks" si te aparece como opción.</li>
+    <li>Fecha de vencimiento: elegí <strong>Sin fecha de vencimiento (Never)</strong>. Este es el principal beneficio del System User.</li>
+    <li>Permisos (scopes): marcá los 4 siguientes:
+      <table class="scope-table">
+        <tr><th>Permiso</th><th>Para qué</th></tr>
+        <tr><td>ads_read</td><td>Leer campañas, ad sets, ads, insights (gasto, ROAS, etc.)</td></tr>
+        <tr><td>ads_management</td><td>Para que algunos endpoints de insights funcionen completos</td></tr>
+        <tr><td>business_management</td><td>Listar las ad accounts del BM</td></tr>
+        <tr><td>read_insights</td><td>Métricas de Pages e Instagram (para creativos)</td></tr>
+      </table>
+    </li>
+    <li>Click <strong>"Generar token"</strong>.</li>
+  </ul>
+</div>
+
+<div class="step">
+  <div class="step-header">
+    <span class="step-num">5</span>
+    <h3>Copiar el token y guardarlo en un lugar seguro</h3>
+  </div>
+  <p>
+    Facebook te muestra el token <strong>una sola vez</strong>. Si cerrás la modal sin copiarlo, tenés que generar uno nuevo.
+  </p>
+  <ul>
+    <li>Click el botón de copiar (📋) al lado del token.</li>
+    <li>Pegalo en <strong>1Password / Bitwarden</strong> o donde guardes tus secretos, con la etiqueta "Meta Token - hooks-analytics" o similar.</li>
+    <li>Empieza con <code>EAA...</code> y tiene unos 200 caracteres.</li>
+  </ul>
+  <div class="callout bad">
+    <strong>NO lo pegues en Slack, WhatsApp, email ni en un Google Doc compartido.</strong> Es el equivalente a una contraseña de tus ad accounts. Si se filtra, alguien podría leer tu data publicitaria (no podría borrar campañas con los scopes que pusiste, pero igual no se filtra).
+  </div>
+</div>
+
+<div class="callout good">
+  ✓ Listo. Ya tenés tu token. Pasá a la sección <a href="#vincular">"Vincular el token a tu tienda en Hooks"</a>.
+</div>
+
+<hr>
+
+<h2 id="metodo-b">4. Método B — Token personal (alternativa rápida, expira 60 días)</h2>
+
+<p>Más simple pero te toca renovarlo cada ~55 días. Útil si <strong>todavía no tenés permisos para crear System Users</strong> en el Business Manager (a veces el dueño de la tienda no te dio rol de Admin).</p>
+
+<div class="step">
+  <div class="step-header">
+    <span class="step-num">1</span>
+    <h3>Crear una "app" en Meta For Developers</h3>
+  </div>
+  <ul>
+    <li>Entrá a <a href="https://developers.facebook.com/" target="_blank">developers.facebook.com</a>.</li>
+    <li>Logueate con tu cuenta personal.</li>
+    <li>Click <strong>"Mis apps"</strong> (arriba a la derecha).</li>
+    <li>Si todavía no tenés ninguna app: <strong>"Crear app"</strong>.</li>
+    <li>Tipo: <strong>"Otro"</strong> → siguiente.</li>
+    <li>App type: <strong>"Negocio"</strong>.</li>
+    <li>Nombre: <code>hooks-mini-[tu-nombre]</code> (cualquier nombre identificable).</li>
+    <li>Email de contacto: el tuyo.</li>
+    <li>Cuenta de Business Manager: elegí la del cliente (la que tiene las ad accounts).</li>
+    <li>Click <strong>"Crear app"</strong>.</li>
+  </ul>
+</div>
+
+<div class="step">
+  <div class="step-header">
+    <span class="step-num">2</span>
+    <h3>Ir al Graph API Explorer</h3>
+  </div>
+  <ul>
+    <li>En el dashboard de la app que recién creaste, sidebar izquierdo busca <strong>"Tools" → "Graph API Explorer"</strong>.</li>
+    <li>O entrá directo a <a href="https://developers.facebook.com/tools/explorer/" target="_blank">developers.facebook.com/tools/explorer</a>.</li>
+  </ul>
+</div>
+
+<div class="step">
+  <div class="step-header">
+    <span class="step-num">3</span>
+    <h3>Configurar la app y permisos</h3>
+  </div>
+  <ul>
+    <li>Arriba a la derecha: selector "Meta App" → elegí la app recién creada.</li>
+    <li>Debajo: selector "User or Page" → <strong>"User Token"</strong>.</li>
+    <li>Click <strong>"Add a Permission"</strong> (botón ámbar/azul al lado del selector).</li>
+    <li>Marcá los 4 permisos (igual que el método A):
+      <ul>
+        <li><code>ads_read</code></li>
+        <li><code>ads_management</code></li>
+        <li><code>business_management</code></li>
+        <li><code>read_insights</code></li>
+      </ul>
+    </li>
+  </ul>
+</div>
+
+<div class="step">
+  <div class="step-header">
+    <span class="step-num">4</span>
+    <h3>Generar el token (short-lived)</h3>
+  </div>
+  <ul>
+    <li>Click <strong>"Generate Access Token"</strong> (botón azul grande).</li>
+    <li>Te abre un popup de Facebook pidiendo autorización. Confirmá los permisos.</li>
+    <li>Te devuelve un token <strong>short-lived</strong> (válido por 1-2 horas) en el campo grande arriba.</li>
+  </ul>
+  <div class="callout warn">
+    Este token corto no nos sirve para Hooks porque expira en 1-2hs. Necesitamos extenderlo a 60 días.
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-header">
+    <span class="step-num">5</span>
+    <h3>Extender el token a 60 días</h3>
+  </div>
+  <ul>
+    <li>Copiá el token corto del paso anterior.</li>
+    <li>Entrá a <a href="https://developers.facebook.com/tools/debug/accesstoken/" target="_blank">developers.facebook.com/tools/debug/accesstoken</a>.</li>
+    <li>Pegá el token corto en el campo y click <strong>"Debug"</strong>.</li>
+    <li>Abajo del debug aparecen los permisos del token y un botón <strong>"Extend Access Token"</strong>. Click ahí.</li>
+    <li>Te pide la contraseña de tu cuenta de Facebook (verificación adicional).</li>
+    <li>Te devuelve un token nuevo, <strong>long-lived (60 días)</strong>. Copialo.</li>
+  </ul>
+</div>
+
+<div class="step">
+  <div class="step-header">
+    <span class="step-num">6</span>
+    <h3>Guardar el token</h3>
+  </div>
+  <p>
+    Igual que en el método A: guardalo en 1Password / Bitwarden / pass manager. Anotá la fecha de generación para saber cuándo regenerar.
+  </p>
+</div>
+
+<div class="callout warn">
+  Con este método vas a necesitar <strong>repetir los pasos 4 y 5</strong> cada ~55 días. La app va a avisarte por mail antes de que expire (gracias al cron de token health-check), pero conviene tener el día marcado en el calendario.
+</div>
+
+<hr>
+
+<h2 id="vincular">5. Vincular el token a tu tienda en Hooks</h2>
+
+<p>Ya tenés tu token. Ahora lo cargás en Hooks:</p>
+
+<div class="step">
+  <div class="step-header">
+    <span class="step-num">1</span>
+    <h3>Entrar a la tienda en Hooks</h3>
+  </div>
+  <p>Desde el home, click en la tarjeta de la tienda → te lleva al Resumen.</p>
+  <p>Si no ves la tienda en el home, es porque Lucas todavía no te dio acceso a esa tienda. Avisale.</p>
+</div>
+
+<div class="step">
+  <div class="step-header">
+    <span class="step-num">2</span>
+    <h3>Ir a Settings</h3>
+  </div>
+  <p>Sidebar → <strong>Settings</strong> (al final, en el grupo CONFIG).</p>
+</div>
+
+<div class="step">
+  <div class="step-header">
+    <span class="step-num">3</span>
+    <h3>Sección Integraciones → bloque Meta Ads</h3>
+  </div>
+  <p>Si Meta no está conectado para esta tienda, vas a ver dos opciones:</p>
+  <ul>
+    <li><strong>"Conectar con Meta"</strong> (botón azul grande, OAuth público) — solo funciona si la tienda registró la app de Hooks como oficial. Si no, va a fallar.</li>
+    <li><strong>"+ Conectar con token manual (avanzado)"</strong> — el link debajo. <strong>Click ahí.</strong></li>
+  </ul>
+</div>
+
+<div class="step">
+  <div class="step-header">
+    <span class="step-num">4</span>
+    <h3>Pegar el token + traer cuentas</h3>
+  </div>
+  <ul>
+    <li>Pegá tu access token (el <code>EAA...</code>) en el campo "Long-lived access token".</li>
+    <li>Click <strong>"Traer cuentas"</strong>.</li>
+    <li>Hooks llama a la API de Meta y te muestra todas las ad accounts a las que tu token tiene acceso.</li>
+  </ul>
+  <div class="callout">
+    Si te dice "No se encontraron cuentas" o "Error 401", ver la sección <a href="#troubleshooting">"Problemas frecuentes"</a> más abajo.
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-header">
+    <span class="step-num">5</span>
+    <h3>Elegir las ad accounts a vincular</h3>
+  </div>
+  <ul>
+    <li>Marcá las cuentas que querés sincronizar con esta tienda (podés elegir varias, ej. una para web + una para mensajes).</li>
+    <li>Click <strong>"Hacer principal"</strong> en la que va a ser la cuenta de referencia (la primera de la lista).</li>
+    <li>Si una cuenta aparece como <strong>"inactiva"</strong>, Hooks no te deja seleccionarla — está pausada en Meta. Reactivala desde Business Manager primero.</li>
+  </ul>
+</div>
+
+<div class="step">
+  <div class="step-header">
+    <span class="step-num">6</span>
+    <h3>Confirmar conexión</h3>
+  </div>
+  <ul>
+    <li>Click <strong>"Conectar Meta Ads"</strong>.</li>
+    <li>Hooks guarda el token cifrado (AES-256-GCM, no se lee desde la DB en plaintext).</li>
+    <li>Dispara la primera sincronización en background. Tarda 1-5 minutos.</li>
+  </ul>
+</div>
+
+<div class="step">
+  <div class="step-header">
+    <span class="step-num">7</span>
+    <h3>Verificar que cargó</h3>
+  </div>
+  <ul>
+    <li>Esperá 2-3 minutos.</li>
+    <li>Andá al sidebar → <strong>Meta Ads</strong>.</li>
+    <li>Deberías ver tus campañas con métricas. Si el chart está vacío, esperá más (la sync puede tardar hasta 5 min para tiendas con mucho histórico).</li>
+    <li>Volvé a Settings y verificá que diga <strong>"Token activo · vence el X (N días)"</strong> en el bloque Meta. Verde si todo OK.</li>
+  </ul>
+</div>
+
+<div class="callout good">
+  ✓ Tu tienda está conectada a Meta Ads. La app va a sincronizar automáticamente cada 4 horas las insights, cada 12 horas la estructura (campañas/adsets/ads), y diariamente refrescá tokens que estén cerca de expirar (si son System User no expiran, así que ese cron no aplica).
+</div>
+
+<hr>
+
+<h2 id="renovar">6. Renovar / re-generar el token</h2>
+
+<h3>Si usaste Método A (System User)</h3>
+<p>El token <strong>no expira</strong>. Solo regeneralo si:</p>
+<ul>
+  <li>Lo perdiste o se filtró (rotación de seguridad).</li>
+  <li>Necesitás cambiar permisos (sumar/sacar scopes).</li>
+  <li>Cambiaste de Business Manager.</li>
+</ul>
+<p>Pasos: Business Manager → Usuarios del sistema → tu System User → "Generar nuevo token" (mismo flow que la primera vez). Después vas a Hooks → Settings → "↻ Reconectar con Meta" y pegás el nuevo token.</p>
+
+<h3>Si usaste Método B (personal)</h3>
+<p>El token expira cada 60 días. Cuando faltan menos de 7 días, Hooks te manda mail recordatorio (siempre que tengas tu API key de Resend configurada en /profile).</p>
+<p>Para renovar:</p>
+<ol>
+  <li>Volvé al Graph API Explorer (paso 3-4 del Método B).</li>
+  <li>Volvé a generar un token short-lived.</li>
+  <li>Volvé a extenderlo en el Debugger (paso 5).</li>
+  <li>En Hooks → Settings → "↻ Reconectar con Meta" → pegar el nuevo token.</li>
+</ol>
+
+<div class="callout warn">
+  Si tu token expira sin que lo renueves, la sincronización con Meta para esa tienda se detiene. Las campañas viejas siguen apareciendo (están en la DB) pero los datos no se actualizan. Al renovar el token y reconectar, la sync vuelve.
+</div>
+
+<hr>
+
+<h2 id="troubleshooting">7. Problemas frecuentes</h2>
+
+<details>
+<summary>"No se encontraron cuentas" al hacer click en "Traer cuentas"</summary>
+<p style="color:var(--text-2);font-size:13px;margin-top:8px;">
+  Tu token no tiene scope <code>ads_read</code> o la System User no tiene ad accounts asignadas. Verificá: (1) que en el paso 4 del método A marcaste los 4 permisos, (2) que en el paso 3 asignaste las ad accounts a la System User.
+</p>
+</details>
+
+<details>
+<summary>"Token inválido" o "Error 401" al traer cuentas</summary>
+<p style="color:var(--text-2);font-size:13px;margin-top:8px;">
+  El token expiró (típico del método B después de 60 días) o lo copiaste mal. Regeneralo. Asegurate de copiar el token COMPLETO — son ~200 caracteres, sin espacios al principio ni al final.
+</p>
+</details>
+
+<details>
+<summary>Aparecen ad accounts que no me interesan / faltan algunas</summary>
+<p style="color:var(--text-2);font-size:13px;margin-top:8px;">
+  Tu System User tiene asignadas todas las ad accounts a las que vos tenés acceso en el BM. Si faltan, asignalas (paso 3 del método A). Si sobran, podés seleccionar solo las que te interesan en el paso 5 del vínculo a Hooks.
+</p>
+</details>
+
+<details>
+<summary>"La cuenta no está activa en Meta"</summary>
+<p style="color:var(--text-2);font-size:13px;margin-top:8px;">
+  La ad account está pausada, deshabilitada o restringida por Meta. Entrá a la ad account directamente en Ads Manager y mirá el banner de estado. Causas típicas: facturación pendiente, política de Meta violada, ad account nueva sin actividad. Hooks no puede conectarse a cuentas inactivas.
+</p>
+</details>
+
+<details>
+<summary>El token funciona pero los datos no aparecen después de 5 minutos</summary>
+<p style="color:var(--text-2);font-size:13px;margin-top:8px;">
+  Posibles causas: la ad account no tuvo gasto en el período seleccionado en Hooks (probá cambiar el rango a "Últimos 30 días"); o la sincronización está fallando por timeout (mucha data histórica). En este último caso, andá a Settings → "↻ Sincronizar Meta ahora" para forzar otro intento. Si sigue sin cargar, avisá a Lucas con captura del Settings → bloque Meta para ver el lastError.
+</p>
+</details>
+
+<details>
+<summary>El mail de "tu token vence en 5 días" no me llega</summary>
+<p style="color:var(--text-2);font-size:13px;margin-top:8px;">
+  Te falta configurar tu API key de Resend en /profile. Sin eso, la app no tiene cómo mandarte mails. Ver el tutorial dedicado de Resend en el archivo de vincular tienda.
+</p>
+</details>
+
+<details>
+<summary>Cuando intento crear System User me dice "No tenés permisos"</summary>
+<p style="color:var(--text-2);font-size:13px;margin-top:8px;">
+  Solo los <strong>admins</strong> del Business Manager pueden crear System Users. Si tu rol es "Empleado", no podés. Opciones: (1) pedirle al admin del BM que te promueva a Admin, (2) pedirle al admin que cree la System User por vos y te comparta el token, (3) usar el método B (token personal) que no requiere ser admin del BM.
+</p>
+</details>
+
+<hr>
+
+<p style="text-align:center;color:var(--text-3);font-size:13px;">
+  Si algo no encaja con tu caso, escribime con captura.
+</p>
+
+</div>
+</body>
+</html>

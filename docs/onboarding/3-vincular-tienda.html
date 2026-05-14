@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Tutorial — Vincular tu tienda y email</title>
+<style>
+  :root {
+    --bg-base: #0a0a0a;
+    --bg-card: #161616;
+    --bg-elev: #1e1e1e;
+    --text: #f5f5f5;
+    --text-2: #b8b8b8;
+    --text-3: #888;
+    --accent: #3b82f6;
+    --good: #10b981;
+    --warn: #f59e0b;
+    --bad: #ef4444;
+    --tn: #00b09b;
+    --shopify: #95bf47;
+    --resend: #e5a3ff;
+    --border: rgba(255,255,255,0.08);
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg-base);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif;
+    line-height: 1.6;
+    margin: 0;
+  }
+  .container { max-width: 880px; margin: 0 auto; padding: 48px 24px 80px; }
+  h1 { font-size: 32px; margin: 0 0 8px; color: #fff; letter-spacing: -0.02em; }
+  .subtitle { color: var(--text-3); font-size: 14px; margin: 0 0 32px; }
+  h2 {
+    font-size: 22px;
+    margin: 48px 0 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    color: #fff;
+  }
+  h3 { font-size: 16px; margin: 24px 0 8px; color: var(--accent); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; }
+  p { color: var(--text-2); font-size: 14px; margin: 0 0 12px; }
+  ul, ol { color: var(--text-2); font-size: 14px; padding-left: 22px; margin: 0 0 12px; }
+  li { margin-bottom: 6px; }
+  code {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 12px;
+    background: var(--bg-elev);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: #ffd479;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .hero {
+    background: linear-gradient(135deg, rgba(0,176,155,0.12), rgba(149,191,71,0.08));
+    border: 1px solid rgba(0,176,155,0.25);
+    border-radius: 16px;
+    padding: 32px;
+    margin-bottom: 32px;
+  }
+  .hero h1 { color: #fff; }
+  .callout {
+    border-left: 3px solid var(--accent);
+    background: rgba(59,130,246,0.05);
+    padding: 12px 16px;
+    margin: 16px 0;
+    border-radius: 0 8px 8px 0;
+    font-size: 13px;
+    color: var(--text-2);
+  }
+  .callout.warn { border-color: var(--warn); background: rgba(245,158,11,0.05); color: #fde68a; }
+  .callout.bad { border-color: var(--bad); background: rgba(239,68,68,0.05); color: #fca5a5; }
+  .callout.good { border-color: var(--good); background: rgba(16,185,129,0.05); color: #6ee7b7; }
+  .callout strong { color: #fff; }
+  .step {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin: 16px 0;
+  }
+  .step-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 12px;
+  }
+  .step-num {
+    color: #fff;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+    flex-shrink: 0;
+    background: var(--accent);
+  }
+  .step-num.tn { background: var(--tn); }
+  .step-num.shopify { background: var(--shopify); }
+  .step-num.resend { background: var(--resend); color: #1a0033; }
+  .step h3 { margin: 0; color: #fff; font-size: 17px; text-transform: none; letter-spacing: 0; }
+  hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+  details {
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin: 12px 0;
+  }
+  summary {
+    cursor: pointer;
+    color: var(--accent);
+    font-size: 13px;
+    font-weight: 600;
+  }
+  details[open] summary { margin-bottom: 8px; }
+  .toc-list {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 28px;
+    margin: 0 0 32px;
+  }
+  .toc-list ol { padding-left: 20px; }
+  .toc-list a { color: var(--text-2); font-size: 13px; }
+  .toc-list a:hover { color: var(--accent); }
+  .section-header {
+    background: linear-gradient(180deg, rgba(255,255,255,0.04), transparent);
+    padding: 20px 24px;
+    border-radius: 12px 12px 0 0;
+    border: 1px solid var(--border);
+    border-bottom: none;
+    margin-top: 32px;
+  }
+  .section-header h2 { border: none; margin: 0; padding: 0; }
+  .section-header.tn { background: linear-gradient(180deg, rgba(0,176,155,0.1), transparent); border-color: rgba(0,176,155,0.3); }
+  .section-header.shopify { background: linear-gradient(180deg, rgba(149,191,71,0.1), transparent); border-color: rgba(149,191,71,0.3); }
+  .section-header.resend { background: linear-gradient(180deg, rgba(229,163,255,0.08), transparent); border-color: rgba(229,163,255,0.3); }
+  .kbd {
+    display: inline-block;
+    padding: 2px 6px;
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-family: ui-monospace, monospace;
+    font-size: 11px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="hero">
+  <h1>Tutorial — Vincular tienda + configurar email</h1>
+  <p style="color:#cbd5e1;font-size:15px;margin:8px 0 0;">
+    Tres cosas para que la app empiece a funcionar para vos: conectar tu Tienda Nube (o Shopify), conectar tu Resend para recibir mails, y conectar Meta Ads (que tiene su propio archivo).
+  </p>
+  <p style="color:var(--text-3);font-size:13px;margin-top:16px;">
+    Tiempo total estimado: 20-30 minutos. Para Meta Ads, ver el archivo separado <code>2-tutorial-meta-access-token.html</code>.
+  </p>
+</div>
+
+<div class="toc-list">
+  <strong style="color:var(--text-3);text-transform:uppercase;letter-spacing:0.08em;font-size:11px;">Índice</strong>
+  <ol>
+    <li><a href="#orden">Orden recomendado</a></li>
+    <li><a href="#resend">Parte 1: Configurar Resend (email para alertas)</a></li>
+    <li><a href="#tiendanube">Parte 2: Conectar Tienda Nube</a></li>
+    <li><a href="#shopify">Parte 3: Conectar Shopify (alternativo)</a></li>
+    <li><a href="#verificar">Parte 4: Verificar que todo anda</a></li>
+    <li><a href="#objetivos">Parte 5: Cargar objetivos (para activar más alertas)</a></li>
+  </ol>
+</div>
+
+<h2 id="orden">1. Orden recomendado</h2>
+
+<ol>
+  <li><strong>Configurá Resend primero.</strong> Sin esto no recibís ningún mail de la app (alertas de Meta token vencido, invitaciones, digests). Tarda 5 min.</li>
+  <li><strong>Conectá tu Tienda Nube (o Shopify).</strong> 5-10 min. Si Lucas ya conectó la tienda con su cuenta, podés saltarte esto.</li>
+  <li><strong>Generá tu access token de Meta y conectalo</strong> siguiendo el archivo <code>2-tutorial-meta-access-token.html</code>. 15-25 min.</li>
+  <li><strong>Cargá objetivos</strong> en Settings para que las alertas contra target empiecen a disparar. 5 min.</li>
+</ol>
+
+<hr>
+
+<div class="section-header resend">
+  <h2 id="resend">2. Parte 1: Configurar Resend</h2>
+</div>
+
+<p>
+  Resend es el servicio que la app usa para mandar emails. Cada miembro del equipo trae <strong>su propia cuenta</strong> de Resend y su propia API key. Esto evita que la app dependa de una cuenta centralizada y que cada uno reciba los mails con sus credenciales.
+</p>
+
+<div class="callout warn">
+  <strong>Limitación importante:</strong> con cuenta gratis de Resend (sin verificar dominio propio), solo podés recibir mails <strong>en el email con el que te registraste</strong>. Si te registrás con <code>tu@gmail.com</code>, la app solo te va a mandar mails a <code>tu@gmail.com</code>. Para mandar a cualquier email (caso típico: invitar a otros) necesitarías verificar un dominio en Resend (más adelante, no es bloqueante).
+</div>
+
+<div class="step">
+  <div class="step-header">
+    <span class="step-num resend">1</span>
+    <h3>Crear cuenta gratis en Resend</h3>
+  </div>
+  <ul>
+    <li>Entrá a <a href="https://resend.com/signup" target="_blank">resend.com/signup</a>.</li>
+    <li>Registrate <strong>con el email donde querés recibir las notificaciones</strong> (esto es importante — Resend free solo manda a la cuenta del owner).</li>
+    <li>Confirmá el email con el link que te llega.</li>
+    <li>Free tier: 3.000 mails/mes. De sobra para alertas + digests.</li>
+  </ul>
+</div>
+
+<div class="step">
+  <div class="step-header">
+    <span class="step-num resend">2</span>
+    <h3>Generar API key</h3>
+  </div>
+  <ul>
+    <li>En el dashboard de Resend, sidebar izquierdo: <strong>API Keys</strong>.</li>
+    <li>Click <strong>"Create API Key"</strong>.</li>
+    <li>Nombre: <code>hooks-analytics</code>.</li>
+    <li>Permission: <strong>Full access</strong>.</li>
+    <li>Click <strong>Create</strong>.</li>
+    <li>Copiá la key — empieza con <code>re_</code>, tiene unos 30-40 caracteres. <strong>Se muestra una sola vez</strong>; si cerrás la modal sin copiarla tenés que generar otra.</li>
+  </ul>
+</div>
+
+<div class="step">
+  <div class="step-header">
+    <span class="step-num resend">3</span>
+    <h3>Pegarla en Hooks</h3>
+  </div>
+  <ul>
+    <li>Entrá a Hooks → click tu avatar arriba a la derecha → <strong>Mi Perfil</strong>.</li>
+    <li>Bajá hasta la sección <strong>"Email service (Resend)"</strong>.</li>
+    <li>Pegá la API key en el campo <strong>"API key de Resend"</strong>.</li>
+    <li>Dejá <strong>"Remitente"</strong> vacío por ahora (usa el default de Resend).</li>
+    <li>Click <strong>"Guardar"</strong>.</li>
+  </ul>
+</div>
+
+<div class="step">
+  <div class="step-header">
+    <span class="step-num resend">4</span>
+    <h3>Probar que funciona</h3>
+  </div>
+  <ul>
+    <li>Click <strong>"Enviar email de prueba"</strong>.</li>
+    <li>La app intenta mandar un mail a tu <code>notificationEmail</code> (configurable un panel más arriba) o al email de login.</li>
+    <li>Revisá tu inbox (también la carpeta de spam por las dudas). Debería llegar un mail con asunto <strong>"[Hooks Analytics] Tu Resend está conectado"</strong> en 30-60 segundos.</li>
+  </ul>
+  <div class="callout">
+    Si te tira error tipo "You can only send testing emails to your own email address", significa que el email donde estás intentando recibir es distinto al del signup de Resend. Cambiá tu <code>notificationEmail</code> arriba en el panel "Notificaciones" para que coincida con el email de Resend.
+  </div>
+</div>
+
+<div class="callout good">
+  ✓ Listo. Las alertas, recordatorios de token Meta y digests semanales van a llegar a tu mail.
+</div>
+
+<hr>
+
+<div class="section-header tn">
+  <h2 id="tiendanube">3. Parte 2: Conectar Tienda Nube</h2>
+</div>
+
+<p>Si tu tienda usa <strong>Tienda Nube</strong>, seguí estos pasos. Si usa Shopify, andá a la <a href="#shopify">parte 3</a>.</p>
+
+<div class="callout">
+  <strong>Caso típico:</strong> Lucas ya conectó la tienda con su cuenta y vos solo necesitás acceso para verla. En ese caso, este paso ya está hecho y podés saltearlo. Verificá entrando a Settings → bloque Tienda Nube → debería decir "Token activo".
+</div>
+
+<h3>3.1. Conseguir las credenciales</h3>
+
+<p>Necesitás dos cosas:</p>
+<ul>
+  <li><strong>Store ID</strong>: número de 6-7 dígitos. Es el ID de la tienda en Tienda Nube.</li>
+  <li><strong>Access token</strong>: una cadena larga que autoriza a Hooks a leer datos.</li>
+</ul>
+
+<p>Si la tienda es <strong>tuya o de un cliente del equipo</strong>:</p>
+
+<div class="step">
+  <div class="step-header">
+    <span class="step-num tn">1</span>
+    <h3>Encontrar el Store ID</h3>
+  </div>
+  <ul>
+    <li>Entrá al admin de Tienda Nube de esa tienda (<code>https://nube.com.ar/admin</code>).</li>
+    <li>Mirá la URL una vez logueado — algo como <code>https://nube.com.ar/admin/v2/stores/<strong>1234567</strong>/...</code>.</li>
+    <li>Ese número de 7 dígitos es el Store ID.</li>
+  </ul>
+</div>
+
+<div class="step">
+  <div class="step-header">
+    <span class="step-num tn">2</span>
+    <h3>Pedirle al dueño el access token</h3>
+  </div>
+  <p>
+    El access token de TN se genera desde el panel de Partners de Tienda Nube. Como solo el dueño/admin de la tienda puede generarlo, lo más práctico es:
+  </p>
+  <ul>
+    <li>Pedirle a Lucas o al dueño que te pase el token por privado (mensaje cifrado, no Slack/WhatsApp).</li>
+    <li>O pedirles que ellos mismos hagan la conexión inicial desde sus cuentas en Hooks, y vos pidás acceso a esa tienda con tu user.</li>
+  </ul>
+  <div class="callout warn">
+    En la práctica, lo más común es que Lucas o el dueño hagan la conexión inicial y vos solo necesites <strong>que te agreguen a la tienda</strong> como member desde Equipo. No necesitás manejar tokens de TN propios.
+  </div>
+</div>
+
+<h3>3.2. Conectar en Hooks</h3>
+
+<p>Solo si necesitás conectar TN vos mismo:</p>
+
+<div class="step">
+  <div class="step-header">
+    <span class="step-num tn">1</span>
+    <h3>Crear la tienda en Hooks (si todavía no existe)</h3>
+  </div>
+  <ul>
+    <li>En el home → click <strong>"+ Nueva tienda"</strong>.</li>
+    <li>Elegí <strong>"Tienda Nube"</strong>.</li>
+    <li>Pegá el Store ID y el access token.</li>
+    <li>Click <strong>"Conectar"</strong>.</li>
+    <li>La app valida que el token sea válido haciendo una llamada test, te muestra el nombre real de la tienda + logo, y arranca la primera sincronización.</li>
+  </ul>
+</div>
+
+<div class="step">
+  <div class="step-header">
+    <span class="step-num tn">2</span>
+    <h3>O conectar TN en una tienda existente</h3>
+  </div>
+  <p>Si la tienda ya existe en Hooks pero TN no está conectada:</p>
+  <ul>
+    <li>Entrá a la tienda → Settings → bloque <strong>Tienda Nube</strong>.</li>
+    <li>Click <strong>"+ Conectar con token manual (avanzado)"</strong>.</li>
+    <li>Pegá Store ID + token.</li>
+    <li>Click <strong>"Conectar"</strong>.</li>
+  </ul>
+</div>
+
+<div class="step">
+  <div class="step-header">
+    <span class="step-num tn">3</span>
+    <h3>Esperar la primera sincronización</h3>
+  </div>
+  <ul>
+    <li>La sync inicial puede tardar 5-15 minutos dependiendo del histórico (cantidad de órdenes y productos).</li>
+    <li>Mientras corre, podés navegar por la app — los datos van apareciendo a medida que se ingestan.</li>
+    <li>Si querés ver el progreso: Settings → Tienda Nube → "Última sync: en proceso" / "Hace X min".</li>
+  </ul>
+</div>
+
+<hr>
+
+<div class="section-header shopify">
+  <h2 id="shopify">4. Parte 3: Conectar Shopify (alternativo)</h2>
+</div>
+
+<p>Solo si la tienda usa <strong>Shopify</strong> en vez de Tienda Nube.</p>
+
+<div class="step">
+  <div class="step-header">
+    <span class="step-num shopify">1</span>
+    <h3>Generar el Admin API access token en Shopify</h3>
+  </div>
+  <ul>
+    <li>En el admin de Shopify de esa tienda: <strong>Apps → Develop apps → Create app</strong>.</li>
+    <li>App name: <code>hooks-analytics</code>.</li>
+    <li>Configurar <strong>Admin API access scopes</strong>:
+      <ul>
+        <li><code>read_orders</code></li>
+        <li><code>read_products</code></li>
+        <li><code>read_customers</code></li>
+        <li><code>read_inventory</code></li>
+      </ul>
+    </li>
+    <li>Save → Install app.</li>
+    <li>Shopify te genera el <strong>Admin API access token</strong> (empieza con <code>shpat_...</code>). Copialo — se muestra una sola vez.</li>
+  </ul>
+</div>
+
+<div class="step">
+  <div class="step-header">
+    <span class="step-num shopify">2</span>
+    <h3>Identificar el dominio de la tienda</h3>
+  </div>
+  <p>Es el dominio <code>*.myshopify.com</code> (no el dominio público de marketing). Ejemplo: <code>tu-tienda.myshopify.com</code>.</p>
+</div>
+
+<div class="step">
+  <div class="step-header">
+    <span class="step-num shopify">3</span>
+    <h3>Conectar en Hooks</h3>
+  </div>
+  <ul>
+    <li>Home → <strong>"+ Nueva tienda"</strong> → <strong>"Shopify"</strong>.</li>
+    <li>O en una tienda existente: Settings → bloque <strong>Shopify</strong> → "Conectar con token manual".</li>
+    <li>Pegá: dominio <code>*.myshopify.com</code> + access token.</li>
+    <li>Click <strong>"Conectar"</strong>.</li>
+  </ul>
+</div>
+
+<hr>
+
+<h2 id="verificar">5. Parte 4: Verificar que todo anda</h2>
+
+<p>Una vez conectadas las integraciones, revisá:</p>
+
+<div class="step">
+  <div class="step-header">
+    <span class="step-num">1</span>
+    <h3>Settings de la tienda</h3>
+  </div>
+  <ul>
+    <li>Sidebar → Settings → bloque "Integraciones".</li>
+    <li>Cada integración debe estar en verde con "Token activo · vence el X (N días)" o "Sin expiración".</li>
+    <li>Si una está en rojo o ámbar, click "↻ Reconectar" y volvé a vincular.</li>
+  </ul>
+</div>
+
+<div class="step">
+  <div class="step-header">
+    <span class="step-num">2</span>
+    <h3>Dashboard con datos</h3>
+  </div>
+  <ul>
+    <li>Sidebar → Resumen.</li>
+    <li>Deberías ver los KPIs poblados (no en "—"): Revenue, Órdenes, AOV, Spend Meta, ROAS, etc.</li>
+    <li>El chart de "Ventas, inversión y ROAS por día" debe tener barras.</li>
+  </ul>
+</div>
+
+<div class="step">
+  <div class="step-header">
+    <span class="step-num">3</span>
+    <h3>Última actualización en el header</h3>
+  </div>
+  <ul>
+    <li>Arriba en el header, al lado del DateRangePicker, dice "Actualizado hace X".</li>
+    <li>Debería ser reciente (hace minutos / hora).</li>
+    <li>Si dice "Sin datos sincronizados", click el ícono refresh (↻) al lado del texto. Espera 2-3 minutos.</li>
+  </ul>
+</div>
+
+<div class="step">
+  <div class="step-header">
+    <span class="step-num">4</span>
+    <h3>Mail de prueba</h3>
+  </div>
+  <ul>
+    <li>Andá a /profile → "Email service (Resend)" → "Enviar email de prueba".</li>
+    <li>Confirmá que llegó.</li>
+  </ul>
+</div>
+
+<hr>
+
+<h2 id="objetivos">6. Parte 5: Cargar objetivos</h2>
+
+<p>Para que las alertas de Hooks empiecen a detectar cosas contra tu target (ROAS bajo, CPA alto, margen pobre), tenés que cargar los KPIs objetivo de la tienda.</p>
+
+<div class="callout warn">
+  Sin objetivos cargados, las anomalías y caídas se detectan igual (caída de revenue, ROAS negativo, productos sin movimiento, etc.). Pero los chequeos contra target específico (ROAS &lt; X, margen &lt; Y) no disparan.
+</div>
+
+<div class="step">
+  <div class="step-header">
+    <span class="step-num">1</span>
+    <h3>Ir a Settings → Objetivos</h3>
+  </div>
+  <p>
+    Sidebar → Settings → bajá hasta la sección <strong>"Objetivos del negocio"</strong>.
+  </p>
+</div>
+
+<div class="step">
+  <div class="step-header">
+    <span class="step-num">2</span>
+    <h3>Cargar los KPIs target</h3>
+  </div>
+  <p>Mínimo recomendado:</p>
+  <ul>
+    <li><strong>ROAS Target</strong>: el ROAS bruto que considerás "saludable" para esta tienda. Ej: <code>2.5x</code> para tickets bajos, <code>4x</code> para tickets altos. Si querés escalar, generalmente 1.5-2x el breakeven.</li>
+    <li><strong>True ROAS Target</strong>: lo mismo pero con margen real. Si tu margen es 30%, breakeven es ROAS 3.3x.</li>
+    <li><strong>CPA Máximo</strong>: el costo máximo aceptable de adquirir un cliente. Generalmente CPA &lt; 0.5 × LTV.</li>
+    <li><strong>Margen Profit Mín.</strong>: el % de margen neto mínimo. Si tu negocio históricamente da 25%, poné <code>20</code> como threshold de alerta.</li>
+    <li><strong>AOV Target</strong>: ticket promedio objetivo. Ayuda a detectar caídas.</li>
+    <li><strong>CVR Target</strong>: conversion rate objetivo del sitio web.</li>
+  </ul>
+  <p>Avanzado (opcional):</p>
+  <ul>
+    <li><strong>ROAS Breakeven</strong>: el ROAS exacto donde margen = 0. Por debajo de esto, estás perdiendo plata.</li>
+    <li><strong>NC % Target</strong>: % de clientes nuevos vs recurrentes que querés mantener.</li>
+    <li><strong>Tasa devolución máx</strong>: % de órdenes devueltas aceptable.</li>
+  </ul>
+</div>
+
+<div class="step">
+  <div class="step-header">
+    <span class="step-num">3</span>
+    <h3>Umbrales de alerta</h3>
+  </div>
+  <ul>
+    <li><strong>Warning %</strong>: 10% es razonable. La métrica te alerta cuando se desvía 10% del target.</li>
+    <li><strong>Critical %</strong>: 25% es razonable. Alerta crítica cuando se desvía 25%.</li>
+  </ul>
+</div>
+
+<div class="step">
+  <div class="step-header">
+    <span class="step-num">4</span>
+    <h3>Guardar y forzar diagnóstico</h3>
+  </div>
+  <ul>
+    <li>Click "Guardar" abajo.</li>
+    <li>Sidebar → Alertas → click "↻ Correr diagnóstico ahora" arriba a la derecha.</li>
+    <li>Si hay alguna métrica fuera de target, te aparecen las alertas.</li>
+  </ul>
+</div>
+
+<hr>
+
+<h2>7. Listo</h2>
+
+<p>Si llegaste hasta acá:</p>
+<ul>
+  <li>✓ Resend configurado — recibís mails.</li>
+  <li>✓ Tienda Nube / Shopify conectada — datos comerciales sincronizando.</li>
+  <li>✓ Meta Ads conectada (siguiendo el otro tutorial) — datos publicitarios sincronizando.</li>
+  <li>✓ Objetivos cargados — alertas activas.</li>
+</ul>
+
+<p>Tu app está completamente operativa. De acá en adelante, lo único que tenés que hacer es entrar, mirar los <strong>Insights automáticos</strong>, y actuar sobre lo que dispare.</p>
+
+<p style="text-align:center;color:var(--text-3);font-size:13px;margin-top:48px;">
+  Si tenés dudas, escribime con captura.
+</p>
+
+</div>
+</body>
+</html>

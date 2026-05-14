@@ -35,6 +35,8 @@ export default function MetaAds() {
   const { storeId } = useParams();
   const { from, to, preset } = useSelector((s) => s.date);
   const store = useSelector((state) => state.stores.stores.find((item) => item._id === storeId));
+  const storeMetrics = useSelector((state) => state.stores.metrics[storeId]);
+  const tnPurchases = storeMetrics?.current?.ordenesPositivas || 0;
   const [campaigns, setCampaigns] = useState([]);
   const [overview, setOverview] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -86,7 +88,13 @@ export default function MetaAds() {
     {
       id: 'funnel',
       label: 'Embudo',
-      node: <MetaFunnel funnel={overview?.funnel} totals={overview?.totals} excludeKeys={['reach']} />,
+      node: (
+        <MetaFunnel
+          funnel={overview?.funnel}
+          totals={{ ...(overview?.totals || {}), tnPurchases }}
+          excludeKeys={['reach']}
+        />
+      ),
     },
     {
       id: 'spend-revenue',

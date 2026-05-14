@@ -153,7 +153,12 @@ export default function Dashboard() {
       label: 'Conversión',
       node: (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-          <MetaFunnel funnel={metaOverview?.funnel} totals={metaOverview?.totals} excludeKeys={['reach']} compact />
+          <MetaFunnel
+            funnel={metaOverview?.funnel}
+            totals={{ ...(metaOverview?.totals || {}), tnPurchases: current?.ordenesPositivas || 0 }}
+            excludeKeys={['reach']}
+            compact
+          />
           <CvrTimelineChart data={dailyMetrics} periodLabel={periodLbl} />
         </div>
       ),

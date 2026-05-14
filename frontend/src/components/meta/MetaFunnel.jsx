@@ -63,34 +63,53 @@ export default function MetaFunnel({
 
   const newTop = filtered[0];
   const newTopValue = Number(newTop?.value || 0);
+  const totalSpend = Number(totals?.spend || 0);
+
   const steps = filtered.map((s, idx) => {
+    const value = Number(s.value || 0);
+    const costPer = totalSpend > 0 && value > 0 ? totalSpend / value : null;
     if (idx === 0) {
-      return { ...s, conversionPct: null, sharePct: null };
+      return { ...s, conversionPct: null, sharePct: null, costPer };
     }
     const prev = filtered[idx - 1];
-    const value = Number(s.value || 0);
     const prevValue = Number(prev.value || 0);
     return {
       ...s,
       conversionPct: prevValue > 0 ? (value / prevValue) * 100 : null,
       sharePct: newTopValue > 0 ? (value / newTopValue) * 100 : null,
+      costPer,
     };
   });
 
   const top = steps[0];
   const topValue = Number(top?.value || 0);
 
-  // Encontrar el peor drop-off para flag
-  const worstDrop = steps.reduce((worst, s) => {
+  // Encontrar el peor drop-off — pero solo entre pasos donde tiene sentido
+  // (excluimos reach→clicks porque siempre es bajísimo por naturaleza de Meta).
+  const worstDrop = steps.slice(2).reduce((worst, s) => {
     if (s.conversionPct == null) return worst;
     if (worst == null || s.conversionPct < worst.conversionPct) return s;
     return worst;
   }, null);
+  const hasBottleneck = worstDrop && worstDrop.conversionPct < 40;
 
   // Conversión global "primer paso → compra" usando el label dinámico del top
   const purchases = Number(totals?.purchases || 0);
   const globalConvPct = topValue > 0 ? (purchases / topValue) * 100 : null;
   const lastStep = steps[steps.length - 1];
+
+  // Carritos perdidos: ATC - purchases. Revenue perdido = lost × ticket promedio
+  const atcStep = steps.find((s) => s.key === 'atc');
+  const checkoutStep = steps.find((s) => s.key === 'checkouts');
+  const atcValue = Number(atcStep?.value || 0);
+  const lostCarts = Math.max(atcValue - purchases, 0);
+  const avgTicketMeta = purchases > 0 ? Number(totals?.purchaseValue || 0) / purchases : 0;
+  const lostRevenue = lostCarts * avgTicketMeta;
+
+  // Atribución gap: si nos pasaron compras TN, comparar
+  const tnPurchases = Number(totals?.tnPurchases || 0);
+  const showAttribGap = tnPurchases > 0 && purchases > 0;
+  const attribDeltaPct = showAttribGap ? ((purchases - tnPurchases) / tnPurchases) * 100 : null;
 
   return (
     <div className={`card ${compact ? 'p-4' : 'p-5'}`}>
@@ -168,11 +187,17 @@ export default function MetaFunnel({
                 {/* Barra del embudo CENTRADA — esto da la forma cónica */}
                 <div className={`flex items-center justify-center relative ${compact ? 'h-9' : 'h-12'}`}>
                   <div
-                    className="h-full rounded-md flex items-center justify-center transition-all duration-700 relative"
+                    className={`h-full rounded-md flex items-center justify-center transition-all duration-700 relative ${
+                      isWorstDrop ? 'ring-2 ring-red-500/60' : ''
+                    }`}
                     style={{
                       width: `${displayWidth}%`,
-                      background: `linear-gradient(180deg, ${color}cc, ${color}66)`,
-                      boxShadow: `0 4px 16px ${color}33, inset 0 1px 0 ${color}80`,
+                      background: isWorstDrop
+                        ? 'linear-gradient(180deg, #ef4444cc, #b91c1c66)'
+                        : `linear-gradient(180deg, ${color}cc, ${color}66)`,
+                      boxShadow: isWorstDrop
+                        ? '0 4px 16px rgba(239,68,68,0.35), inset 0 1px 0 rgba(239,68,68,0.5)'
+                        : `0 4px 16px ${color}33, inset 0 1px 0 ${color}80`,
                     }}
                   >
                     <span
@@ -181,6 +206,11 @@ export default function MetaFunnel({
                     >
                       {fmtNum(value)}
                     </span>
+                    {step.costPer != null && !compact && (
+                      <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[10px] text-app-muted tabular-nums whitespace-nowrap">
+                        {fmtMoney(step.costPer)} c/u
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -192,8 +222,10 @@ export default function MetaFunnel({
                         {fmtPct(step.conversionPct)}
                       </p>
                       {!compact && <p className="text-app-muted text-[10px] mt-1 leading-tight">vs paso anterior</p>}
-                      {isWorstDrop && !compact && (
-                        <p className="text-red-400 text-[10px] mt-1 font-semibold">⚠ mayor caída</p>
+                      {isWorstDrop && (
+                        <span className={`inline-block mt-1 px-1.5 py-0.5 rounded text-white font-bold bg-red-500/90 ${compact ? 'text-[8.5px]' : 'text-[9.5px]'} uppercase tracking-wide`}>
+                          CUELLO
+                        </span>
                       )}
                     </>
                   ) : (
@@ -230,8 +262,42 @@ export default function MetaFunnel({
         })}
       </div>
 
-      {/* El bloque de métricas al pie (CTR/%ATC/%Checkout/%Compra) se eliminó
-          porque duplicaba la columna derecha de cada paso del embudo. */}
+      {/* Pie: insights cuantificados (carritos perdidos + atribución gap) */}
+      {!compact && (lostCarts > 0 || showAttribGap) && (
+        <div className="mt-6 pt-4 border-t border-white/[0.06] grid sm:grid-cols-2 gap-4">
+          {lostCarts > 0 && (
+            <div className="rounded-lg border border-amber-500/15 bg-amber-500/[0.04] p-3">
+              <p className="text-[10px] uppercase tracking-[0.16em] text-amber-200/70 font-semibold">Carritos perdidos</p>
+              <p className="text-amber-200 text-[18px] font-bold tabular-nums leading-none mt-1.5">
+                {fmtNum(lostCarts)}
+              </p>
+              {avgTicketMeta > 0 && (
+                <p className="text-amber-100/70 text-[11px] mt-1.5 leading-tight">
+                  ≈ {fmtMoney(lostRevenue)} de revenue potencial
+                  <span className="text-app-muted ml-1">(ticket prom. {fmtMoney(avgTicketMeta)})</span>
+                </p>
+              )}
+            </div>
+          )}
+          {showAttribGap && (
+            <div className={`rounded-lg border p-3 ${
+              Math.abs(attribDeltaPct) > 20
+                ? 'border-red-500/15 bg-red-500/[0.04]'
+                : 'border-white/[0.06] bg-white/[0.02]'
+            }`}>
+              <p className="text-[10px] uppercase tracking-[0.16em] text-app-muted font-semibold">Gap de atribución</p>
+              <p className={`text-[18px] font-bold tabular-nums leading-none mt-1.5 ${
+                attribDeltaPct >= 0 ? 'text-blue-300' : 'text-amber-300'
+              }`}>
+                Meta {fmtNum(purchases)} <span className="text-app-muted text-[14px]">vs</span> TN {fmtNum(tnPurchases)}
+              </p>
+              <p className="text-app-muted text-[11px] mt-1.5 leading-tight">
+                Meta {attribDeltaPct >= 0 ? '+' : ''}{attribDeltaPct.toFixed(1)}% vs órdenes reales de TiendaNube
+              </p>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

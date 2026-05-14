@@ -81,8 +81,25 @@ const COLUMNS = [
   { key: 'cpc', label: 'CPC', align: 'center', width: 'w-[90px]' },
   { key: 'ctr', label: 'CTR', align: 'center', width: 'w-[90px]' },
   { key: 'reach', label: 'Alcance', align: 'center', width: 'w-[110px]' },
+  { key: 'frequency', label: 'Frec.', align: 'center', width: 'w-[80px]' },
+  { key: 'hookRate', label: 'Hook %', align: 'center', width: 'w-[90px]' },
   { key: 'verdict', label: 'Veredicto', align: 'center', width: 'w-[110px]' },
 ];
+
+function frequencyTone(v) {
+  if (!v) return '';
+  if (v >= 3) return 'text-red-300';
+  if (v >= 2.5) return 'text-amber-300';
+  if (v >= 1.5) return 'text-emerald-300';
+  return 'text-app-secondary';
+}
+
+function hookRateTone(v) {
+  if (!v) return '';
+  if (v >= 30) return 'text-emerald-300';
+  if (v >= 15) return 'text-amber-300';
+  return 'text-red-300';
+}
 
 export default function CampaignsTableRich({ campaigns = [] }) {
   const [search, setSearch] = useState('');
@@ -112,6 +129,11 @@ export default function CampaignsTableRich({ campaigns = [] }) {
         _ctr: Number(m.ctr || 0),
         _impressions: Number(m.impressions || 0),
         _reach: Number(m.reach || 0),
+        _frequency: Number(m.frequency || 0),
+        _hookRate: Number(m.hookRate || 0),
+        _videoViews: Number(m.videoViews || 0),
+        _videoViewsPct25: Number(m.videoViewsPct25 || 0),
+        _videoViewsPct50: Number(m.videoViewsPct50 || 0),
         _spendShare: totalSpend > 0 ? (spend / totalSpend) * 100 : 0,
         _verdict: m.verdict || null,
         _name: String(c.nombre || '').toLowerCase(),
@@ -357,6 +379,36 @@ export default function CampaignsTableRich({ campaigns = [] }) {
                     {/* Alcance */}
                     <td className="py-3 px-4 text-center">
                       <p className="text-app-secondary tabular-nums">{c._reach > 0 ? fmtNum(c._reach) : <span className="text-app-muted">—</span>}</p>
+                    </td>
+                    {/* Frecuencia (con alerta de fatiga >2.5) */}
+                    <td className="py-3 px-4 text-center">
+                      {c._frequency > 0 ? (
+                        <span
+                          className={`tabular-nums font-semibold ${frequencyTone(c._frequency)}`}
+                          title={c._frequency >= 3 ? 'Frecuencia alta — creativo quemado' : c._frequency >= 2.5 ? 'Frecuencia elevada — empieza fatiga' : 'Frecuencia saludable'}
+                        >
+                          {c._frequency.toFixed(2)}
+                        </span>
+                      ) : (
+                        <span className="text-app-muted">—</span>
+                      )}
+                    </td>
+                    {/* Hook Rate (video views / impressions) */}
+                    <td className="py-3 px-4 text-center">
+                      {c._videoViews > 0 ? (
+                        <span
+                          className={`tabular-nums ${hookRateTone(c._hookRate)}`}
+                          title={
+                            `${fmtNum(c._videoViews)} video views\n` +
+                            `${fmtNum(c._videoViewsPct25)} llegaron al 25%\n` +
+                            `${fmtNum(c._videoViewsPct50)} llegaron al 50%`
+                          }
+                        >
+                          {fmtPct(c._hookRate, 1)}
+                        </span>
+                      ) : (
+                        <span className="text-app-muted">—</span>
+                      )}
                     </td>
                     {/* Veredicto */}
                     <td className="py-3 px-4 text-center">

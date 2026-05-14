@@ -91,12 +91,17 @@ async function aggregateInsightMap(storeId, metaIds, granularity, from, to) {
         checkouts: { $sum: '$checkouts' },
         purchases: { $sum: '$purchases' },
         purchaseValue: { $sum: '$purchaseValue' },
+        videoViews: { $sum: '$videoViews' },
+        videoViewsPct25: { $sum: '$videoViewsPct25' },
+        videoViewsPct50: { $sum: '$videoViewsPct50' },
+        days: { $sum: 1 },
       },
     },
   ]);
 
   return rows.reduce((acc, row) => {
-    acc[row._id] = row;
+    const freq = row.reach > 0 ? row.impressions / row.reach : 0;
+    acc[row._id] = { ...row, frequency: freq };
     return acc;
   }, {});
 }
@@ -241,6 +246,16 @@ exports.getCampaigns = async (req, res, next) => {
           cpa: i.purchases > 0 ? (i.spend || 0) / i.purchases : 0,
           cpc: i.clicks > 0 ? (i.spend || 0) / i.clicks : 0,
           ctr: i.impressions > 0 ? ((i.clicks || 0) / i.impressions) * 100 : 0,
+          // Frecuencia: impresiones / alcance. >2.5 ≈ creativo quemado / fatiga.
+          frequency: i.frequency || 0,
+          // Hook Rate aproximado: % de impresiones que generaron al menos un view.
+          // Real "thumbstop ratio" requiere 3-sec views; usamos videoViews como proxy.
+          videoViews: i.videoViews || 0,
+          videoViewsPct25: i.videoViewsPct25 || 0,
+          videoViewsPct50: i.videoViewsPct50 || 0,
+          hookRate: i.impressions > 0 && i.videoViews > 0
+            ? (i.videoViews / i.impressions) * 100
+            : 0,
         },
       };
     });

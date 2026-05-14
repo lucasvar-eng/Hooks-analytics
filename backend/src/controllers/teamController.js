@@ -4,7 +4,7 @@ const StoreInvitation = require('../models/StoreInvitation');
 const StoreAccess = require('../models/StoreAccess');
 const permissions = require('../services/permissions');
 const { logAudit } = require('../services/auditLogService');
-const { sendEmail, buildInvitationEmail } = require('../services/emailService');
+const { sendEmailForUser, buildInvitationEmail } = require('../services/emailService');
 const { email: emailConfig } = require('../config/environment');
 const logger = require('../utils/logger');
 
@@ -101,7 +101,12 @@ exports.invite = async (req, res, next) => {
       expiresAt,
     });
 
-    const emailResult = await sendEmail({
+    // Usamos la API key del que invita (req.user). Si Resend rechaza porque el
+    // destino no es la cuenta del owner (sin dominio verificado), la UI muestra
+    // el acceptUrl para copiar a mano.
+    const inviter = await User.findById(req.user._id)
+      .select('+resendApiKeyEncrypted +resendApiKeyIV +resendApiKeyAuthTag email resendFromEmail');
+    const emailResult = await sendEmailForUser(inviter, {
       to: email,
       subject: emailTemplate.subject,
       html: emailTemplate.html,

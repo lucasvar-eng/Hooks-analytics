@@ -10,6 +10,198 @@ const ROLE_LABELS = {
   viewer: { label: 'Viewer', color: 'text-gray-300', bg: 'bg-white/[0.04]', border: 'border-white/[0.08]' },
 };
 
+function ResendSection() {
+  const [config, setConfig] = useState(null);
+  const [apiKey, setApiKey] = useState('');
+  const [fromEmail, setFromEmail] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [msg, setMsg] = useState(null);
+  const [openTutorial, setOpenTutorial] = useState(false);
+
+  useEffect(() => {
+    api.get('/api/user/resend-config')
+      .then(({ data }) => {
+        setConfig(data);
+        setFromEmail(data.fromEmail || '');
+      })
+      .catch(() => setConfig(null));
+  }, []);
+
+  const save = async () => {
+    setSaving(true);
+    setMsg(null);
+    try {
+      const payload = {};
+      if (apiKey.trim()) payload.apiKey = apiKey.trim();
+      if (fromEmail !== (config?.fromEmail || '')) payload.fromEmail = fromEmail.trim();
+      if (!Object.keys(payload).length) {
+        setMsg({ ok: false, text: 'No hay cambios para guardar' });
+        setSaving(false);
+        return;
+      }
+      const { data } = await api.put('/api/user/resend-config', payload);
+      setConfig(data);
+      setApiKey('');
+      setMsg({ ok: true, text: 'Configuración guardada' });
+    } catch (err) {
+      setMsg({ ok: false, text: err.response?.data?.error || 'Error al guardar' });
+    }
+    setSaving(false);
+  };
+
+  const test = async () => {
+    setTesting(true);
+    setMsg(null);
+    try {
+      const payload = apiKey.trim() ? { apiKey: apiKey.trim() } : {};
+      const { data } = await api.post('/api/user/resend-config/test', payload);
+      setMsg({ ok: true, text: `Email de prueba enviado a ${data.sentTo}. Revisá tu inbox (puede tardar 30s-2min).` });
+    } catch (err) {
+      const data = err.response?.data || {};
+      setMsg({
+        ok: false,
+        text: data.hint ? `${data.error}\n\n💡 ${data.hint}` : (data.error || 'Error al mandar el email de prueba'),
+      });
+    }
+    setTesting(false);
+  };
+
+  const clearKey = async () => {
+    if (!confirm('¿Quitar la API key guardada? La app dejará de poder mandarte mails.')) return;
+    setSaving(true);
+    setMsg(null);
+    try {
+      const { data } = await api.put('/api/user/resend-config', { apiKey: '' });
+      setConfig(data);
+      setMsg({ ok: true, text: 'API key eliminada' });
+    } catch (err) {
+      setMsg({ ok: false, text: err.response?.data?.error || 'Error' });
+    }
+    setSaving(false);
+  };
+
+  return (
+    <div className="card p-5">
+      <div className="flex items-start justify-between gap-3 mb-1">
+        <div>
+          <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Email service (Resend)</p>
+          <p className="text-[12px] text-app-secondary mt-1">
+            Conectá tu cuenta de Resend para recibir alertas, recordatorios y digests por mail. Cada uno trae la suya: vos recibís en tu cuenta, Germán en la suya, etc.
+          </p>
+        </div>
+        {config?.configured && (
+          <span className="badge-green shrink-0 text-[11px]">Conectado</span>
+        )}
+      </div>
+
+      <button
+        onClick={() => setOpenTutorial((v) => !v)}
+        className="mt-3 text-[12px] text-blue-400 hover:text-blue-300 transition flex items-center gap-1"
+      >
+        {openTutorial ? '− Ocultar tutorial' : '+ Ver tutorial paso a paso'}
+      </button>
+
+      {openTutorial && (
+        <div className="mt-4 space-y-4 border-t border-white/[0.06] pt-4">
+          <div>
+            <p className="text-[12px] font-semibold text-white">1 — Crear cuenta gratis en Resend</p>
+            <ul className="mt-2 ml-4 list-disc space-y-1 text-[12px] text-app-secondary">
+              <li>Entrá a <a className="text-blue-400 hover:underline" href="https://resend.com/signup" target="_blank" rel="noreferrer">resend.com/signup</a> y registrate <b>con el email donde querés recibir las notificaciones</b>.</li>
+              <li>El free tier permite 3.000 mails/mes, suficiente para alertas + digests.</li>
+              <li>Confirmá el email con el link que te llega.</li>
+            </ul>
+          </div>
+
+          <div>
+            <p className="text-[12px] font-semibold text-white">2 — Generar API key</p>
+            <ul className="mt-2 ml-4 list-disc space-y-1 text-[12px] text-app-secondary">
+              <li>En el dashboard de Resend, sidebar → <b>API Keys</b> → <b>Create API Key</b>.</li>
+              <li>Nombre: <span className="font-mono text-[11px] bg-white/[0.05] px-1.5 py-0.5 rounded">hooks-analytics</span>. Permiso: <b>Full access</b> (lo necesita para mandar mails).</li>
+              <li>Copiá la key — empieza con <span className="font-mono text-[11px] bg-white/[0.05] px-1.5 py-0.5 rounded">re_</span>. Solo se muestra una vez.</li>
+            </ul>
+          </div>
+
+          <div>
+            <p className="text-[12px] font-semibold text-white">3 — Pegarla acá abajo</p>
+            <p className="mt-1 text-[12px] text-app-secondary">
+              La guardamos encriptada (AES-256). Solo se descifra cuando hay que mandar un mail.
+            </p>
+          </div>
+
+          <div className="rounded-lg border border-amber-500/20 bg-amber-500/[0.06] p-3">
+            <p className="text-[12px] text-amber-200 font-medium">Limitación importante de Resend gratis</p>
+            <p className="text-[12px] text-amber-100/80 mt-1">
+              Sin <b>verificar un dominio propio</b>, Resend solo te deja mandar emails <b>a la misma cuenta con la que te registraste</b>. Eso significa: vos vas a recibir tus alertas y digests OK. Pero si querés que la app le mande mails a alguien con un email distinto al de tu signup (por ejemplo invitar a alguien), necesitás verificar un dominio en Resend → Domains. Pasos en <a className="text-blue-400 hover:underline" href="https://resend.com/docs/dashboard/domains/introduction" target="_blank" rel="noreferrer">resend.com/docs/domains</a>.
+            </p>
+          </div>
+        </div>
+      )}
+
+      <div className="mt-5 space-y-3">
+        <div>
+          <label className="kpi-label mb-1 block">API key de Resend</label>
+          <input
+            type="password"
+            value={apiKey}
+            onChange={(e) => setApiKey(e.target.value)}
+            placeholder={config?.configured ? '••••••••  (ya hay una guardada)' : 're_...'}
+            className="input-dark w-full font-mono text-[12px]"
+            autoComplete="off"
+          />
+          <p className="text-[11px] text-gray-600 mt-1">
+            {config?.configured
+              ? `Hay una API key guardada para ${config.ownerEmail}. Pegá una nueva si querés reemplazarla.`
+              : 'Conseguila en resend.com → API Keys.'}
+          </p>
+        </div>
+
+        <div>
+          <label className="kpi-label mb-1 block">Remitente (opcional)</label>
+          <input
+            type="text"
+            value={fromEmail}
+            onChange={(e) => setFromEmail(e.target.value)}
+            placeholder='Por defecto: "Hooks Analytics <onboarding@resend.dev>"'
+            className="input-dark w-full text-[12px]"
+          />
+          <p className="text-[11px] text-gray-600 mt-1">
+            Si verificaste un dominio en Resend, podés usar <span className="font-mono">notificaciones@tudominio.com</span> o <span className="font-mono">"Tu Marca &lt;notif@tudominio.com&gt;"</span>.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-3 flex-wrap pt-1">
+          <button
+            onClick={save}
+            disabled={saving || (!apiKey.trim() && fromEmail === (config?.fromEmail || ''))}
+            className="btn-primary disabled:opacity-50"
+          >
+            {saving ? 'Guardando…' : 'Guardar'}
+          </button>
+          <button
+            onClick={test}
+            disabled={testing || (!apiKey.trim() && !config?.configured)}
+            className="btn-secondary disabled:opacity-50"
+          >
+            {testing ? 'Enviando…' : 'Enviar email de prueba'}
+          </button>
+          {config?.configured && (
+            <button onClick={clearKey} disabled={saving} className="text-[12px] text-red-400 hover:text-red-300 ml-auto">
+              Quitar API key
+            </button>
+          )}
+        </div>
+
+        {msg && (
+          <p className={`text-[12px] whitespace-pre-line ${msg.ok ? 'text-emerald-400' : 'text-red-400'}`}>
+            {msg.text}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function MetaTutorial() {
   const [open, setOpen] = useState(false);
   return (
@@ -360,6 +552,7 @@ export default function UserProfile() {
         </div>
 
         <NotificationsSection />
+        <ResendSection />
         <MyStoresSection />
         <MetaTutorial />
       </div>

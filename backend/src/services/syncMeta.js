@@ -8,7 +8,7 @@ const User = require('../models/User');
 const { recalculateDailyMetric } = require('./metricCalculator');
 const { toBusinessDateLabel, addDaysToLabel } = require('../utils/businessDate');
 const storeConnections = require('./storeConnections');
-const { sendEmail, buildTokenExpiringEmail } = require('./emailService');
+const { sendEmailForUser, buildTokenExpiringEmail } = require('./emailService');
 const { email: emailConfig } = require('../config/environment');
 const logger = require('../utils/logger');
 
@@ -466,15 +466,16 @@ async function checkMetaTokenHealth(store) {
     return { skipped: 'cooldown', daysLeft };
   }
 
-  let recipientEmail = null;
+  let recipient = null;
   if (conn.connectedByUser) {
-    const user = await User.findById(conn.connectedByUser).select('email notificationEmail');
-    if (user) recipientEmail = user.notificationEmail || user.email;
+    recipient = await User.findById(conn.connectedByUser)
+      .select('+resendApiKeyEncrypted +resendApiKeyIV +resendApiKeyAuthTag email notificationEmail resendFromEmail');
   }
-  if (!recipientEmail) {
+  if (!recipient) {
     logger.warn(`checkMetaTokenHealth: ${store.nombre} sin recipient (no connectedByUser). Skip.`);
     return { skipped: 'no_recipient' };
   }
+  const recipientEmail = recipient.notificationEmail || recipient.email;
 
   const reconnectUrl = `${emailConfig.appUrl}/store/${store._id}/settings`;
   const template = buildTokenExpiringEmail({
@@ -485,7 +486,9 @@ async function checkMetaTokenHealth(store) {
     reconnectUrl,
   });
 
-  const result = await sendEmail({
+  // Usamos la API key del user que recibe el aviso — así llega sin depender
+  // de un dominio verificado en una key global.
+  const result = await sendEmailForUser(recipient, {
     to: recipientEmail,
     subject: template.subject,
     html: template.html,

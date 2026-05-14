@@ -1,30 +1,53 @@
 /**
- * emailService — wrapper sobre Resend.
+ * emailService — wrapper sobre Resend con soporte multi-tenant.
  *
- * Si RESEND_API_KEY no está configurada, no manda nada y solo loguea
- * (modo dev). Si está configurada, manda via Resend SDK.
+ * Cada User puede traer su propia API key de Resend (encrypted en
+ * User.resendApiKey*). La app le manda los mails a ese user con SU key
+ * — así cada uno recibe sus propios mails sin necesidad de dominio
+ * verificado del lado de la app.
  *
- * Función principal:
- *   sendEmail({ to, subject, html, text?, replyTo? })
+ * Si el user no tiene key configurada, fallback a la global del .env
+ * (que solo puede mandar a la cuenta del owner de Resend del .env).
  *
- * Helpers de templates (devuelven { subject, html, text }):
- *   buildInvitationEmail(...)
- *   buildTokenExpiringEmail(...)
- *   buildAlertEmail(...)
+ * APIs:
+ *   sendEmail({ to, subject, html, text?, replyTo?, apiKey?, from? })
+ *      → manda directo con la apiKey provista (o la del .env como fallback).
+ *
+ *   sendEmailForUser(userId, { to, subject, html, text?, replyTo? })
+ *      → resuelve la API key del User y manda con esa. El `from` se toma
+ *        del User.resendFromEmail si lo tiene, sino del .env.
+ *
+ *   verifyApiKey(apiKey, testTo) → manda un mail de prueba.
+ *
+ * Templates: buildInvitationEmail, buildTokenExpiringEmail, buildAlertEmail.
  */
 const { Resend } = require('resend');
 const { email: emailConfig } = require('../config/environment');
+const { decrypt } = require('../utils/encryption');
 const logger = require('../utils/logger');
 
-let resendClient = null;
-function getResend() {
-  if (!emailConfig.resendApiKey) return null;
-  if (!resendClient) resendClient = new Resend(emailConfig.resendApiKey);
-  return resendClient;
+// Cache de clientes Resend por API key para no instanciar uno nuevo en cada send.
+const clientCache = new Map();
+function getResendFor(apiKey) {
+  if (!apiKey) return null;
+  if (!clientCache.has(apiKey)) clientCache.set(apiKey, new Resend(apiKey));
+  return clientCache.get(apiKey);
 }
 
 function isEnabled() {
   return !!emailConfig.resendApiKey;
+}
+
+function decryptUserResendKey(user) {
+  if (!user?.resendApiKeyEncrypted || !user?.resendApiKeyIV || !user?.resendApiKeyAuthTag) {
+    return null;
+  }
+  try {
+    return decrypt(user.resendApiKeyEncrypted, user.resendApiKeyIV, user.resendApiKeyAuthTag);
+  } catch (err) {
+    logger.warn(`[emailService] No pude descifrar resendApiKey de user ${user._id}: ${err.message}`);
+    return null;
+  }
 }
 
 function escapeHtml(value) {
@@ -37,23 +60,24 @@ function escapeHtml(value) {
 }
 
 /**
- * Manda un email. Devuelve `{ ok, id?, error?, skipped? }`.
- * Nunca tira — si falla, devuelve `{ ok: false, error }` para que el caller decida.
+ * Manda un email directo. `apiKey` y `from` son opcionales (fallback al .env global).
+ * Devuelve `{ ok, id?, error?, skipped? }`. Nunca tira.
  */
-async function sendEmail({ to, subject, html, text, replyTo }) {
+async function sendEmail({ to, subject, html, text, replyTo, apiKey, from }) {
   if (!to || !subject || !html) {
     return { ok: false, error: 'to, subject y html son obligatorios' };
   }
 
-  const resend = getResend();
+  const effectiveKey = apiKey || emailConfig.resendApiKey;
+  const resend = getResendFor(effectiveKey);
   if (!resend) {
-    logger.warn(`[emailService] RESEND_API_KEY no configurada — email a "${to}" no enviado. Subject: "${subject}"`);
+    logger.warn(`[emailService] Sin API key disponible — email a "${to}" no enviado. Subject: "${subject}"`);
     return { ok: false, skipped: true, error: 'email_disabled' };
   }
 
   try {
     const payload = {
-      from: emailConfig.from,
+      from: from || emailConfig.from,
       to: Array.isArray(to) ? to : [to],
       subject,
       html,
@@ -64,13 +88,71 @@ async function sendEmail({ to, subject, html, text, replyTo }) {
     const { data, error } = await resend.emails.send(payload);
     if (error) {
       logger.error(`[emailService] Resend devolvió error mandando a ${to}: ${error.message || JSON.stringify(error)}`);
-      return { ok: false, error: error.message || 'resend_error' };
+      return { ok: false, error: error.message || 'resend_error', errorCode: error.statusCode || error.name };
     }
     return { ok: true, id: data?.id };
   } catch (err) {
     logger.error(`[emailService] Excepción mandando email a ${to}: ${err.message}`);
     return { ok: false, error: err.message };
   }
+}
+
+/**
+ * Manda un email "para" un user (usando la API key personal del user).
+ *
+ * Cargá el User con `+resendApiKeyEncrypted +resendApiKeyIV +resendApiKeyAuthTag`
+ * para que esta función pueda descifrar. Si el user no tiene key, hace fallback
+ * a la global del .env.
+ */
+async function sendEmailForUser(user, { to, subject, html, text, replyTo }) {
+  const userKey = decryptUserResendKey(user);
+  const apiKey = userKey || emailConfig.resendApiKey;
+  const from = user?.resendFromEmail || emailConfig.from;
+
+  if (!apiKey) {
+    logger.warn(`[emailService] sendEmailForUser sin key disponible — email a "${to}" no enviado.`);
+    return { ok: false, skipped: true, error: 'email_disabled' };
+  }
+
+  return sendEmail({
+    to,
+    subject,
+    html,
+    text,
+    replyTo,
+    apiKey,
+    from,
+    keySource: userKey ? 'user' : 'global',
+  });
+}
+
+/**
+ * Verifica que una API key de Resend funciona mandando un email mínimo de prueba.
+ * Devuelve { ok, error? } — el caller muestra el resultado al usuario.
+ */
+async function verifyApiKey(apiKey, testTo) {
+  if (!apiKey || !apiKey.startsWith('re_')) {
+    return { ok: false, error: 'La API key debe empezar con "re_"' };
+  }
+  if (!testTo) return { ok: false, error: 'Falta destinatario de prueba' };
+
+  return sendEmail({
+    apiKey,
+    to: testTo,
+    subject: '[Hooks Analytics] Tu Resend está conectado',
+    html: `${WRAPPER_OPEN}
+      <h2 style="margin:0 0 16px 0;font-size:20px;color:#ffffff;">Resend conectado correctamente</h2>
+      <p style="margin:0 0 12px 0;font-size:14px;line-height:1.6;color:#d1d5db;">
+        Si recibís este mail, significa que tu API key de Resend funciona y Hooks Analytics
+        puede mandarte alertas, recordatorios y digests a este email.
+      </p>
+      <p style="margin:0;font-size:12px;color:#9ca3af;">
+        Recordá: con cuenta gratis de Resend, solo podés recibir mails en este mismo email.
+        Para recibir en otros emails (o mandar invitaciones a tu equipo) verificá un dominio en Resend.
+      </p>
+    ${WRAPPER_CLOSE}`,
+    text: 'Tu Resend está conectado. Vas a poder recibir alertas y digests de Hooks Analytics en este email.',
+  });
 }
 
 const BUTTON_STYLE =
@@ -160,6 +242,8 @@ function buildAlertEmail({ storeName, alertTitle, alertMessage, severity, storeU
 
 module.exports = {
   sendEmail,
+  sendEmailForUser,
+  verifyApiKey,
   isEnabled,
   buildInvitationEmail,
   buildTokenExpiringEmail,

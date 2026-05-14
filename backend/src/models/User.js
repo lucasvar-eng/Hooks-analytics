@@ -45,6 +45,14 @@ const userSchema = new mongoose.Schema(
       trim: true,
       default: '',
     },
+    // API key personal de Resend (encrypted). Cada user trae la suya;
+    // la app le manda los emails a sí mismo con su propia key.
+    // Por el restricción de Resend free (solo a la cuenta del owner),
+    // sin dominio verificado el user solo recibe SUS propios mails.
+    resendApiKeyEncrypted: { type: String, select: false },
+    resendApiKeyIV: { type: String, select: false },
+    resendApiKeyAuthTag: { type: String, select: false },
+    resendFromEmail: { type: String, default: '' },
     notificationPreferences: {
       alerts: {
         enabled: { type: Boolean, default: true },
@@ -79,6 +87,9 @@ userSchema.methods.comparePassword = async function (candidatePassword) {
 userSchema.methods.toJSON = function () {
   const obj = this.toObject();
   delete obj.password;
+  delete obj.resendApiKeyEncrypted;
+  delete obj.resendApiKeyIV;
+  delete obj.resendApiKeyAuthTag;
   return obj;
 };
 

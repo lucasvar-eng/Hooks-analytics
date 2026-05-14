@@ -947,49 +947,16 @@ export default function Settings() {
               )}
             </div>
 
-            <ConnectionHealthBanner conn={findConn('meta')} onReconnect={startMetaOAuth} />
+            <ConnectionHealthBanner conn={findConn('meta')} onReconnect={() => setEditingMetaAccounts(true)} />
 
             <div className="mt-3 p-4 rounded-lg bg-white/[0.03] border border-white/[0.06] space-y-3">
-              {!store?.integrationStatus?.metaAds?.connected && (
-                <>
-                  <button
-                    onClick={startMetaOAuth}
-                    disabled={oauthStartingMeta}
-                    className="btn-primary disabled:opacity-50"
-                  >
-                    {oauthStartingMeta ? 'Abriendo Meta...' : 'Conectar con Meta'}
-                  </button>
-                  <p className="text-[11px] text-gray-500">
-                    Te lleva a Facebook, autorizás el acceso a tu cuenta publicitaria y volvés acá.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => setShowManualMeta((v) => !v)}
-                    className="text-[11px] text-gray-500 hover:text-gray-300 transition underline-offset-2 hover:underline"
-                  >
-                    {showManualMeta ? '− Ocultar conexión manual con token' : '+ Conectar con token manual (avanzado)'}
-                  </button>
-                </>
-              )}
-
-              {store?.integrationStatus?.metaAds?.connected && !editingMetaAccounts && (
-                <button
-                  type="button"
-                  onClick={startMetaOAuth}
-                  disabled={oauthStartingMeta}
-                  className="text-[11px] text-gray-500 hover:text-gray-300 transition disabled:opacity-50"
-                >
-                  {oauthStartingMeta ? 'Abriendo Meta...' : '↻ Reconectar con Meta'}
-                </button>
-              )}
-
-              {(showManualMeta || (!store?.integrationStatus?.metaAds?.connected && false) || editingMetaAccounts) && (
+              {(!store?.integrationStatus?.metaAds?.connected || editingMetaAccounts) && (
                 <p className="text-[12px] text-gray-500">
-                  Pegá un long-lived access token de Meta, traé las cuentas publicitarias disponibles y elegí una o varias para sincronizar en esta tienda.
+                  Pegá un long-lived access token generado desde tu app de Meta (System User o usuario personal), traé las cuentas publicitarias a las que tiene acceso y elegí una o varias para sincronizar en esta tienda.
                 </p>
               )}
 
-              {((!store?.integrationStatus?.metaAds?.connected && showManualMeta) || editingMetaAccounts) && (
+              {(!store?.integrationStatus?.metaAds?.connected || editingMetaAccounts) && (
                 <>
                   <div>
                     <label className="kpi-label mb-1 block">Long-lived access token</label>

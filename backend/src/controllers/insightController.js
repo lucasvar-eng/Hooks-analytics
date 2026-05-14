@@ -1,6 +1,4 @@
 const Insight = require('../models/Insight');
-const { analyze, structuredInsights, buildContext, buildFallbackStructuredInsights } = require('../services/aiService');
-const logger = require('../utils/logger');
 
 // GET /stores/:id/insights?section=&tipo=&estado=
 exports.list = async (req, res, next) => {
@@ -121,85 +119,6 @@ exports.resolve = async (req, res, next) => {
     if (!insight) return res.status(404).json({ error: 'Insight not found' });
     res.json(insight);
   } catch (error) {
-    next(error);
-  }
-};
-
-// POST /stores/:id/insights/generate — generate AI insights for a section
-exports.generate = async (req, res, next) => {
-  try {
-    const storeId = req.params.id;
-    const { section = 'dashboard' } = req.body;
-
-    // Get date range from query or default to last 30 days
-    const to = new Date().toISOString().slice(0, 10);
-    const fromDate = new Date();
-    fromDate.setDate(fromDate.getDate() - 30);
-    const from = fromDate.toISOString().slice(0, 10);
-
-    let result;
-    try {
-      result = await structuredInsights(section, storeId, from, to, req.user._id);
-    } catch (error) {
-      logger.warn(`Structured insights failed, falling back to text parse: ${error.message}`);
-      try {
-        const fallback = await analyze(section, storeId, from, to, req.user._id);
-        const lines = fallback.analysis.split('\n').filter((l) => l.trim());
-        result = {
-          confidence: fallback.confidence ?? 0.5,
-          provider: fallback.provider,
-          model: fallback.model,
-          tokensUsed: fallback.tokensUsed,
-          insights: lines
-            .map((line) => line.replace(/^[-*#\s]+/, '').trim())
-            .filter((line) => line.length >= 10)
-            .slice(0, 8)
-            .map((line) => ({
-              titulo: line.length > 80 ? `${line.slice(0, 80)}...` : line,
-              descripcion: line,
-              tipo: 'diagnostic',
-              severidad: 'neutral',
-              verdict: null,
-              metricKey: null,
-              impacto: null,
-            })),
-        };
-      } catch (analysisError) {
-        logger.warn(`AI text fallback failed, using local heuristic insights: ${analysisError.message}`);
-        const context = await buildContext(section, storeId, from, to);
-        result = buildFallbackStructuredInsights(section, context);
-      }
-    }
-
-    const insights = result.insights.map((item) => ({
-      storeId,
-      section,
-      tipo: item.tipo || 'diagnostic',
-      severidad: item.severidad || 'neutral',
-      titulo: item.titulo,
-      descripcion: item.descripcion,
-      impacto: item.impacto || undefined,
-      verdict: item.verdict || null,
-      layer: 'L2',
-      generatedBy: result.provider === 'openai' ? 'openai' : result.provider === 'local' ? 'local' : 'claude',
-      metricKey: item.metricKey || undefined,
-      confidence: result.confidence ?? 0.5,
-      metadata: {
-        model: result.model,
-        tokensUsed: result.tokensUsed,
-        summary: result.summary,
-      },
-    }));
-
-    // Clear old AI-generated insights for this section, then insert new
-    if (insights.length > 0) {
-      await Insight.deleteMany({ storeId, section, generatedBy: { $in: ['claude', 'openai'] } });
-      await Insight.insertMany(insights.slice(0, 20)); // cap at 20
-    }
-
-    res.json({ count: insights.length, tokensUsed: result.tokensUsed, confidence: result.confidence ?? 0.5 });
-  } catch (error) {
-    logger.error('Insight generate error:', error.message);
     next(error);
   }
 };

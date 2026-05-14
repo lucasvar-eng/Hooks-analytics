@@ -10,7 +10,6 @@ router.use('/stores/:id', auth, storeContext);
 router.get('/stores/:id/reports', auth, asyncHandler(reportController.list));
 router.get('/stores/:id/reports/:reportId', auth, asyncHandler(reportController.getById));
 router.post('/stores/:id/reports', auth, asyncHandler(reportController.create));
-router.post('/stores/:id/reports/templates/:templateKey', auth, asyncHandler(reportController.createFromTemplate));
 router.get('/stores/:id/reports/:reportId/export', auth, asyncHandler(reportController.exportReport));
 router.delete('/stores/:id/reports/:reportId', auth, asyncHandler(reportController.remove));
 

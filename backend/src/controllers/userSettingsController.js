@@ -1,6 +1,5 @@
 const User = require('../models/User');
 const { encrypt } = require('../utils/encryption');
-const aiService = require('../services/aiService');
 const logger = require('../utils/logger');
 
 exports.getAIConfig = async (req, res, next) => {
@@ -117,11 +116,8 @@ exports.deleteGlobalFile = async (req, res, next) => {
   }
 };
 
-exports.testConnection = async (req, res, next) => {
-  try {
-    const result = await aiService.testConnection(req.user._id);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+exports.testConnection = async (req, res) => {
+  res.status(410).json({
+    error: 'Endpoint deprecado. La AI ya no corre dentro de la app — entra por MCP. Configurá las credenciales en tu cliente MCP (Claude Desktop / Codex / etc).',
+  });
 };

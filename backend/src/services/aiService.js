@@ -1,7 +1,19 @@
-const { ai } = require('../config/environment');
-const { getProvider } = require('./aiProviders');
-const { decrypt } = require('../utils/encryption');
-const User = require('../models/User');
+/**
+ * aiService — versión post-MCP (mayo 2026).
+ *
+ * Quedó SOLO el armado del contexto de datos para que una IA externa (Claude vía
+ * MCP, Codex, etc.) lo consuma como input. Las funciones de chat/analyze/
+ * structuredInsights/fallback fueron eliminadas: la IA ya no corre dentro de la
+ * app — entra por MCP, lee el contexto, y sube resultados con create_report /
+ * save_analysis / create_team_note.
+ *
+ * Mantiene:
+ *  - BASE_SYSTEM_PROMPT y SECTION_PLAYBOOKS: documentación de qué se espera de
+ *    cada sección. Lo exponemos por MCP como hint para la IA externa.
+ *  - buildContext(section, storeId, from, to): cargas pesadas de Mongo
+ *    convertidas a un objeto de métricas listo para inyectar en un prompt.
+ */
+const mongoose = require('mongoose');
 const Store = require('../models/Store');
 const DailyMetric = require('../models/DailyMetric');
 const Order = require('../models/Order');
@@ -12,7 +24,6 @@ const CashflowEntry = require('../models/CashflowEntry');
 const TopicMap = require('../models/TopicMap');
 const LanguageBank = require('../models/LanguageBank');
 const Competitor = require('../models/Competitor');
-const mongoose = require('mongoose');
 const { getEffectiveTarget } = require('./targetService');
 const { getDataAudit } = require('./tiendaService');
 const { getFixedCostsForRange } = require('./fixedCostService');
@@ -22,7 +33,6 @@ const {
   getCompetitorOverview,
 } = require('./contentStrategyService');
 const { buildBusinessDateKeyMatch } = require('../utils/businessDate');
-const logger = require('../utils/logger');
 
 const BASE_SYSTEM_PROMPT = `Sos un analista senior de ecommerce argentino. Tu cliente es una agencia que gestiona tiendas en TiendaNube con Meta Ads.
 
@@ -86,114 +96,14 @@ const SECTION_PLAYBOOKS = {
   },
 };
 
-/**
- * Resolve AI credentials for a user (user key → env fallback).
- */
-async function resolveCredentials(userId) {
-  if (userId) {
-    const user = await User.findById(userId)
-      .select('+aiConfig.apiKeyEncrypted +aiConfig.apiKeyIV +aiConfig.apiKeyAuthTag aiConfig.provider aiConfig.modelAnalysis aiConfig.modelChat aiConfig.modelReports');
-
-    if (user?.aiConfig?.apiKeyEncrypted) {
-      const apiKey = decrypt(
-        user.aiConfig.apiKeyEncrypted,
-        user.aiConfig.apiKeyIV,
-        user.aiConfig.apiKeyAuthTag
-      );
-      return {
-        provider: user.aiConfig.provider || 'anthropic',
-        apiKey,
-        modelAnalysis: user.aiConfig.modelAnalysis || ai.modelAnalysis,
-        modelChat: user.aiConfig.modelChat || ai.modelChat,
-        modelReports: user.aiConfig.modelReports || ai.modelReports,
-        source: 'user',
-      };
-    }
-  }
-
-  if (ai.anthropicApiKey) {
-    return {
-      provider: 'anthropic',
-      apiKey: ai.anthropicApiKey,
-      modelAnalysis: ai.modelAnalysis,
-      modelChat: ai.modelChat,
-      modelReports: ai.modelReports,
-      source: 'env',
-    };
-  }
-
-  if (ai.openaiApiKey) {
-    return {
-      provider: 'openai',
-      apiKey: ai.openaiApiKey,
-      modelAnalysis: ai.modelAnalysis,
-      modelChat: ai.modelChat,
-      modelReports: ai.modelReports,
-      source: 'env',
-    };
-  }
-
-  throw new Error('No hay API key de AI configurada. Configurala en tu perfil o en .env');
-}
-
-function pickModel(credentials, purpose = 'analysis') {
-  if (purpose === 'reports') return credentials.modelReports || credentials.modelAnalysis;
-  if (purpose === 'chat') return credentials.modelChat;
-  return credentials.modelAnalysis;
-}
-
-/**
- * Build the full system prompt merging base + user global + store instructions.
- */
-async function buildSystemPrompt(userId, storeId) {
-  let prompt = BASE_SYSTEM_PROMPT;
-
-  // User global instructions
-  if (userId) {
-    const user = await User.findById(userId)
-      .select('aiConfig.globalInstructions')
-      .populate({ path: 'aiConfig.globalFiles', select: 'filename content' });
-
-    // Re-fetch with file content since select: false
-    const userFull = await User.findById(userId).select('+aiConfig.globalFiles.content aiConfig.globalInstructions');
-
-    if (userFull?.aiConfig?.globalInstructions) {
-      prompt += `\n\n--- Instrucciones globales del usuario ---\n${userFull.aiConfig.globalInstructions}`;
-    }
-    if (userFull?.aiConfig?.globalFiles?.length) {
-      for (const f of userFull.aiConfig.globalFiles) {
-        if (f.content) {
-          prompt += `\n\n--- Archivo: ${f.filename} ---\n${f.content}`;
-        }
-      }
-    }
-  }
-
-  // Store-specific instructions
-  if (storeId) {
-    const store = await Store.findById(storeId).select('aiContext nombre');
-    if (store?.aiContext?.instructions) {
-      prompt += `\n\n--- Instrucciones de la tienda "${store.nombre}" ---\n${store.aiContext.instructions}`;
-    }
-    if (store?.aiContext?.files?.length) {
-      for (const f of store.aiContext.files) {
-        if (f.content) {
-          prompt += `\n\n--- Archivo tienda: ${f.filename} ---\n${f.content}`;
-        }
-      }
-    }
-  }
-
-  // Safety: truncate if too long (30K chars max for system prompt)
-  if (prompt.length > 30000) {
-    prompt = prompt.substring(0, 30000) + '\n\n[Contexto truncado por límite de tamaño]';
-  }
-
-  return prompt;
+function getSectionPlaybook(section) {
+  return SECTION_PLAYBOOKS[section] || SECTION_PLAYBOOKS.dashboard;
 }
 
 /**
  * Build data context for a specific section.
+ * Output: objeto con métricas, costos, audit, framework creativo, etc. — lo que
+ * necesite la IA externa para escribir un análisis sin recalcular nada.
  */
 async function buildContext(section, storeId, from, to) {
   const sid = new mongoose.Types.ObjectId(storeId);
@@ -447,350 +357,23 @@ async function buildContext(section, storeId, from, to) {
     extra.competitorOverview = await getCompetitorOverview(storeId);
   }
 
+  // Store base info para que la IA externa pueda referirse al cliente correctamente
+  const storeMeta = await Store.findById(storeId).select('nombre plataforma storeUrl objetivos').lean();
+  if (storeMeta) {
+    extra.store = {
+      nombre: storeMeta.nombre,
+      plataforma: storeMeta.plataforma,
+      url: storeMeta.storeUrl,
+      objetivos: storeMeta.objetivos || null,
+    };
+  }
+
   return { ...base, ...extra };
 }
 
-function getSectionInstructions(section) {
-  const playbook = SECTION_PLAYBOOKS[section] || SECTION_PLAYBOOKS.dashboard;
-  return `Objetivo: ${playbook.objective}.
-Incluí sí o sí: ${playbook.mustInclude.join(', ')}.
-Si la confianza del dato no es alta, decilo explícitamente y evitá recomendar escalar fuerte o tomar decisiones irreversibles.`;
-}
-
-function buildAnalysisPrompt(section, context) {
-  return `${getSectionInstructions(section)}
-
-Respondé en markdown y usá esta estructura:
-## Diagnóstico
-## Qué está funcionando
-## Riesgos o límites del dato
-## Acciones prioritarias
-
-Reglas:
-- no inventes números
-- no repitas todo el contexto
-- si falta data clave, tratala como limitación operativa
-- si la confianza es baja, decí qué NO harías todavía
-
-Datos:
-${JSON.stringify(context, null, 2)}`;
-}
-
-function parseRatioValue(value) {
-  if (value == null) return 0;
-  if (typeof value === 'number') return value;
-  const cleaned = String(value).replace(/[^\d.,-]/g, '').replace(',', '.');
-  const parsed = Number(cleaned);
-  return Number.isFinite(parsed) ? parsed : 0;
-}
-
-function buildFallbackStructuredInsights(section, context) {
-  const insights = [];
-  const add = (item) => {
-    if (item?.titulo && insights.length < 8) insights.push(item);
-  };
-
-  if (section === 'meta') {
-    const spend = Number(context.adSpend || 0);
-    const purchases = Number(context.metaPurchases || 0);
-    const roas = parseRatioValue(context.roas);
-    const ctr = parseRatioValue(context.ctr);
-
-    if (spend <= 0) {
-      add({
-        titulo: 'No hay inversión publicitaria registrada',
-        descripcion: 'La sección Meta no muestra gasto en el período. Antes de evaluar performance, confirmá si no hubo inversión o si falta sincronización.',
-        tipo: 'diagnostic',
-        severidad: 'warning',
-        verdict: 'REVISAR',
-        metricKey: 'adSpend',
-      });
-    } else if (purchases <= 0) {
-      add({
-        titulo: 'Hay spend sin compras atribuidas',
-        descripcion: `Se registraron ${Math.round(spend).toLocaleString('es-AR')} de inversión sin compras Meta atribuidas en el período.`,
-        tipo: 'alert',
-        severidad: 'critical',
-        verdict: 'REVISAR',
-        metricKey: 'metaPurchases',
-      });
-    } else if (roas >= 2) {
-      add({
-        titulo: 'La adquisición muestra una base rentable',
-        descripcion: `El ROAS del período quedó en ${roas.toFixed(2)}x con ${purchases.toLocaleString('es-AR')} compras atribuidas. Hay señal para identificar campañas escalables.`,
-        tipo: 'win',
-        severidad: 'positive',
-        verdict: 'ESCALAR',
-        metricKey: 'roas',
-      });
-    } else {
-      add({
-        titulo: 'La eficiencia de adquisición todavía es frágil',
-        descripcion: `El ROAS del período quedó en ${roas.toFixed(2)}x. Conviene separar campañas sostenibles de campañas que solo consumen presupuesto.`,
-        tipo: 'diagnostic',
-        severidad: 'warning',
-        verdict: 'REVISAR',
-        metricKey: 'roas',
-      });
-    }
-
-    if (ctr > 0 && ctr < 1) {
-      add({
-        titulo: 'CTR bajo para la inversión actual',
-        descripcion: `El CTR de la cuenta está en ${ctr.toFixed(2)}%. Puede haber fatiga creativa o un problema de propuesta inicial.`,
-        tipo: 'alert',
-        severidad: 'warning',
-        verdict: 'TESTEAR',
-        metricKey: 'ctr',
-      });
-    }
-
-    add({
-      titulo: 'Bajar a campañas con gasto real',
-      descripcion: 'La lectura útil en Meta empieza por campañas con spend y volumen. Evitá sacar conclusiones sobre estructuras sin delivery.',
-      tipo: 'action_item',
-      severidad: 'diagnostic',
-      verdict: 'IMPLEMENTAR',
-      metricKey: 'campaigns',
-    });
-  } else if (section === 'dashboard') {
-    const revenue = Number(context.revenue || 0);
-    const profit = Number(context.adjustedProfit ?? context.profit ?? 0);
-    const orders = Number(context.ordenesPositivas || 0);
-    const ncPct = parseRatioValue(context.ncPct);
-
-    add({
-      titulo: 'Foto ejecutiva del período',
-      descripcion: `La tienda cerró con ${orders.toLocaleString('es-AR')} órdenes positivas, ${Math.round(revenue).toLocaleString('es-AR')} de facturación y ${Math.round(profit).toLocaleString('es-AR')} de ganancia ajustada.`,
-      tipo: 'diagnostic',
-      severidad: 'diagnostic',
-      verdict: null,
-      metricKey: 'revenue',
-    });
-
-    if (ncPct >= 80 && orders > 0) {
-      add({
-        titulo: 'Dependencia alta de nuevos clientes',
-        descripcion: `El mix actual muestra ${ncPct.toFixed(1)}% de órdenes de nuevos clientes. Conviene revisar recompra y calidad de base.`,
-        tipo: 'alert',
-        severidad: 'warning',
-        verdict: 'REVISAR',
-        metricKey: 'ncPct',
-      });
-    }
-  } else {
-    add({
-      titulo: 'Lectura rápida disponible',
-      descripcion: 'La sección no tiene AI paga activa, así que se generó un diagnóstico local de respaldo para no dejarla vacía.',
-      tipo: 'diagnostic',
-      severidad: 'diagnostic',
-      verdict: null,
-      metricKey: null,
-    });
-  }
-
-  return {
-    summary: `Fallback local para ${section}`,
-    confidence: context?.dataQuality?.confidence ?? 0.45,
-    insights,
-    tokensUsed: 0,
-    model: 'local-fallback',
-    provider: 'local',
-    context,
-  };
-}
-
-async function structuredInsights(section, storeId, from, to, userId) {
-  const credentials = await resolveCredentials(userId);
-  const provider = getProvider(credentials.provider, credentials.apiKey);
-  const systemPrompt = await buildSystemPrompt(userId, storeId);
-  const context = await buildContext(section, storeId, from, to);
-
-  const prompt = `Generá un JSON válido con esta forma exacta:
-{"summary":"string","confidence":0.0,"insights":[{"titulo":"string","descripcion":"string","tipo":"alert|win|diagnostic|action_item|verdict|note","severidad":"critical|warning|positive|neutral|diagnostic|verdict","verdict":"ESCALAR|PAUSAR|TESTEAR|REVISAR|IMPLEMENTAR|MANTENER|null","metricKey":"string|null","impacto":"string|null"}]}
-
-Reglas:
-- confidence debe reflejar la calidad del dato y estar entre 0 y 1
-- máximo 8 insights
-- no inventes números
-- si la confianza es baja, reflejalo en summary y en los insights
-
-Instrucciones sección:
-${getSectionInstructions(section)}
-
-Datos:
-${JSON.stringify(context, null, 2)}`;
-
-  const result = await provider.createMessage({
-    model: pickModel(credentials, 'analysis'),
-    maxTokens: 1800,
-    system: systemPrompt,
-    messages: [{ role: 'user', content: prompt }],
-  });
-
-  const jsonMatch = result.text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) {
-    throw new Error('La AI no devolvió un JSON interpretable');
-  }
-
-  const parsed = JSON.parse(jsonMatch[0]);
-  return {
-    summary: parsed.summary || '',
-    confidence: Math.max(0, Math.min(1, Number(parsed.confidence ?? context.dataQuality?.confidence ?? 0.5))),
-    insights: Array.isArray(parsed.insights) ? parsed.insights.slice(0, 8) : [],
-    tokensUsed: result.usage.inputTokens + result.usage.outputTokens,
-    model: pickModel(credentials, 'analysis'),
-    provider: credentials.provider,
-    context,
-  };
-}
-
-async function generateWorkflow(type, storeId, from, to, userId, extra = {}) {
-  const credentials = await resolveCredentials(userId);
-  const provider = getProvider(credentials.provider, credentials.apiKey);
-  const systemPrompt = await buildSystemPrompt(userId, storeId);
-  const section = type === 'competitor_opportunities' ? 'competencia' : 'creativos';
-  const context = await buildContext(section, storeId, from, to);
-
-  const workflowPrompts = {
-    creative_brief: `Respondé SOLO JSON válido con esta forma:
-{"title":"string","confidence":0.0,"ideas":[{"hook":"string","angle":"string","format":"string","why":"string","priority":"high|medium|low"}]}
-
-Objetivo:
-- Proponer entre 4 y 8 ideas creativas accionables
-- Usar hooks, objeciones, topics y señales de performance
-- No inventar métricas
-- Priorizar ideas que cubran objeciones desatendidas y territorios subexplotados`,
-    competitor_opportunities: `Respondé SOLO JSON válido con esta forma:
-{"title":"string","confidence":0.0,"opportunities":[{"title":"string","gap":"string","action":"string","priority":"high|medium|low"}]}
-
-Objetivo:
-- Detectar entre 4 y 8 oportunidades concretas frente al competidor
-- Usar solo el contexto provisto
-- Si el contexto del competidor es limitado, decirlo y bajar la confianza`,
-  };
-
-  const prompt = `${workflowPrompts[type]}
-
-Extra:
-${JSON.stringify(extra, null, 2)}
-
-Datos:
-${JSON.stringify(context, null, 2)}`;
-
-  const result = await provider.createMessage({
-    model: pickModel(credentials, 'reports'),
-    maxTokens: 1800,
-    system: systemPrompt,
-    messages: [{ role: 'user', content: prompt }],
-  });
-
-  const jsonMatch = result.text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error('La AI no devolvió un JSON interpretable');
-
-  const parsed = JSON.parse(jsonMatch[0]);
-  return {
-    ...parsed,
-    confidence: Math.max(0, Math.min(1, Number(parsed.confidence ?? context.dataQuality?.confidence ?? 0.5))),
-    tokensUsed: result.usage.inputTokens + result.usage.outputTokens,
-    model: pickModel(credentials, 'reports'),
-    provider: credentials.provider,
-  };
-}
-
-/**
- * Generate AI analysis for a section.
- */
-async function analyze(section, storeId, from, to, userId, options = {}) {
-  const credentials = await resolveCredentials(userId);
-  const provider = getProvider(credentials.provider, credentials.apiKey);
-  const systemPrompt = await buildSystemPrompt(userId, storeId);
-  const context = await buildContext(section, storeId, from, to);
-  const purpose = options.purpose || (section === 'report' ? 'reports' : 'analysis');
-  const model = pickModel(credentials, purpose);
-
-  const prompt = buildAnalysisPrompt(section, context);
-
-  const result = await provider.createMessage({
-    model,
-    maxTokens: 1500,
-    system: systemPrompt,
-    messages: [{ role: 'user', content: prompt }],
-  });
-
-  return {
-    analysis: result.text,
-    confidence: context.dataQuality?.confidence ?? 0.5,
-    qualityNote: context.dataQuality?.note,
-    contextMeta: {
-      sourceCoverage: context.sourceCoverage,
-      targets: context.targets ? true : false,
-      credentialSource: credentials.source,
-    },
-    tokensUsed: result.usage.inputTokens + result.usage.outputTokens,
-    model,
-    provider: credentials.provider,
-    generationMode: 'ai',
-  };
-}
-
-/**
- * Chat with AI about store data.
- */
-async function chat(messages, storeId, from, to, userId, section = 'dashboard') {
-  const credentials = await resolveCredentials(userId);
-  const provider = getProvider(credentials.provider, credentials.apiKey);
-  const systemPrompt = await buildSystemPrompt(userId, storeId);
-  const context = await buildContext(section, storeId, from, to);
-
-  const fullSystem = `${systemPrompt}
-
-Sección activa: ${section}
-Contexto de la tienda en el período seleccionado:
-${JSON.stringify(context, null, 2)}
-
-Reglas extra:
-- Si el usuario pide ideas creativas, usá topic maps, hooks, objeciones y competencia si están disponibles.
-- Si la calidad del dato no es alta, decilo antes de sacar conclusiones fuertes.
-- Si te preguntan algo que no podés determinar con estos datos, decilo claramente.`;
-
-  const result = await provider.createMessage({
-    model: pickModel(credentials, 'chat'),
-    maxTokens: 1000,
-    system: fullSystem,
-    messages: messages.map((m) => ({ role: m.role, content: m.content })),
-  });
-
-  return {
-    response: result.text,
-    tokensUsed: result.usage.inputTokens + result.usage.outputTokens,
-    provider: credentials.provider,
-    model: pickModel(credentials, 'chat'),
-    confidence: context.dataQuality?.confidence ?? 0.5,
-    qualityNote: context.dataQuality?.note || '',
-    contextMeta: {
-      sourceCoverage: context.sourceCoverage,
-      credentialSource: credentials.source,
-    },
-  };
-}
-
-/**
- * Test API connection using user's credentials.
- */
-async function testConnection(userId) {
-  const credentials = await resolveCredentials(userId);
-  const provider = getProvider(credentials.provider, credentials.apiKey);
-  const testModel = credentials.provider === 'anthropic' ? 'claude-haiku-4-5-20251001' : 'gpt-4o-mini';
-
-  await provider.createMessage({
-    model: testModel,
-    maxTokens: 10,
-    system: 'Respond OK',
-    messages: [{ role: 'user', content: 'test' }],
-  });
-
-  return { status: 'ok', provider: credentials.provider, source: credentials.source };
-}
-
-module.exports = { analyze, chat, testConnection, structuredInsights, buildContext, generateWorkflow, buildFallbackStructuredInsights };
+module.exports = {
+  buildContext,
+  getSectionPlaybook,
+  BASE_SYSTEM_PROMPT,
+  SECTION_PLAYBOOKS,
+};

@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import { useSelector } from 'react-redux';
 import api from '../services/api';
 import { renderMarkdown } from '../utils/markdown';
 
@@ -24,32 +23,12 @@ const GENERATION_LABELS = {
   manual: 'Manual',
 };
 
-const REPORT_TEMPLATES = [
-  {
-    key: 'executive',
-    title: 'Reporte ejecutivo de tienda',
-    description: 'Foto rápida del negocio con facturación, ganancia, ROAS y riesgos del período.',
-  },
-  {
-    key: 'meta-performance',
-    title: 'Reporte de performance Meta',
-    description: 'Lectura de inversión, compras, ROAS, CPA y top campañas del período.',
-  },
-  {
-    key: 'creative-framework',
-    title: 'Reporte creativo y mensaje',
-    description: 'Pipeline creativo, gaps del framework y backlog inicial de próximos tests.',
-  },
-];
-
 export default function Reportes() {
   const { storeId } = useParams();
-  const { from, to } = useSelector((state) => state.date);
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
-  const [creatingTemplate, setCreatingTemplate] = useState(null);
 
   const fetchList = useCallback(async () => {
     setLoading(true);
@@ -81,15 +60,6 @@ export default function Reportes() {
       await api.delete(`/api/stores/${storeId}/reports/${id}`);
       fetchList();
     } catch {}
-  };
-
-  const handleCreateTemplate = async (templateKey) => {
-    setCreatingTemplate(templateKey);
-    try {
-      await api.post(`/api/stores/${storeId}/reports/templates/${templateKey}`, { from, to });
-      await fetchList();
-    } catch {}
-    setCreatingTemplate(null);
   };
 
   const handleExport = async (report, format = 'json') => {
@@ -219,28 +189,16 @@ export default function Reportes() {
         </span>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-        {REPORT_TEMPLATES.map((template) => (
-          <div key={template.key} className="card p-4">
-            <p className="text-white font-semibold text-[14px]">{template.title}</p>
-            <p className="text-app-secondary text-[12px] mt-2 leading-relaxed">{template.description}</p>
-            <p className="text-app-muted text-[11px] mt-3">
-              Rango actual: {from || 'inicio'} a {to || 'hoy'}
-            </p>
-            <button
-              onClick={() => handleCreateTemplate(template.key)}
-              disabled={creatingTemplate === template.key}
-              className="btn-primary mt-4 w-full disabled:opacity-50"
-            >
-              {creatingTemplate === template.key ? 'Generando...' : 'Generar reporte'}
-            </button>
-          </div>
-        ))}
+      <div className="card p-5 border-blue-500/15 bg-blue-500/[0.03]">
+        <p className="text-[11px] font-bold uppercase tracking-[1.4px] text-blue-300 mb-1.5">Cómo se llenan los reportes</p>
+        <p className="text-[13px] text-gray-200 leading-relaxed">
+          Los reportes ahora los genera una IA externa via MCP (Claude Desktop, Codex, etc.) que lee el contexto de la tienda y los sube acá. Esta página es la bandeja de reportes recibidos.
+        </p>
       </div>
 
       {reports.length === 0 ? (
         <div className="text-center py-12 text-[13px] text-app-secondary">
-          No hay reportes guardados aún. Generá un análisis AI en cualquier sección y guardalo.
+          No hay reportes guardados aún. Esperando que la IA externa suba uno vía MCP.
         </div>
       ) : (
         <div className="card">

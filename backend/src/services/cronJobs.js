@@ -4,7 +4,6 @@ const { syncOrders, syncProducts, checkTiendanubeTokenHealth } = require('./sync
 const { syncMetaStructure, syncMetaInsights, syncMetaProductInsights, refreshMetaTokens } = require('./syncMeta');
 const { updateCashflowStates } = require('./cashflow');
 const { runDiagnostics } = require('./diagnosticsService');
-const { runDueRulesForAllStores } = require('./automationService');
 const logger = require('../utils/logger');
 
 async function runForTnStores(jobName, syncFn) {
@@ -105,18 +104,7 @@ function startCronJobs() {
     }
   });
 
-  // Local automations
-  cron.schedule('15 * * * *', async () => {
-    logger.info('Cron: automation rules starting...');
-    try {
-      const result = await runDueRulesForAllStores();
-      logger.info(`Cron: automation rules finished (${result.total} due, ${result.success} ok, ${result.error} error)`);
-    } catch (error) {
-      logger.error(`Cron automation rules failed: ${error.message}`);
-    }
-  });
-
-  logger.info('Cron jobs scheduled: TN token health(2h), TN orders(4h), TN products(12h), Meta structure(12h), Meta insights(4x/day), Meta product breakdown(2x/day), Meta tokens(daily), Cashflow states(daily), Diagnostics(6h), Automations(hourly)');
+  logger.info('Cron jobs scheduled: TN token health(2h), TN orders(4h), TN products(12h), Meta structure(12h), Meta insights(4x/day), Meta product breakdown(2x/day), Meta tokens(daily), Cashflow states(daily), Diagnostics(6h)');
 }
 
 module.exports = { startCronJobs };

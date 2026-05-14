@@ -3,7 +3,6 @@ import { useParams, NavLink, Outlet, Link, useLocation } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchStores, fetchStoreMetrics, selectStore } from '../store/storeSlice';
 import Header from '../components/common/Header';
-import InsightPanel from '../components/insights/InsightPanel';
 
 const ICONS = {
   dashboard: (
@@ -62,19 +61,9 @@ const ICONS = {
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
     </svg>
   ),
-  'report-builder': (
-    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-    </svg>
-  ),
   alertas: (
     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-    </svg>
-  ),
-  automatizaciones: (
-    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M13 3l4 4-4 4M7 21l-4-4 4-4M3 17h10a4 4 0 004-4V7" />
     </svg>
   ),
   settings: (
@@ -94,24 +83,11 @@ const NAV_ITEMS = [
   { path: 'competencia', label: 'Competencia', group: 'Marketing' },
   { path: 'cashflow', label: 'Cashflow', group: 'Finanzas' },
   { path: 'costos', label: 'Costos', group: 'Finanzas' },
-  { path: 'simulador', label: 'Simulador', group: 'IA' },
-  { path: 'reportes', label: 'Reportes', group: 'IA' },
-  { path: 'report-builder', label: 'Reporte AI', group: 'IA' },
-  { path: 'alertas', label: 'Alertas', group: 'IA' },
-  { path: 'automatizaciones', label: 'Automatizaciones', group: 'IA' },
+  { path: 'simulador', label: 'Simulador', group: 'Análisis' },
+  { path: 'reportes', label: 'Reportes', group: 'Análisis' },
+  { path: 'alertas', label: 'Alertas', group: 'Operación' },
   { path: 'settings', label: 'Settings', group: 'Config' },
 ];
-
-const SECTION_MAP = {
-  dashboard: 'dashboard',
-  'meta-ads': 'meta',
-  creativos: 'creativos',
-  costos: 'costos',
-  productos: 'productos',
-  clientes: 'clientes',
-  cashflow: 'cashflow',
-  competencia: 'competencia',
-};
 
 export default function StoreLayout() {
   const { storeId } = useParams();
@@ -123,22 +99,6 @@ export default function StoreLayout() {
   const { from, to } = useSelector((state) => state.date);
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [panelOpen, setPanelOpen] = useState(false);
-
-  useEffect(() => {
-    try {
-      const saved = window.localStorage.getItem('hooks-insight-panel-open');
-      if (saved != null) {
-        setPanelOpen(saved === '1');
-      }
-    } catch {}
-  }, []);
-
-  useEffect(() => {
-    try {
-      window.localStorage.setItem('hooks-insight-panel-open', panelOpen ? '1' : '0');
-    } catch {}
-  }, [panelOpen]);
 
   useEffect(() => {
     dispatch(selectStore(storeId));
@@ -155,10 +115,6 @@ export default function StoreLayout() {
     if (!storeId || !from || !to) return;
     dispatch(fetchStoreMetrics({ storeId, from, to }));
   }, [dispatch, storeId, from, to]);
-
-  const pathSegment = location.pathname.split('/').pop();
-  const insightSection = SECTION_MAP[pathSegment] || 'dashboard';
-  const showPanel = SECTION_MAP[pathSegment] != null;
 
   const groups = [];
   let lastGroup = null;
@@ -185,16 +141,6 @@ export default function StoreLayout() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
-        {showPanel && (
-          <button
-            onClick={() => setPanelOpen(!panelOpen)}
-            className="p-2 text-gray-500 hover:text-gray-300 transition"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
-          </button>
-        )}
       </div>
 
       {/* Backdrop */}
@@ -270,41 +216,7 @@ export default function StoreLayout() {
         <main className="app-shell flex-1 overflow-y-auto p-5 min-w-0">
           <Outlet />
         </main>
-
-        {/* RIGHT ANALYSIS PANEL */}
-        {showPanel && panelOpen && (
-          <aside className="app-surface hidden lg:flex w-[320px] shrink-0 border-l border-white/[0.06] flex-col overflow-hidden">
-            <InsightPanel
-              storeId={storeId}
-              section={insightSection}
-              onClose={() => setPanelOpen(false)}
-            />
-          </aside>
-        )}
-
-        {/* Panel toggle (desktop, when closed) */}
-        {showPanel && !panelOpen && (
-          <button
-            onClick={() => setPanelOpen(true)}
-            className="hidden lg:flex fixed right-0 top-1/2 -translate-y-1/2 z-20 bg-blue-600 text-white p-2 rounded-l-lg shadow-lg hover:bg-blue-700 transition"
-            title="Abrir análisis"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-        )}
       </div>
-
-      {/* Mobile panel */}
-      {showPanel && panelOpen && (
-        <>
-          <div className="lg:hidden fixed inset-0 bg-black/60 z-40" onClick={() => setPanelOpen(false)} />
-          <aside className="app-surface lg:hidden fixed inset-y-0 right-0 z-50 w-[320px] max-w-[90vw] border-l border-white/[0.06] flex flex-col">
-            <InsightPanel storeId={storeId} section={insightSection} onClose={() => setPanelOpen(false)} />
-          </aside>
-        </>
-      )}
     </div>
   );
 }

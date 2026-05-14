@@ -14,9 +14,7 @@ import Creativos from './pages/Creativos';
 import Competencia from './pages/Competencia';
 import Simulador from './pages/Simulador';
 import Reportes from './pages/Reportes';
-import ReportBuilder from './pages/ReportBuilder';
 import Alertas from './pages/Alertas';
-import Automatizaciones from './pages/Automatizaciones';
 import Settings from './pages/Settings';
 import UserProfile from './pages/UserProfile';
 import UserManagement from './pages/UserManagement';
@@ -64,9 +62,10 @@ export default function App() {
         <Route path="competencia" element={<Competencia />} />
         <Route path="simulador" element={<Simulador />} />
         <Route path="reportes" element={<Reportes />} />
-        <Route path="report-builder" element={<ReportBuilder />} />
         <Route path="alertas" element={<Alertas />} />
-        <Route path="automatizaciones" element={<Automatizaciones />} />
+        {/* Backwards compat: estas pestañas se eliminaron junto con la IA interna */}
+        <Route path="report-builder" element={<Navigate to="../reportes" replace />} />
+        <Route path="automatizaciones" element={<Navigate to="../alertas" replace />} />
         <Route path="settings" element={<Settings />} />
       </Route>
       <Route

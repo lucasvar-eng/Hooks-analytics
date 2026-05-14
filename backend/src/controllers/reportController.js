@@ -2,7 +2,6 @@ const Report = require('../models/Report');
 const { aggregateRange } = require('../services/metricCalculator');
 const { getEffectiveTarget } = require('../services/targetService');
 const { logAudit } = require('../services/auditLogService');
-const { buildTemplateReport } = require('../services/reportTemplateService');
 
 function buildSummary(metrics, target) {
   const summary = [];
@@ -119,39 +118,11 @@ exports.remove = async (req, res) => {
   res.json({ message: 'Deleted' });
 };
 
+// El template-builder vivía adentro de la app y generaba reportes con texto
+// hardcodeado. Ahora la IA externa entra por MCP, agarra los esqueletos de
+// template, los completa, y sube el reporte vía POST /reports.
 exports.createFromTemplate = async (req, res) => {
-  const { templateKey } = req.params;
-  const { from, to } = req.body || {};
-
-  const built = await buildTemplateReport(templateKey, req.params.id, from, to, req.user?._id);
-  const report = await Report.create({
-    storeId: req.params.id,
-    titulo: built.titulo,
-    contenido: built.contenido,
-    summary: built.summary,
-    section: built.section,
-    tipo: built.tipo,
-    dateRange: {
-      from: from ? new Date(from) : undefined,
-      to: to ? new Date(to) : undefined,
-    },
-    snapshot: built.snapshot,
-    confidence: built.confidence,
-    qualityNote: built.qualityNote,
-    generationMode: built.generationMode || 'manual',
-    provider: built.provider,
-    model: built.model,
-    tokensUsed: built.tokensUsed || 0,
+  res.status(410).json({
+    error: 'Endpoint deprecado. Los reportes ahora los sube la IA externa vía MCP (tool create_report). El Sprint 2 expone los esqueletos de templates como recurso MCP.',
   });
-
-  await logAudit({
-    storeId: req.params.id,
-    userId: req.user?._id,
-    action: 'report.template.created',
-    entityType: 'Report',
-    entityId: report._id,
-    details: { templateKey, section: built.section, tipo: built.tipo },
-  });
-
-  res.status(201).json(report);
 };

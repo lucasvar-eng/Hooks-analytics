@@ -9,7 +9,6 @@ const tnAPI = require('../services/tiendanubeAPI');
 const shopifyAPI = require('../services/shopifyAPI');
 const { syncOrders, syncProducts } = require('../services/syncTiendanube');
 const { syncShopifyOrders, syncShopifyProducts } = require('../services/syncShopify');
-const { analyze } = require('../services/aiService');
 const { DEFAULT_THRESHOLDS } = require('../services/verdictEngine');
 const { getEffectiveTarget } = require('../services/targetService');
 const { getCostCoverage } = require('../services/costCoverage');
@@ -671,31 +670,9 @@ exports.generateVerdictThresholds = async (req, res, next) => {
     const avgCpa = summary.totalPurchases > 0 ? summary.totalSpend / summary.totalPurchases : 0;
     const daysActive = summary.days?.length || 0;
 
-    // Try AI generation
-    try {
-      const prompt = `Basándote en estos datos de los últimos 30 días de la tienda "${store.nombre}":
-- ROAS promedio: ${avgRoas.toFixed(2)}x
-- CPA promedio: $${Math.round(avgCpa)}
-- Gasto total: $${Math.round(summary.totalSpend || 0)}
-- Compras totales: ${summary.totalPurchases || 0}
-- Días activos: ${daysActive}
-- Objetivos configurados: ${JSON.stringify(store.objetivos?.kpis || {})}
-
-Generá umbrales personalizados para clasificar campañas. Respondé SOLO con un JSON válido (sin markdown, sin texto extra) con esta estructura exacta:
-{"escalar":{"roasMin":number,"minSpend":number,"minPurchases":number},"mantener":{"roasMin":number,"minSpend":number},"revisar":{"roasMin":number,"cpaMaxPct":number},"pausar":{"roasMax":number,"minSpend":number,"minDays":number},"testear":{"maxSpend":number,"maxPurchases":number}}`;
-
-      const result = await analyze('dashboard', storeId, null, null, req.user._id);
-      // Try to parse JSON from the response
-      const jsonMatch = result.analysis.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        const thresholds = JSON.parse(jsonMatch[0]);
-        return res.json({ thresholds, source: 'ai' });
-      }
-    } catch {
-      // AI not available, generate rule-based defaults
-    }
-
-    // Fallback: generate sensible defaults based on data
+    // Thresholds rule-based derivados de los últimos 30 días.
+    // La generación con AI vivía aquí antes; ahora la IA externa puede subir
+    // thresholds custom vía MCP si hace falta.
     const thresholds = { ...DEFAULT_THRESHOLDS };
     if (avgRoas > 0) {
       thresholds.escalar.roasMin = Math.round(avgRoas * 1.5 * 10) / 10;

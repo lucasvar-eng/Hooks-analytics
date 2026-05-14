@@ -5,6 +5,83 @@ La bitácora se ordena de **arriba hacia abajo** por orden cronológico inverso 
 
 ---
 
+## 2026-05-13 — Sprint 1: limpieza de IA interna + reorder sidebar
+
+**Branch**: `codex/universal-dashboard-builder` (continúa)
+
+### Decisión arquitectónica
+
+La IA ya no corre dentro de la app. Toda la inteligencia (análisis, reportes, insights) entra ahora vía MCP — una IA externa (Claude Desktop / Codex / etc.) lee el contexto con los tools del `hooksMcpServer.js` y sube outputs con `create_report`, `save_analysis`, `create_team_note`. La app pasa a ser dashboard + ingesta + repositorio.
+
+### Trabajo hecho (Sprint 1 — limpieza)
+
+**Frontend eliminado**:
+- `pages/ReportBuilder.jsx` (200 líneas) — composer de prompts AI internos.
+- `pages/Automatizaciones.jsx` (320 líneas) — rules que disparaban analyze/structuredInsights.
+- `components/insights/InsightPanel.jsx` — panel lateral derecho "Análisis asistido".
+- `components/common/ClaudeActionBar.jsx`, `AIAnalysisPanel.jsx`, `AIChatPanel.jsx`, `pageBlockCatalog.jsx`.
+
+**Backend eliminado**:
+- `routes/aiRoutes.js`, `controllers/aiController.js`, `models/AIConversation.js`.
+- `routes/automationRoutes.js`, `controllers/automationController.js`, `models/AutomationRule.js`, `services/automationService.js`.
+- `services/reportTemplateService.js` (los templates se rearman en Sprint 2 como esqueletos para la IA externa).
+- `scripts/generateInitialReports.js` + `refreshClientReports.js`.
+
+**Backend reducido**:
+- `services/aiService.js`: de ~800 líneas a ~310. Mantiene solo `buildContext`, `BASE_SYSTEM_PROMPT`, `SECTION_PLAYBOOKS`, `getSectionPlaybook`. Saca `analyze`, `chat`, `structuredInsights`, `generateWorkflow`, `buildFallbackStructuredInsights`, `testConnection`, `pickModel`, `buildSystemPrompt`, `resolveCredentials`.
+- `services/cronJobs.js`: saca cron de automation rules (hourly).
+- `controllers/insightController.js`: saca `generate` (que disparaba AI). Mantiene CRUD + dismiss/resolve/pin (la IA externa los llena vía `/insights` POST).
+- `controllers/reportController.js`: `createFromTemplate` queda como stub 410 con mensaje claro.
+- `controllers/competitorController.js`: `analyze` y `opportunities` quedan como stubs 410.
+- `controllers/storeController.js`: la generación AI de thresholds se reemplazó por solo rule-based (la IA externa puede subir thresholds custom vía MCP).
+- `controllers/userSettingsController.js`: `testConnection` queda como stub 410.
+- `routes/insightRoutes.js`: saca `/generate`.
+- `routes/reportRoutes.js`: saca `/templates/:key`.
+- `server.js`: saca imports y mounts de aiRoutes y automationRoutes.
+
+**Sidebar reorganizada** (`pages/StoreLayout.jsx`):
+- General: Resumen
+- Ventas: Tienda · Productos · Clientes
+- Marketing: Meta Ads · Creativos · Competencia
+- Finanzas: Cashflow · Costos
+- **Análisis: Simulador · Reportes** (sección nueva)
+- **Operación: Alertas** (sección nueva)
+- Config: Settings
+- Sección "IA" desaparece. Topic Map, Lenguaje, Reporte AI, Automatizaciones desaparecen del menú.
+- Panel lateral derecho del `InsightPanel` eliminado — todas las páginas ahora full-width.
+
+**Routes legacy** (en `App.jsx`):
+- `/report-builder` → redirect a `/reportes` (Navigate).
+- `/automatizaciones` → redirect a `/alertas` (Navigate).
+
+**Reportes UI**:
+- Saca la sección "Templates con botón Generar" (3 cards que llamaban al endpoint deprecated).
+- Nueva intro: "Los reportes ahora los genera una IA externa vía MCP. Esta página es la bandeja de reportes recibidos".
+
+**MCP server intacto**: el `hooksMcpServer.js` sigue exponiendo tools de read/write (`get_ai_context_snapshot`, `create_report`, `save_analysis`, `create_team_note`, etc.) y resources. La IA externa entra por ahí.
+
+### Pendientes
+
+**Sprint 2** — Templates como esqueletos para MCP:
+- Refactor de `reportTemplateService` → catálogo de templates con `metricsBlock` pre-calculado + `structure` (secciones obligatorias) + `prompts` (preguntas guía) + `contextRefs`.
+- 5 templates Tier 1: `executive`, `weekly-review`, `monthly-close`, `product-performance`, `customer-cohorts`.
+- Tools MCP nuevos: `list_report_templates`, `get_report_template`.
+- Reader de reportes mejorado (TOC sticky, export PDF, "enviado al cliente").
+
+**Sprint 3** — Alertas operativas:
+- `User.notificationEmail` (lucasvar@gmail.com para Lucas).
+- `Store.notificationConfig.email.{enabled, recipients}`.
+- `notificationService.js` con nodemailer (provider configurable: console/smtp/resend).
+- 4 anomaly checks nuevos en diagnosticsService (sin spend 3d, sin órdenes hoy, top sin stock, competidor cambió).
+- Auto-targets (sugerir baseline 30d) en lugar de obligar a cargar.
+- UI Alertas con tabs Activas/Configuración + wizard de onboarding.
+
+**Pendientes anteriores** que siguen abiertos:
+- Endpoint detalle cliente `/customers/:id/orders` para enriquecer modal de perfil.
+- Eventualmente: limpiar UserProfile de la sección AI config (lo dejo para Sprint 2/3).
+
+---
+
 ## 2026-05-13 — Competencia: scraping URL + snapshot temporal + reorder sidebar
 
 **Branch**: `codex/universal-dashboard-builder` (continúa)

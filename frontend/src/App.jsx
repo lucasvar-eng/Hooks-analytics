@@ -15,6 +15,7 @@ import Competencia from './pages/Competencia';
 import Simulador from './pages/Simulador';
 import Reportes from './pages/Reportes';
 import Alertas from './pages/Alertas';
+import Insights from './pages/Insights';
 import Team from './pages/Team';
 import Settings from './pages/Settings';
 import UserProfile from './pages/UserProfile';
@@ -64,6 +65,7 @@ export default function App() {
         <Route path="simulador" element={<Simulador />} />
         <Route path="reportes" element={<Reportes />} />
         <Route path="alertas" element={<Alertas />} />
+        <Route path="insights" element={<Insights />} />
         {/* Backwards compat: estas pestañas se eliminaron junto con la IA interna */}
         <Route path="report-builder" element={<Navigate to="../reportes" replace />} />
         <Route path="automatizaciones" element={<Navigate to="../alertas" replace />} />

@@ -464,6 +464,7 @@ async function getMonthlyMatrix(storeId, { months = 12, topN = 20 } = {}) {
   const orderMatch = {
     storeId: storeObjectId,
     estado: { $nin: ['cancelled'] },
+    paymentStatus: { $in: POSITIVE_PAYMENT_STATUSES },
     fechaCreacion: { $gte: periodStart, $lte: now },
   };
 

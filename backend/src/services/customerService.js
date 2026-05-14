@@ -13,6 +13,7 @@ async function rebuildCustomersFromOrders(storeId) {
       $match: {
         storeId: storeObjectId,
         estado: { $nin: ['cancelled'] },
+        paymentStatus: { $in: ['paid'] },
         $or: [
           { customerEmail: { $exists: true, $ne: null, $ne: '' } },
           { externalCustomerId: { $exists: true, $ne: null, $ne: '' } },
@@ -157,6 +158,7 @@ async function getCohortTable(storeId) {
       $match: {
         storeId: new mongoose.Types.ObjectId(storeId),
         estado: { $nin: ['cancelled'] },
+        paymentStatus: { $in: ['paid'] },
       },
     },
     {
@@ -303,6 +305,8 @@ async function getPeriodInsights(storeId, from, to) {
   const orderMatch = {
     storeId: storeObjectId,
     estado: { $nin: ['cancelled'] },
+    paymentStatus: { $in: ['paid'] },
+    totalOrden: { $gt: 0 },
   };
   if (dateMatch) orderMatch.fechaCreacion = dateMatch;
 

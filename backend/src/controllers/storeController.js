@@ -540,6 +540,7 @@ exports.syncNow = async (req, res, next) => {
     const store = await Store.findById(req.params.id);
     if (!store) return res.status(404).json({ error: 'Store not found' });
 
+    const force = !!(req.body?.force);
     const hasTnToken = !!(await storeConnections.getToken(store._id, 'tiendanube'));
     const hasShopifyToken = !!(await storeConnections.getToken(store._id, 'shopify'));
 
@@ -550,24 +551,32 @@ exports.syncNow = async (req, res, next) => {
     }
 
     // Run sync in background (don't block the response)
-    res.json({ status: 'sync_started' });
+    res.json({ status: 'sync_started', force });
+
+    const { recalculateDailyMetricsForRange } = require('../services/metricCalculator');
 
     if (store.plataforma === 'shopify' || (store.integrationStatus?.shopify?.connected && hasShopifyToken)) {
       (async () => {
         try {
           await syncShopifyProducts(store);
           await syncShopifyOrders(store);
+          await recalculateDailyMetricsForRange(store._id, 90);
         } catch (err) {
           console.error('Background sync Shopify failed:', err.message);
+          try { await recalculateDailyMetricsForRange(store._id, 90); } catch {}
         }
       })();
     } else {
-      syncProducts(store).catch((err) => {
-        console.error('Background sync products failed:', err.message);
-      });
-      syncOrders(store).catch((err) => {
-        console.error('Background sync orders failed:', err.message);
-      });
+      (async () => {
+        try {
+          await syncProducts(store);
+          await syncOrders(store, { force });
+          await recalculateDailyMetricsForRange(store._id, 90);
+        } catch (err) {
+          console.error('Background sync TN failed:', err.message);
+          try { await recalculateDailyMetricsForRange(store._id, 90); } catch {}
+        }
+      })();
     }
   } catch (error) {
     next(error);

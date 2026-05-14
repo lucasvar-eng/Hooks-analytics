@@ -856,7 +856,39 @@ export default function Settings() {
             )}
 
             {store?.integrationStatus?.tiendanube?.connected && (
-              <div className="mt-2">
+              <div className="mt-2 flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setMessage(null);
+                    try {
+                      const { data } = await api.post(`/api/stores/${storeId}/sync/now`, { force: false });
+                      setMessage('Sincronización TN iniciada en background.');
+                    } catch (err) {
+                      setMessage(`Error: ${err.response?.data?.error || err.message}`);
+                    }
+                  }}
+                  className="btn-ghost text-[12px]"
+                >
+                  Sincronizar ahora
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!confirm('Re-sync completo: trae todas las órdenes desde el inicio ignorando el último sync. Tarda según el tamaño del historial. ¿Continuar?')) return;
+                    setMessage(null);
+                    try {
+                      await api.post(`/api/stores/${storeId}/sync/now`, { force: true });
+                      setMessage('Re-sync completo iniciado en background. Refrescá en unos minutos.');
+                    } catch (err) {
+                      setMessage(`Error: ${err.response?.data?.error || err.message}`);
+                    }
+                  }}
+                  className="text-[11px] text-amber-300 hover:text-amber-200 transition"
+                  title="Trae todas las órdenes desde el inicio ignorando lastSync. Útil cuando el sync inicial quedó incompleto."
+                >
+                  Re-sync completo
+                </button>
                 <button
                   type="button"
                   onClick={startTnOAuth}

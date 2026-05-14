@@ -38,14 +38,18 @@ function deriveSyncStatus(log, connected, latestSourceAt, staleThresholdHours = 
 async function getTiendaBreakdown(storeId, from, to) {
   const orderDateMatch = buildBusinessSourceDateMatch(from, to);
 
+  // Match principal para revenue/órdenes: alineado con DailyMetric (paid + no cancelled + total > 0).
+  // Si no se filtra paymentStatus se cuentan pendientes y vencidas como facturación, inflando el total.
   const orderMatch = {
     storeId: new mongoose.Types.ObjectId(storeId),
     estado: { $nin: ['cancelled'] },
+    paymentStatus: { $in: ['paid'] },
+    totalOrden: { $gt: 0 },
   };
   if (from || to) orderMatch.fechaCreacion = orderDateMatch;
 
-  // Para Payment status incluimos TODAS las órdenes (incluyendo cancelled) —
-  // si filtramos cancelled, las "anuladas" no aparecerían.
+  // Para Payment status incluimos TODAS las órdenes (incluyendo cancelled, pending, voided) —
+  // este match alimenta la sección "Por estado de pago" que justamente quiere ese desglose.
   const orderMatchAll = {
     storeId: new mongoose.Types.ObjectId(storeId),
   };
@@ -533,6 +537,7 @@ async function reconcileHistoricalData(storeId, from, to) {
   const orderMatch = {
     storeId: storeObjectId,
     estado: { $nin: ['cancelled'] },
+    paymentStatus: { $in: ['paid'] },
   };
   const dailyMatch = { storeId: storeObjectId };
   if (from || to) {

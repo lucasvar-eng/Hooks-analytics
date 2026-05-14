@@ -42,11 +42,22 @@ function mapTnOrderToSchema(tnOrder) {
   };
 }
 
-async function syncOrders(store) {
+async function syncOrders(store, options = {}) {
+  const { force = false } = options;
   const startTime = Date.now();
   const tnToken = await storeConnections.getToken(store._id, 'tiendanube');
-  const lastSync =
-    store.integrationStatus?.tiendanube?.lastSync || new Date(0);
+
+  // Sync incremental con buffer de 1 hora para no perder órdenes que se
+  // actualizaron mientras corría el sync anterior. Si force=true, ignora
+  // lastSync y trae todas las órdenes desde el inicio (sirve para re-sync
+  // completo cuando un sync inicial quedó incompleto).
+  const lastSyncRaw = store.integrationStatus?.tiendanube?.lastSync;
+  const lastSync = force
+    ? new Date(0)
+    : lastSyncRaw
+      ? new Date(lastSyncRaw.getTime() - 60 * 60 * 1000)
+      : new Date(0);
+
   let page = 1;
   let hasMore = true;
   const perPage = 200;
@@ -58,6 +69,8 @@ async function syncOrders(store) {
     type: 'tiendanube_orders',
     status: 'running',
   });
+
+  logger.info(`[TN sync] ${store.nombre} arranca: lastSync=${lastSync.toISOString()} force=${force}`);
 
   try {
     while (hasMore) {
@@ -92,6 +105,7 @@ async function syncOrders(store) {
       }
 
       const orders = response.data;
+      logger.info(`[TN sync] ${store.nombre} page ${page}: ${orders.length} órdenes`);
 
       for (const tnOrder of orders) {
         const order = await Order.findOneAndUpdate(
@@ -119,7 +133,9 @@ async function syncOrders(store) {
       if (hasMore) await sleep(500);
     }
 
-    // Update last sync timestamp
+    // Update last sync timestamp SOLO al terminar exitosamente todas las páginas.
+    // Si el sync se corta a mitad, lastSync queda igual y la próxima corrida
+    // vuelve a barrer desde el mismo punto.
     store.integrationStatus.tiendanube.lastSync = new Date();
     store.integrationStatus.tiendanube.connected = true;
     await store.save();

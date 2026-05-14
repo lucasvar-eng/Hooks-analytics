@@ -215,6 +215,7 @@ async function buildAutoInsights(storeId, from, to) {
       $match: {
         storeId: new mongoose.Types.ObjectId(storeId),
         estado: { $nin: ['cancelled'] },
+        paymentStatus: { $in: ['paid'] },
         customerEmail: { $exists: true, $ne: null, $ne: '' },
         ...(from && to ? { fechaCreacion: buildBusinessSourceDateMatch(from, to) } : {}),
       },

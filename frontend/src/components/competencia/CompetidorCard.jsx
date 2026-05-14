@@ -79,10 +79,12 @@ export default function CompetidorCard({
   selectedForCompare,
   onToggleCompare,
   onAnalyze,
+  onScrape,
   onEdit,
   onDelete,
   onOpenDetail,
   analyzing,
+  scraping,
 }) {
   const c = competitor;
   const hasUrl = !!c.url;
@@ -233,14 +235,24 @@ export default function CompetidorCard({
         </span>
         <div className="flex gap-1.5 flex-wrap">
           {status === 'pending' && hasUrl && (
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); onAnalyze?.(c); }}
-              disabled={analyzing}
-              className="bg-emerald-500/12 border border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/20 px-3.5 py-1.5 rounded-lg text-[11.5px] font-medium transition disabled:opacity-50"
-            >
-              {analyzing ? 'Analizando...' : 'Analizar con AI'}
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onScrape?.(c); }}
+                disabled={scraping}
+                className="bg-white/[0.04] border border-white/[0.08] text-gray-200 hover:bg-white/[0.08] hover:text-white px-3.5 py-1.5 rounded-lg text-[11.5px] font-medium transition disabled:opacity-50"
+              >
+                {scraping ? 'Scrapeando...' : 'Scrapear'}
+              </button>
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onAnalyze?.(c); }}
+                disabled={analyzing}
+                className="bg-emerald-500/12 border border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/20 px-3.5 py-1.5 rounded-lg text-[11.5px] font-medium transition disabled:opacity-50"
+              >
+                {analyzing ? 'Analizando...' : 'Analizar con AI'}
+              </button>
+            </>
           )}
           {status === 'incomplete' && (
             <button

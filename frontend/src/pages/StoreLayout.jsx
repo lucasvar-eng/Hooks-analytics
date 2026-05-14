@@ -86,14 +86,14 @@ const ICONS = {
 
 const NAV_ITEMS = [
   { path: 'dashboard', label: 'Resumen', group: 'General' },
-  { path: 'tienda', label: 'Tienda', group: 'General' },
+  { path: 'tienda', label: 'Tienda', group: 'Ventas' },
+  { path: 'productos', label: 'Productos', group: 'Ventas' },
+  { path: 'clientes', label: 'Clientes', group: 'Ventas' },
   { path: 'meta-ads', label: 'Meta Ads', group: 'Marketing' },
   { path: 'creativos', label: 'Creativos', group: 'Marketing' },
   { path: 'competencia', label: 'Competencia', group: 'Marketing' },
   { path: 'cashflow', label: 'Cashflow', group: 'Finanzas' },
   { path: 'costos', label: 'Costos', group: 'Finanzas' },
-  { path: 'productos', label: 'Productos', group: 'Ventas' },
-  { path: 'clientes', label: 'Clientes', group: 'Ventas' },
   { path: 'simulador', label: 'Simulador', group: 'IA' },
   { path: 'reportes', label: 'Reportes', group: 'IA' },
   { path: 'report-builder', label: 'Reporte AI', group: 'IA' },

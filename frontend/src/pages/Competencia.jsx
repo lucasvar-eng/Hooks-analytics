@@ -8,6 +8,7 @@ import ActionCardsCompetencia from '../components/competencia/ActionCardsCompete
 import AddCompetidorModal from '../components/competencia/AddCompetidorModal';
 import CompetidorDetailModal from '../components/competencia/CompetidorDetailModal';
 import CompetidorCompareModal from '../components/competencia/CompetidorCompareModal';
+import CompetidorScrapeModal from '../components/competencia/CompetidorScrapeModal';
 import GlossaryModalCompetencia from '../components/competencia/GlossaryModalCompetencia';
 import {
   COMPETENCIA_METRICS,
@@ -60,6 +61,8 @@ export default function Competencia() {
   const [compareOpen, setCompareOpen] = useState(false);
   const [glossaryOpen, setGlossaryOpen] = useState(false);
   const [analyzingId, setAnalyzingId] = useState(null);
+  const [scrapingId, setScrapingId] = useState(null);
+  const [scrapeState, setScrapeState] = useState({ open: false, competitor: null, loading: false, error: null, data: null });
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -128,6 +131,39 @@ export default function Competencia() {
     } finally {
       setAnalyzingId(null);
     }
+  };
+
+  const handleScrape = async (c) => {
+    setScrapingId(c._id);
+    setScrapeState({ open: true, competitor: c, loading: true, error: null, data: null });
+    try {
+      const { data } = await api.post(`/api/stores/${storeId}/competitors/${c._id}/scrape`);
+      setScrapeState((s) => ({ ...s, loading: false, data }));
+    } catch (err) {
+      const message = err?.response?.data?.error || err?.message || 'Error desconocido al scrapear el sitio.';
+      setScrapeState((s) => ({ ...s, loading: false, error: message }));
+    } finally {
+      setScrapingId(null);
+    }
+  };
+
+  const handleApplyScrape = async ({ updates, force }) => {
+    if (!scrapeState.competitor) return;
+    const qs = force ? '?force=true' : '';
+    try {
+      await api.post(
+        `/api/stores/${storeId}/competitors/${scrapeState.competitor._id}/scrape/apply${qs}`,
+        updates,
+      );
+      setScrapeState({ open: false, competitor: null, loading: false, error: null, data: null });
+      await fetchAll();
+    } catch (err) {
+      console.error('Error aplicando sugerencias:', err);
+    }
+  };
+
+  const closeScrape = () => {
+    setScrapeState({ open: false, competitor: null, loading: false, error: null, data: null });
   };
 
   const handleOpportunities = async (c) => {
@@ -226,8 +262,10 @@ export default function Competencia() {
           competitors={filtered}
           compareIds={compareIds}
           analyzingId={analyzingId}
+          scrapingId={scrapingId}
           onToggleCompare={toggleCompare}
           onAnalyze={handleAnalyze}
+          onScrape={handleScrape}
           onEdit={handleEdit}
           onOpenDetail={openDetail}
           onAddCompetidor={() => { setEditing(null); setAddOpen(true); }}
@@ -267,12 +305,25 @@ export default function Competencia() {
 
       <CompetidorDetailModal
         competitor={detailCompetitor}
+        storeId={storeId}
         onClose={() => setDetailCompetitor(null)}
         onAnalyze={handleAnalyze}
         onOpportunities={handleOpportunities}
+        onScrape={handleScrape}
         onEdit={handleEdit}
         onDelete={handleDelete}
         analyzing={analyzingId === detailCompetitor?._id}
+        scraping={scrapingId === detailCompetitor?._id}
+      />
+
+      <CompetidorScrapeModal
+        open={scrapeState.open}
+        loading={scrapeState.loading}
+        error={scrapeState.error}
+        data={scrapeState.data}
+        competitor={scrapeState.competitor}
+        onClose={closeScrape}
+        onApply={handleApplyScrape}
       />
 
       {compareOpen && (
@@ -355,8 +406,10 @@ function CompetitorsGrid({
   competitors,
   compareIds,
   analyzingId,
+  scrapingId,
   onToggleCompare,
   onAnalyze,
+  onScrape,
   onEdit,
   onOpenDetail,
   onAddCompetidor,
@@ -397,9 +450,11 @@ function CompetitorsGrid({
           selectedForCompare={compareIds.includes(c._id)}
           onToggleCompare={onToggleCompare}
           onAnalyze={onAnalyze}
+          onScrape={onScrape}
           onEdit={onEdit}
           onOpenDetail={onOpenDetail}
           analyzing={analyzingId === c._id}
+          scraping={scrapingId === c._id}
         />
       ))}
     </div>

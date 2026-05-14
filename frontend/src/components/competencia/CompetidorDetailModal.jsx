@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { renderMarkdown } from '../../utils/markdown';
+import CompetidorHistoria from './CompetidorHistoria';
 
 /**
  * Modal de detalle del competidor: análisis AI completo en markdown,
@@ -33,12 +34,15 @@ function hostnameOf(url) {
 
 export default function CompetidorDetailModal({
   competitor,
+  storeId,
   onClose,
   onAnalyze,
   onOpportunities,
+  onScrape,
   onEdit,
   onDelete,
   analyzing,
+  scraping,
 }) {
   const [opportunityState, setOpportunityState] = useState({ data: null, loading: false });
 
@@ -174,6 +178,14 @@ export default function CompetidorDetailModal({
             )}
           </div>
 
+          {/* Historia de cambios */}
+          {storeId && (
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[1.5px] text-gray-300 mb-3">Historia de cambios</p>
+              <CompetidorHistoria storeId={storeId} competitor={c} />
+            </div>
+          )}
+
           {/* Oportunidades (botón → llamada al endpoint) */}
           {isAnalyzed && (
             <div>
@@ -221,7 +233,17 @@ export default function CompetidorDetailModal({
           >
             Eliminar competidor
           </button>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
+            {hasUrl && (
+              <button
+                type="button"
+                onClick={() => onScrape?.(c)}
+                disabled={scraping}
+                className="bg-white/[0.04] border border-white/[0.08] text-gray-200 hover:bg-white/[0.08] hover:text-white px-4 py-2 rounded-lg text-[12.5px] font-medium disabled:opacity-50"
+              >
+                {scraping ? 'Scrapeando...' : 'Scrapear sitio'}
+              </button>
+            )}
             {hasUrl && (
               <button
                 type="button"

@@ -5,6 +5,79 @@ La bitácora se ordena de **arriba hacia abajo** por orden cronológico inverso 
 
 ---
 
+## 2026-05-13 — Competencia: scraping URL + snapshot temporal + reorder sidebar
+
+**Branch**: `codex/universal-dashboard-builder` (continúa)
+**Tienda usada para validar**: Límite Deportes
+
+### Trabajo hecho
+
+Cierra los 2 features pendientes de Competencia + reorder de la sidebar.
+
+**Feature 1 — Scraping de URL del competidor (sin dependencias externas)**:
+
+- Nuevo `backend/src/services/competitorScrapeService.js`. Hace fetch del HTML con axios (User-Agent legítimo, timeout 15s, tolera certificados SSL inválidos vía agente con `rejectUnauthorized: false` — read-only sin credentials). Parsea con regex puro:
+  - title, meta description, og:title, og:description, og:site_name
+  - h1 / h2 / h3 (primeros)
+  - Párrafos ricos (60-600 chars, hasta 8)
+  - Buttons + CTAs (text de `<button>` y `<a class="btn|button|cta">`)
+  - Precios visibles (regex `$\d{1,3}(?:[.,]\d{3})*`)
+  - Lang attribute del `<html>`
+  - Decodifica entidades HTML comunes (á, é, ñ, ¿, ¡, etc. + numéricas).
+- Deriva 2 sugerencias automáticas con heurísticas (no AI):
+  - `positioning` ← og:description o meta description corta
+  - `mainOffer` ← primer H1 o primer párrafo grande
+- Sin cheerio/puppeteer — ~250 líneas, 0 deps nuevas.
+
+**Endpoints nuevos** en `competitorRoutes.js`:
+- `POST /competitors/:id/scrape` — fetchea + parsea, devuelve `{ parsed, suggestions }` SIN aplicar nada.
+- `POST /competitors/:id/scrape/apply?force=true` — aplica campos seleccionados. Por default solo escribe en campos vacíos, `force=true` sobrescribe.
+
+**Feature 2 — Snapshot temporal + diff visual**:
+
+- Nuevo modelo `CompetitorSnapshot.js`: copia histórica de los 11 campos cualitativos + `source` (analyze/scrape/update/manual) + `triggeredBy` + `capturedAt` con índice descendente.
+- Nuevo `backend/src/services/competitorSnapshotService.js`:
+  - `createSnapshot(competitorId, { source, userId })` — copia estado actual a un snapshot.
+  - `listSnapshots(competitorId, limit)` — timeline descendente.
+  - `getLatestDiff(competitorId)` — diff entre estado actual y último snapshot. Normaliza arrays + strings para comparar.
+  - `diffSnapshotsByIds(competitorId, fromId, toId)`.
+- `competitorController.analyze`, `update`, `applyScrape` crean snapshot ANTES de pisar — preserva el "before". `remove` borra snapshots asociados.
+- Endpoints nuevos:
+  - `GET /competitors/:id/snapshots` — timeline.
+  - `GET /competitors/:id/diff` — qué cambió desde el último snapshot.
+
+**Frontend — 2 modales + 1 componente + integración**:
+
+- `CompetidorScrapeModal.jsx`: muestra resultados del scrape con checkboxes por campo, preview de "lo que se vio en el sitio" (título, meta, H1/H2, CTAs, precios, texto destacado). Default marca solo los campos vacíos; toggle "Sobreescribir campos que ya tengan valor" para forzar.
+- `CompetidorHistoria.jsx`: timeline embebido en el detail modal. Destaca arriba el "cambió desde X" si hay changes pendientes vs último snapshot, después lista todos los snapshots con diff entre consecutivos (cajitas rojo/verde "Antes" / "Ahora").
+- `CompetidorDetailModal.jsx`: sección nueva "Historia de cambios", botón "Scrapear sitio" en footer junto a "Re-analizar".
+- `CompetidorCard.jsx`: botón "Scrapear" para competidores con URL + sin análisis (alternativa rápida a "Analizar con AI" que consume tokens).
+- `Competencia.jsx`: 2 handlers nuevos (`handleScrape` + `handleApplyScrape`) + estado `scrapeState` para el modal.
+
+**Reorder sidebar** (`StoreLayout.jsx`):
+- Tienda movida de "General" a "Ventas" (queda con Productos y Clientes — las 3 vistas operativas de la tienda).
+- General queda con solo Resumen.
+
+**Validación runtime con dexter.com.ar real**:
+- Click "Scrapear" en card → modal abre con loading state → 5 segundos después muestra:
+  - Sugerencias: Posicionamiento ("Somos la mejor tienda deportiva del país...") + Oferta principal ("¡Bienvenido a Dexter!").
+  - Datos crudos: title, meta description, H1, H2, CTAs (Mujer · Hombre · Categorías), precios ($219.999 · $159.999 · ...), texto destacado.
+- Click "Aplicar 2 campos" → competidor actualizado, snapshot creado.
+- Click en card → modal de detalle muestra los nuevos campos cargados + "Historia de cambios" con bloque "Cambió desde …" arriba (diff rojo→verde por campo) + timeline con "Scrape del sitio · primer snapshot".
+- Build frontend clean.
+- SSL inválido (Stock Center primer test) ya tolerado con `httpsAgent: insecureHttpsAgent`.
+
+### Pendientes (actualiza backlog)
+
+- [x] **Scraping URL competidor** — listo.
+- [x] **Snapshot temporal + diff** — listo.
+- [x] **Reorder sidebar (Tienda → Ventas)** — listo.
+- [ ] **Auto-extracción de objeciones desde comments Meta Ads** → llena LanguageBank.
+- [ ] **Alert en Resumen cuando un competidor cambia** (a partir del flag `hasPrevious + changes.length > 0` que ya devuelve `/diff`).
+- [ ] **Endpoint detalle cliente** `/customers/:id/orders` para enriquecer modal de perfil.
+
+---
+
 ## 2026-05-13 — Mover Topic Map + Lenguaje a Creativos
 
 **Branch**: `codex/universal-dashboard-builder` (continúa)

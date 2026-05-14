@@ -6,7 +6,7 @@
  * muestra los últimos 12 meses para detectar tendencias.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import api from '../../services/api';
 
@@ -32,6 +32,10 @@ export default function ProductMonthlyHeatmap() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [hovered, setHovered] = useState(null); // { productId, month, units, revenue }
+  // Sort: por una columna. Default = 'total' desc (top revenue del año = lo que viene del backend).
+  // Para columnas mensuales, sortKey es el yyyy-MM (ej. '2026-05').
+  const [sortKey, setSortKey] = useState('total');
+  const [sortDir, setSortDir] = useState('desc');
 
   useEffect(() => {
     if (!storeId) return;
@@ -58,7 +62,44 @@ export default function ProductMonthlyHeatmap() {
     );
   }
 
-  const { months, products, totalProductsWithSales } = data;
+  const { months, products: rawProducts, totalProductsWithSales } = data;
+
+  // Aplicar sort
+  const products = useMemo(() => {
+    const arr = [...rawProducts];
+    const getVal = (p) => {
+      if (sortKey === 'total') return p.totalUnits || 0;
+      if (sortKey === 'totalRevenue') return p.totalRevenue || 0;
+      if (sortKey === 'stock') return p.stock || 0;
+      if (sortKey === 'nombre') return (p.nombre || '').toLowerCase();
+      // Columna mensual
+      return p.monthly?.[sortKey]?.units || 0;
+    };
+    arr.sort((a, b) => {
+      const av = getVal(a);
+      const bv = getVal(b);
+      if (typeof av === 'string') {
+        const r = av.localeCompare(bv);
+        return sortDir === 'asc' ? r : -r;
+      }
+      return sortDir === 'asc' ? av - bv : bv - av;
+    });
+    return arr;
+  }, [rawProducts, sortKey, sortDir]);
+
+  const toggleSort = (key) => {
+    if (sortKey === key) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortKey(key);
+      setSortDir(key === 'nombre' ? 'asc' : 'desc');
+    }
+  };
+
+  const sortArrow = (key) => {
+    if (sortKey !== key) return null;
+    return <span className="ml-0.5 text-blue-400">{sortDir === 'asc' ? '↑' : '↓'}</span>;
+  };
 
   // Máximo absoluto para escalar la intensidad del color
   const maxUnits = products.reduce((max, p) => {
@@ -76,7 +117,8 @@ export default function ProductMonthlyHeatmap() {
         <div>
           <h3 className="text-white text-[15px] font-semibold">Matriz producto × mes</h3>
           <p className="text-app-secondary text-[12px] mt-1">
-            Top {products.length} productos por revenue · unidades vendidas mes a mes (últimos 12 meses)
+            Top {products.length} productos por revenue · unidades vendidas mes a mes (últimos 12 meses) ·
+            <span className="ml-1 text-app-muted">Click en cualquier columna para ordenar.</span>
           </p>
         </div>
         <div className="text-right">
@@ -89,12 +131,37 @@ export default function ProductMonthlyHeatmap() {
         <table className="w-full text-[11.5px] tabular-nums">
           <thead>
             <tr className="text-app-muted">
-              <th className="text-left py-2 px-2 font-semibold w-[280px] sticky left-0 bg-[var(--bg-card)]">Producto</th>
+              <th
+                className="text-left py-2 px-2 font-semibold w-[280px] sticky left-0 bg-[var(--bg-card)] cursor-pointer select-none hover:text-white transition"
+                onClick={() => toggleSort('nombre')}
+                title="Ordenar por nombre"
+              >
+                Producto{sortArrow('nombre')}
+              </th>
               {months.map((m) => (
-                <th key={m} className="text-center py-2 px-1 font-semibold w-[60px]">{shortMonth(m)}</th>
+                <th
+                  key={m}
+                  className="text-center py-2 px-1 font-semibold w-[60px] cursor-pointer select-none hover:text-white transition"
+                  onClick={() => toggleSort(m)}
+                  title={`Ordenar por ${shortMonth(m)}`}
+                >
+                  {shortMonth(m)}{sortArrow(m)}
+                </th>
               ))}
-              <th className="text-right py-2 px-2 font-semibold w-[80px]">Total</th>
-              <th className="text-right py-2 px-2 font-semibold w-[80px]">Stock</th>
+              <th
+                className="text-right py-2 px-2 font-semibold w-[80px] cursor-pointer select-none hover:text-white transition"
+                onClick={() => toggleSort('total')}
+                title="Ordenar por total de unidades"
+              >
+                Total{sortArrow('total')}
+              </th>
+              <th
+                className="text-right py-2 px-2 font-semibold w-[80px] cursor-pointer select-none hover:text-white transition"
+                onClick={() => toggleSort('stock')}
+                title="Ordenar por stock actual"
+              >
+                Stock{sortArrow('stock')}
+              </th>
             </tr>
           </thead>
           <tbody>

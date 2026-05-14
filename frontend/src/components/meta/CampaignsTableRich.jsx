@@ -103,7 +103,7 @@ function hookRateTone(v) {
 
 export default function CampaignsTableRich({ campaigns = [] }) {
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all'); // all | active | paused | spend | nospend
+  const [statusFilter, setStatusFilter] = useState('active'); // all | active | paused | spend | nospend
   const [verdictFilter, setVerdictFilter] = useState('all');
   const [sortBy, setSortBy] = useState('spend');
   const [sortDir, setSortDir] = useState('desc');

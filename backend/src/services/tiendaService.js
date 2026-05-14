@@ -44,6 +44,15 @@ async function getTiendaBreakdown(storeId, from, to) {
   };
   if (from || to) orderMatch.fechaCreacion = orderDateMatch;
 
+  // Para Payment status incluimos TODAS las órdenes (incluyendo cancelled) —
+  // si filtramos cancelled, las "anuladas" no aparecerían.
+  const orderMatchAll = {
+    storeId: new mongoose.Types.ObjectId(storeId),
+  };
+  if (from || to) orderMatchAll.fechaCreacion = orderDateMatch;
+
+  const TZ = 'America/Argentina/Buenos_Aires';
+
   const [
     summary,
     byMedioPago,
@@ -55,6 +64,12 @@ async function getTiendaBreakdown(storeId, from, to) {
     topCustomers,
     dailyTopProductsAgg,
     dailyTopGatewayAgg,
+    byPaymentStatus,
+    byUtmSource,
+    byUtmMedium,
+    byUtmCampaign,
+    byDayOfWeek,
+    byHourOfDay,
   ] = await Promise.all([
     // 1. Summary
     Order.aggregate([
@@ -253,6 +268,86 @@ async function getTiendaBreakdown(storeId, from, to) {
         },
       },
     ]),
+
+    // 11. Por estado de pago (incluye anuladas/canceladas)
+    Order.aggregate([
+      { $match: orderMatchAll },
+      {
+        $group: {
+          _id: { $ifNull: ['$paymentStatus', 'sin_estado'] },
+          ordenes: { $sum: 1 },
+          revenue: { $sum: '$totalOrden' },
+        },
+      },
+      { $sort: { ordenes: -1 } },
+    ]),
+
+    // 12. Por UTM source / medium / campaign — solo órdenes con UTM cargado
+    Order.aggregate([
+      { $match: { ...orderMatch, utm_source: { $exists: true, $ne: '' } } },
+      {
+        $group: {
+          _id: { $ifNull: ['$utm_source', 'direct'] },
+          ordenes: { $sum: 1 },
+          revenue: { $sum: '$totalOrden' },
+          aov: { $avg: '$totalOrden' },
+        },
+      },
+      { $sort: { revenue: -1 } },
+      { $limit: 20 },
+    ]),
+    Order.aggregate([
+      { $match: { ...orderMatch, utm_medium: { $exists: true, $ne: '' } } },
+      {
+        $group: {
+          _id: { $ifNull: ['$utm_medium', 'direct'] },
+          ordenes: { $sum: 1 },
+          revenue: { $sum: '$totalOrden' },
+        },
+      },
+      { $sort: { revenue: -1 } },
+      { $limit: 20 },
+    ]),
+    Order.aggregate([
+      { $match: { ...orderMatch, utm_campaign: { $exists: true, $ne: '' } } },
+      {
+        $group: {
+          _id: { $ifNull: ['$utm_campaign', 'direct'] },
+          ordenes: { $sum: 1 },
+          revenue: { $sum: '$totalOrden' },
+          aov: { $avg: '$totalOrden' },
+        },
+      },
+      { $sort: { revenue: -1 } },
+      { $limit: 30 },
+    ]),
+
+    // 13. Por día de la semana (1=Domingo, 2=Lunes...7=Sábado en MongoDB)
+    Order.aggregate([
+      { $match: orderMatch },
+      {
+        $group: {
+          _id: { $dayOfWeek: { date: '$fechaCreacion', timezone: TZ } },
+          ordenes: { $sum: 1 },
+          revenue: { $sum: '$totalOrden' },
+          aov: { $avg: '$totalOrden' },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]),
+
+    // 14. Por hora del día (0-23 en TZ Argentina)
+    Order.aggregate([
+      { $match: orderMatch },
+      {
+        $group: {
+          _id: { $hour: { date: '$fechaCreacion', timezone: TZ } },
+          ordenes: { $sum: 1 },
+          revenue: { $sum: '$totalOrden' },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]),
   ]);
 
   // Index daily extras por fecha (top products y top gateway)
@@ -277,6 +372,12 @@ async function getTiendaBreakdown(storeId, from, to) {
     },
     byMedioPago,
     byCanal,
+    byPaymentStatus,
+    byUtmSource,
+    byUtmMedium,
+    byUtmCampaign,
+    byDayOfWeek,
+    byHourOfDay,
     ncrc: {
       nc: { ordenes: nc.ordenes, revenue: nc.revenue, netRevenue: nc.netRevenue, aov: nc.aov },
       rc: { ordenes: rc.ordenes, revenue: rc.revenue, netRevenue: rc.netRevenue, aov: rc.aov },

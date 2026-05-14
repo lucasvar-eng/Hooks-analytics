@@ -9,6 +9,8 @@ import DailySalesRevenueChart from '../components/tienda/DailySalesRevenueChart'
 import DailySalesTable from '../components/tienda/DailySalesTable';
 import PaymentMethodsChart from '../components/tienda/PaymentMethodsChart';
 import ChannelChart from '../components/tienda/ChannelChart';
+import TemporalDistributionChart from '../components/tienda/TemporalDistributionChart';
+import UtmAttributionTable from '../components/tienda/UtmAttributionTable';
 import TopInsightBar from '../components/insights/TopInsightBar';
 import SortableLayout from '../components/common/SortableLayout';
 
@@ -80,9 +82,30 @@ export default function Tienda() {
       label: 'Medios de pago + Canales',
       node: (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-          <PaymentMethodsChart data={data?.byMedioPago} />
+          <PaymentMethodsChart data={data?.byMedioPago} byPaymentStatus={data?.byPaymentStatus} />
           <ChannelChart data={data?.byCanal} />
         </div>
+      ),
+    },
+    {
+      id: 'temporal-distribution',
+      label: 'Distribución temporal',
+      node: (
+        <TemporalDistributionChart
+          byDayOfWeek={data?.byDayOfWeek}
+          byHourOfDay={data?.byHourOfDay}
+        />
+      ),
+    },
+    {
+      id: 'utm-attribution',
+      label: 'Atribución UTM',
+      node: (
+        <UtmAttributionTable
+          byUtmSource={data?.byUtmSource}
+          byUtmMedium={data?.byUtmMedium}
+          byUtmCampaign={data?.byUtmCampaign}
+        />
       ),
     },
     {

@@ -25,6 +25,8 @@ const userSettingsRoutes = require('./routes/userSettingsRoutes');
 const userManagementRoutes = require('./routes/userManagementRoutes');
 const insightRoutes = require('./routes/insightRoutes');
 const teamNoteRoutes = require('./routes/teamNoteRoutes');
+const teamRoutes = require('./routes/teamRoutes');
+const invitationRoutes = require('./routes/invitationRoutes');
 const { startCronJobs } = require('./services/cronJobs');
 const logger = require('./utils/logger');
 
@@ -105,6 +107,7 @@ app.use('/api', teamNoteRoutes);
 app.use('/api', tiendaRoutes);
 app.use('/api/user', userSettingsRoutes);
 app.use('/api/admin/users', userManagementRoutes);
+app.use('/api/invitations', invitationRoutes);
 
 // Serve frontend in production
 if (nodeEnv === 'production') {

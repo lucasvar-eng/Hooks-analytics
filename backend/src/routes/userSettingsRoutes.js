@@ -12,4 +12,7 @@ router.post('/ai-files', userSettings.uploadGlobalFile);
 router.delete('/ai-files/:filename', userSettings.deleteGlobalFile);
 router.post('/ai-test', userSettings.testConnection);
 
+router.get('/notifications', userSettings.getNotifications);
+router.put('/notifications', userSettings.updateNotifications);
+
 module.exports = router;

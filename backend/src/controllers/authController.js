@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const permissions = require('../services/permissions');
 const { jwtSecret, jwtExpiresIn } = require('../config/environment');
 
 const signToken = (id) => jwt.sign({ id }, jwtSecret, { expiresIn: jwtExpiresIn });
@@ -70,14 +71,24 @@ exports.register = async (req, res, next) => {
   }
 };
 
-exports.me = async (req, res) => {
-  res.json({
-    user: {
-      id: req.user._id,
-      email: req.user.email,
-      nombre: req.user.nombre,
-      role: req.user.role,
-      storeAccess: req.user.storeAccess,
-    },
-  });
+exports.me = async (req, res, next) => {
+  try {
+    const accesses = await permissions.getUserStoreAccesses(req.user._id);
+    res.json({
+      user: {
+        id: req.user._id,
+        email: req.user.email,
+        nombre: req.user.nombre,
+        role: req.user.role,
+        storeAccess: accesses.map((a) => a.storeId),
+        storeAccessDetailed: accesses.map((a) => ({
+          storeId: a.storeId,
+          role: a.role,
+          permissions: a.permissions,
+        })),
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
 };

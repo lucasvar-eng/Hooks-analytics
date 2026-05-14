@@ -37,6 +37,29 @@ const userSchema = new mongoose.Schema(
       default: true,
     },
 
+    // Notificaciones: a dónde mandar alertas / digests.
+    // Si vacío, se usa `email` como fallback.
+    notificationEmail: {
+      type: String,
+      lowercase: true,
+      trim: true,
+      default: '',
+    },
+    notificationPreferences: {
+      alerts: {
+        enabled: { type: Boolean, default: true },
+        channels: { type: [String], enum: ['email'], default: ['email'] },
+        minSeverity: { type: String, enum: ['info', 'warning', 'critical'], default: 'warning' },
+      },
+      digests: {
+        daily: { type: Boolean, default: false },
+        weekly: { type: Boolean, default: true },
+      },
+      reports: {
+        onPublish: { type: Boolean, default: true },
+      },
+    },
+
     // AI configuration per user
     aiConfig: {
       provider: { type: String, enum: ['anthropic', 'openai'], default: 'anthropic' },

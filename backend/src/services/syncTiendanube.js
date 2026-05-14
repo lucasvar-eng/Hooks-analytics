@@ -3,7 +3,7 @@ const Order = require('../models/Order');
 const Product = require('../models/Product');
 const SyncLog = require('../models/SyncLog');
 const { isCentralizedTiendanubeStore, invalidateTiendanubeToken } = require('../utils/tiendanubeToken');
-const { getStoreToken } = require('../utils/tokenAccess');
+const storeConnections = require('./storeConnections');
 const { recalculateDailyMetric } = require('./metricCalculator');
 const { calculateOrderFinancials, classifyCustomer } = require('./orderFinancials');
 const { generateCashflowEntries } = require('./cashflow');
@@ -44,7 +44,7 @@ function mapTnOrderToSchema(tnOrder) {
 
 async function syncOrders(store) {
   const startTime = Date.now();
-  const tnToken = getStoreToken(store, 'tn');
+  const tnToken = await storeConnections.getToken(store._id, 'tiendanube');
   const lastSync =
     store.integrationStatus?.tiendanube?.lastSync || new Date(0);
   let page = 1;
@@ -182,7 +182,7 @@ function mapTnProductToSchema(tnProduct) {
 
 async function syncProducts(store) {
   const startTime = Date.now();
-  const tnToken = getStoreToken(store, 'tn');
+  const tnToken = await storeConnections.getToken(store._id, 'tiendanube');
   let page = 1;
   let hasMore = true;
   const perPage = 200;

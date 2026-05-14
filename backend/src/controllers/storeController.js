@@ -13,7 +13,8 @@ const { DEFAULT_THRESHOLDS } = require('../services/verdictEngine');
 const { getEffectiveTarget } = require('../services/targetService');
 const { getCostCoverage } = require('../services/costCoverage');
 const { isCentralizedTiendanubeStore } = require('../utils/tiendanubeToken');
-const { setStoreToken, getStoreToken } = require('../utils/tokenAccess');
+const storeConnections = require('../services/storeConnections');
+const permissions = require('../services/permissions');
 const { buildBusinessDateKeyMatch, buildBusinessSourceDateMatch } = require('../utils/businessDate');
 
 function safeDelta(current, baseline, invert = false) {
@@ -162,10 +163,11 @@ function normalizeLogoUrl(url) {
 
 exports.list = async (req, res, next) => {
   try {
-    const filter =
-      req.user.role === 'admin'
-        ? {}
-        : { _id: { $in: req.user.storeAccess } };
+    let filter = {};
+    if (req.user.role !== 'admin') {
+      const storeIds = await permissions.listStoreIdsForUser(req.user._id);
+      filter = { _id: { $in: storeIds } };
+    }
 
     const stores = await Store.find(filter).select(
       'nombre tnNombre shopifyShopName plataforma logoUrl storeUrl integrationStatus metricasHome objetivos createdAt'
@@ -184,13 +186,17 @@ exports.create = async (req, res, next) => {
     }
     const store = await Store.create({ nombre: nombre.trim(), tnStoreId });
     if (tnAccessToken) {
-      setStoreToken(store, 'tn', tnAccessToken);
-      await store.save();
+      await storeConnections.setConnection(store._id, 'tiendanube', {
+        accessToken: String(tnAccessToken).trim(),
+        metadata: { tnStoreId: store.tnStoreId, tokenSource: 'manual' },
+        connectedByUser: req.user?._id,
+      });
     }
 
-    // Add store to creator's storeAccess
-    await User.findByIdAndUpdate(req.user._id, {
-      $addToSet: { storeAccess: store._id },
+    await permissions.grantAccess({
+      userId: req.user._id,
+      storeId: store._id,
+      role: 'owner',
     });
 
     res.status(201).json(store);
@@ -214,7 +220,11 @@ exports.createConnected = async (req, res, next) => {
       }
 
       const store = await Store.create({ nombre, plataforma: 'manual' });
-      await User.findByIdAndUpdate(req.user._id, { $addToSet: { storeAccess: store._id } });
+      await permissions.grantAccess({
+        userId: req.user._id,
+        storeId: store._id,
+        role: 'owner',
+      });
       return res.status(201).json({
         store,
         connection: { platform: 'manual', connected: false, syncStarted: false },
@@ -269,11 +279,22 @@ exports.createConnected = async (req, res, next) => {
         },
       });
       if (!useCentralToken && normalizedToken) {
-        setStoreToken(store, 'tn', normalizedToken);
-        await store.save();
+        await storeConnections.setConnection(store._id, 'tiendanube', {
+          accessToken: normalizedToken,
+          metadata: {
+            tnStoreId: store.tnStoreId,
+            tnNombre: store.tnNombre,
+            tokenSource: 'manual',
+          },
+          connectedByUser: req.user?._id,
+        });
       }
 
-      await User.findByIdAndUpdate(req.user._id, { $addToSet: { storeAccess: store._id } });
+      await permissions.grantAccess({
+        userId: req.user._id,
+        storeId: store._id,
+        role: 'owner',
+      });
 
       res.status(201).json({
         store,
@@ -334,10 +355,21 @@ exports.createConnected = async (req, res, next) => {
         shopify: { connected: true },
       },
     });
-    setStoreToken(store, 'shopify', normalizedToken);
-    await store.save();
+    await storeConnections.setConnection(store._id, 'shopify', {
+      accessToken: normalizedToken,
+      metadata: {
+        shopDomain: store.shopifyShopDomain,
+        shopName: store.shopifyShopName,
+        shopId: store.shopifyShopId,
+      },
+      connectedByUser: req.user?._id,
+    });
 
-    await User.findByIdAndUpdate(req.user._id, { $addToSet: { storeAccess: store._id } });
+    await permissions.grantAccess({
+      userId: req.user._id,
+      storeId: store._id,
+      role: 'owner',
+    });
 
     res.status(201).json({
       store,
@@ -485,12 +517,11 @@ exports.getOrders = async (req, res, next) => {
 
 exports.syncNow = async (req, res, next) => {
   try {
-    const store = await Store.findById(req.params.id)
-      .select('+tnAccessToken +tnTokenEncrypted +tnTokenIV +tnTokenAuthTag +shopifyAccessToken +shopifyTokenEncrypted +shopifyTokenIV +shopifyTokenAuthTag');
+    const store = await Store.findById(req.params.id);
     if (!store) return res.status(404).json({ error: 'Store not found' });
 
-    const hasTnToken = !!getStoreToken(store, 'tn');
-    const hasShopifyToken = !!getStoreToken(store, 'shopify');
+    const hasTnToken = !!(await storeConnections.getToken(store._id, 'tiendanube'));
+    const hasShopifyToken = !!(await storeConnections.getToken(store._id, 'shopify'));
 
     if (!store.tnStoreId || (!hasTnToken && store.tnTokenSource !== 'cro_service')) {
       if (!hasShopifyToken || !store.shopifyShopDomain) {
@@ -561,10 +592,11 @@ exports.getExecutiveOverview = async (req, res, next) => {
       return res.status(400).json({ error: 'from and to query params required' });
     }
 
-    const filter =
-      req.user.role === 'admin'
-        ? {}
-        : { _id: { $in: req.user.storeAccess } };
+    let filter = {};
+    if (req.user.role !== 'admin') {
+      const storeIds = await permissions.listStoreIdsForUser(req.user._id);
+      filter = { _id: { $in: storeIds } };
+    }
 
     const stores = await Store.find(filter).select(
       'nombre plataforma logoUrl storeUrl integrationStatus objetivos metricasHome createdAt'

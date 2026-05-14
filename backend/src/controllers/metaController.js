@@ -10,7 +10,7 @@ const { classifyCampaign, getThresholds } = require('../services/verdictEngine')
 const { meta: metaConfig } = require('../config/environment');
 const logger = require('../utils/logger');
 const { buildBusinessDateKeyMatch } = require('../utils/businessDate');
-const { getStoreToken, setStoreToken, loadStoreWithToken } = require('../utils/tokenAccess');
+const storeConnections = require('../services/storeConnections');
 
 function getConfiguredMetaAccounts(store) {
   const configured = Array.isArray(store?.metaAdAccounts) ? store.metaAdAccounts.filter((item) => item?.id) : [];
@@ -35,7 +35,7 @@ function buildRangeOptions(from, to) {
 }
 
 async function fetchLiveCampaignMetadata(store) {
-  const token = getStoreToken(store, 'meta');
+  const token = await storeConnections.getToken(store?._id, 'meta');
   const accounts = getConfiguredMetaAccounts(store);
   if (!token || !accounts.length) return new Map();
 
@@ -146,12 +146,10 @@ exports.callback = async (req, res, next) => {
     if (!store) return res.redirect('/?error=store_not_found');
 
     const primaryAccount = adAccounts[0] || null;
-    setStoreToken(store, 'meta', accessToken);
-    store.metaTokenExpiresAt = new Date(Date.now() + expiresIn * 1000);
-    store.metaAdAccountId = primaryAccount?.id || (primaryAccount?.account_id ? `act_${primaryAccount.account_id}` : '');
-    store.metaAdAccounts = primaryAccount
+    const primaryAccountId = primaryAccount?.id || (primaryAccount?.account_id ? `act_${primaryAccount.account_id}` : '');
+    const adAccountsList = primaryAccount
       ? [{
-          id: primaryAccount.id || (primaryAccount.account_id ? `act_${primaryAccount.account_id}` : ''),
+          id: primaryAccountId,
           accountId: primaryAccount.account_id,
           name: primaryAccount.name,
           status: primaryAccount.account_status,
@@ -160,8 +158,19 @@ exports.callback = async (req, res, next) => {
           connectedAt: new Date(),
         }]
       : [];
+
+    store.metaTokenExpiresAt = new Date(Date.now() + expiresIn * 1000);
+    store.metaAdAccountId = primaryAccountId;
+    store.metaAdAccounts = adAccountsList;
     store.integrationStatus.metaAds.connected = true;
     await store.save();
+
+    await storeConnections.setConnection(storeId, 'meta', {
+      accessToken,
+      expiresAt: new Date(Date.now() + expiresIn * 1000),
+      metadata: { adAccountId: primaryAccountId, adAccounts: adAccountsList },
+      connectedByUser: req.user?._id,
+    });
 
     logger.info(`Meta OAuth complete for ${store.nombre}, ad account: ${store.metaAdAccountId}`);
 
@@ -188,7 +197,7 @@ exports.getCampaigns = async (req, res, next) => {
     const { from, to } = req.query;
 
     const [store, storedCampaigns] = await Promise.all([
-      Store.findById(storeId).select('+metaAccessToken +metaTokenEncrypted +metaTokenIV +metaTokenAuthTag metaAdAccountId metaAdAccounts').lean(),
+      Store.findById(storeId).select('metaAdAccountId metaAdAccounts').lean(),
       MetaCampaign.find({
         storeId,
         level: 'campaign',
@@ -503,9 +512,10 @@ exports.syncProductInsights = async (req, res, next) => {
       return res.status(400).json({ error: 'invalid store id' });
     }
 
-    const store = await loadStoreWithToken(Store, storeId, 'meta');
+    const store = await Store.findById(storeId);
     if (!store) return res.status(404).json({ error: 'store not found' });
-    if (!getStoreToken(store, 'meta')) {
+    const metaToken = await storeConnections.getToken(storeId, 'meta');
+    if (!metaToken) {
       return res.status(400).json({ error: 'store does not have a Meta access token' });
     }
 

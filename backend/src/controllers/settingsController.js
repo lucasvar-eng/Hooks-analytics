@@ -8,7 +8,7 @@ const tnAPI = require('../services/tiendanubeAPI');
 const shopifyAPI = require('../services/shopifyAPI');
 const metaAPI = require('../services/metaAPI');
 const { isCentralizedTiendanubeStore } = require('../utils/tiendanubeToken');
-const { getStoreToken, setStoreToken, loadStoreWithToken } = require('../utils/tokenAccess');
+const storeConnections = require('../services/storeConnections');
 const DailyMetric = require('../models/DailyMetric');
 const { dateKeyToLabel } = require('../utils/businessDate');
 const Target = require('../models/Target');
@@ -201,7 +201,6 @@ exports.connectTNManual = async (req, res, next) => {
       });
     }
 
-    setStoreToken(store, 'tn', useCentralToken ? '' : normalizedToken);
     store.tnStoreId = normalizedStoreId;
     store.tnTokenSource = useCentralToken ? 'cro_service' : 'manual';
     store.plataforma = 'tiendanube';
@@ -211,6 +210,17 @@ exports.connectTNManual = async (req, res, next) => {
     store.integrationStatus.tiendanube.connected = true;
     store.integrationStatus.tiendanube.lastSync = new Date();
     await store.save();
+
+    if (!useCentralToken && normalizedToken) {
+      await storeConnections.setConnection(store._id, 'tiendanube', {
+        accessToken: normalizedToken,
+        metadata: { tnStoreId: store.tnStoreId, tnNombre: store.tnNombre, tokenSource: 'manual' },
+        connectedByUser: req.user?._id,
+      });
+    } else if (useCentralToken) {
+      // Si se mueve de manual a centralizado, borrar la conexión guardada
+      await storeConnections.clearConnection(store._id, 'tiendanube');
+    }
 
     await logAudit({
       storeId: store._id,
@@ -284,7 +294,6 @@ exports.connectShopifyManual = async (req, res, next) => {
     }
 
     store.plataforma = 'shopify';
-    setStoreToken(store, 'shopify', normalizedToken);
     store.shopifyShopDomain = metadata.shopDomain || normalizedDomain;
     store.shopifyShopName = metadata.name || store.shopifyShopName || store.nombre;
     store.shopifyShopId = metadata.shopId || store.shopifyShopId;
@@ -294,6 +303,16 @@ exports.connectShopifyManual = async (req, res, next) => {
     store.integrationStatus.shopify.lastSync = new Date();
     store.storeUrl = metadata.primaryDomain || store.storeUrl;
     await store.save();
+
+    await storeConnections.setConnection(store._id, 'shopify', {
+      accessToken: normalizedToken,
+      metadata: {
+        shopDomain: store.shopifyShopDomain,
+        shopName: store.shopifyShopName,
+        shopId: store.shopifyShopId,
+      },
+      connectedByUser: req.user?._id,
+    });
 
     await logAudit({
       storeId: store._id,
@@ -393,8 +412,11 @@ exports.connectMetaManual = async (req, res, next) => {
     }
 
     const primaryAccount = selectedAccounts[0];
+    const expiresAt =
+      expiresAtInput && !Number.isNaN(expiresAtInput.getTime())
+        ? expiresAtInput
+        : new Date(Date.now() + 60 * 24 * 60 * 60 * 1000);
 
-    setStoreToken(store, 'meta', token);
     store.metaAdAccountId = primaryAccount.id;
     store.metaAdAccounts = selectedAccounts.map((account, index) => ({
       id: account.id,
@@ -405,12 +427,25 @@ exports.connectMetaManual = async (req, res, next) => {
       isPrimary: index === 0,
       connectedAt: new Date(),
     }));
-    store.metaTokenExpiresAt =
-      expiresAtInput && !Number.isNaN(expiresAtInput.getTime())
-        ? expiresAtInput
-        : new Date(Date.now() + 60 * 24 * 60 * 60 * 1000);
+    store.metaTokenExpiresAt = expiresAt;
     store.integrationStatus.metaAds.connected = true;
     await store.save();
+
+    await storeConnections.setConnection(store._id, 'meta', {
+      accessToken: token,
+      expiresAt,
+      metadata: {
+        adAccountId: store.metaAdAccountId,
+        adAccounts: store.metaAdAccounts.map((account) => ({
+          id: account.id,
+          accountId: account.accountId,
+          name: account.name,
+          currency: account.currency,
+          isPrimary: account.isPrimary,
+        })),
+      },
+      connectedByUser: req.user?._id,
+    });
 
     await logAudit({
       storeId: store._id,
@@ -464,13 +499,14 @@ exports.connectMetaManual = async (req, res, next) => {
 
 exports.syncMetaManual = async (req, res, next) => {
   try {
-    const store = await loadStoreWithToken(Store, req.params.id, 'meta');
+    const store = await Store.findById(req.params.id);
     if (!store) return res.status(404).json({ error: 'Store not found' });
 
     const hasMetaAccounts =
       Array.isArray(store.metaAdAccounts) && store.metaAdAccounts.some((item) => item?.id);
+    const metaToken = await storeConnections.getToken(store._id, 'meta');
 
-    if (!getStoreToken(store, 'meta') || (!store.metaAdAccountId && !hasMetaAccounts)) {
+    if (!metaToken || (!store.metaAdAccountId && !hasMetaAccounts)) {
       return res.status(400).json({ error: 'La tienda no tiene Meta configurado' });
     }
 

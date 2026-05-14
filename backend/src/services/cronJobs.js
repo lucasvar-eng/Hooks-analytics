@@ -4,20 +4,26 @@ const { syncOrders, syncProducts, checkTiendanubeTokenHealth } = require('./sync
 const { syncMetaStructure, syncMetaInsights, syncMetaProductInsights, refreshMetaTokens } = require('./syncMeta');
 const { updateCashflowStates } = require('./cashflow');
 const { runDiagnostics } = require('./diagnosticsService');
+const storeConnections = require('./storeConnections');
 const logger = require('../utils/logger');
 
 async function runForTnStores(jobName, syncFn) {
   logger.info(`Cron: ${jobName} starting...`);
-  // Importante: para que los services puedan descifrar el token, hay que cargar
-  // los campos *Encrypted, *IV, *AuthTag y legacy (todos están select:false).
-  const stores = await Store.find({
+
+  // Lista de stores con conexión TN activa O con token centralizado (cro_service)
+  // que vive fuera del modelo StoreConnection.
+  const connectedStoreIds = await storeConnections.findActiveStoresByProvider('tiendanube');
+  const centralizedStores = await Store.find({
     'integrationStatus.tiendanube.connected': true,
-    $or: [
-      { tnTokenEncrypted: { $exists: true, $ne: '' } },
-      { tnAccessToken: { $exists: true, $ne: '' } },
-      { tnTokenSource: 'cro_service' },
-    ],
-  }).select('+tnAccessToken +tnTokenEncrypted +tnTokenIV +tnTokenAuthTag');
+    tnTokenSource: 'cro_service',
+  }).select('_id');
+
+  const allIds = new Set([
+    ...connectedStoreIds.map((id) => String(id)),
+    ...centralizedStores.map((s) => String(s._id)),
+  ]);
+
+  const stores = await Store.find({ _id: { $in: Array.from(allIds) } });
 
   for (const store of stores) {
     try {
@@ -34,7 +40,7 @@ async function runTiendanubeTokenHealthCheck() {
   const stores = await Store.find({
     'integrationStatus.tiendanube.connected': true,
     tnTokenSource: 'cro_service',
-  }).select('+tnAccessToken +tnTokenEncrypted +tnTokenIV +tnTokenAuthTag');
+  });
 
   for (const store of stores) {
     try {
@@ -49,13 +55,8 @@ async function runTiendanubeTokenHealthCheck() {
 
 async function runForMetaStores(jobName, syncFn) {
   logger.info(`Cron: ${jobName} starting...`);
-  const stores = await Store.find({
-    'integrationStatus.metaAds.connected': true,
-    $or: [
-      { metaTokenEncrypted: { $exists: true, $ne: '' } },
-      { metaAccessToken: { $exists: true, $ne: '' } },
-    ],
-  }).select('+metaAccessToken +metaTokenEncrypted +metaTokenIV +metaTokenAuthTag');
+  const storeIds = await storeConnections.findActiveStoresByProvider('meta');
+  const stores = await Store.find({ _id: { $in: storeIds } });
 
   for (const store of stores) {
     try {

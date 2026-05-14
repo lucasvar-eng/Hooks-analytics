@@ -7,7 +7,7 @@ const LanguageBank = require('../models/LanguageBank');
 const Competitor = require('../models/Competitor');
 const metaAPI = require('./metaAPI');
 const { buildBusinessDateKeyMatch } = require('../utils/businessDate');
-const { getStoreToken } = require('../utils/tokenAccess');
+const storeConnections = require('./storeConnections');
 
 function getConfiguredMetaAccounts(store) {
   const configured = Array.isArray(store?.metaAdAccounts) ? store.metaAdAccounts.filter((item) => item?.id) : [];
@@ -24,7 +24,7 @@ function buildDateOptions(from, to) {
 }
 
 async function fetchLiveAdInsights(store, from, to) {
-  const token = getStoreToken(store, 'meta');
+  const token = await storeConnections.getToken(store?._id, 'meta');
   const accounts = getConfiguredMetaAccounts(store);
   if (!token || !accounts.length) return [];
 
@@ -95,7 +95,7 @@ function aggregateInsightRows(rows, idKey, nameKey) {
 }
 
 async function fetchLiveCampaignMetadata(store) {
-  const token = getStoreToken(store, 'meta');
+  const token = await storeConnections.getToken(store?._id, 'meta');
   const accounts = getConfiguredMetaAccounts(store);
   if (!token || !accounts.length) return new Map();
 
@@ -133,7 +133,7 @@ async function autoClassifyAds(storeId, from, to) {
   const ads = await MetaCampaign.find(match).lean();
   if (ads.length === 0) return [];
 
-  const store = await Store.findById(storeId).select('+metaAccessToken +metaTokenEncrypted +metaTokenIV +metaTokenAuthTag metaAdAccountId metaAdAccounts').lean();
+  const store = await Store.findById(storeId).select('metaAdAccountId metaAdAccounts').lean();
   const liveRows = await fetchLiveAdInsights(store, from, to);
   const liveMap = aggregateInsightRows(liveRows, 'ad_id', 'ad_name');
 
@@ -224,7 +224,7 @@ async function getCampaignResults(storeId, from, to) {
     level: 'campaign',
   }).lean();
 
-  const store = await Store.findById(storeId).select('+metaAccessToken +metaTokenEncrypted +metaTokenIV +metaTokenAuthTag metaAdAccountId metaAdAccounts').lean();
+  const store = await Store.findById(storeId).select('metaAdAccountId metaAdAccounts').lean();
   const liveRows = await fetchLiveAdInsights(store, from, to);
   const liveMap = aggregateInsightRows(liveRows, 'campaign_id', 'campaign_name');
   const liveCampaignMeta = await fetchLiveCampaignMetadata(store);

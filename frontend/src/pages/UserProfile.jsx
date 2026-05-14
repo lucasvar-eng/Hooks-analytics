@@ -202,6 +202,173 @@ function ResendSection() {
   );
 }
 
+function MetaTokenSection() {
+  const [status, setStatus] = useState(null);
+  const [token, setToken] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState(null);
+  const [adAccounts, setAdAccounts] = useState(null);
+  const [loadingAccounts, setLoadingAccounts] = useState(false);
+
+  const load = () => {
+    api.get('/api/user/meta-token')
+      .then(({ data }) => setStatus(data))
+      .catch(() => setStatus({ configured: false }));
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const save = async () => {
+    if (!token.trim()) {
+      setMsg({ ok: false, text: 'Pegá el access token primero' });
+      return;
+    }
+    setSaving(true);
+    setMsg(null);
+    try {
+      const { data } = await api.put('/api/user/meta-token', { accessToken: token.trim() });
+      setMsg({
+        ok: true,
+        text: `Token guardado. ${data.adAccountsCount} cuentas publicitarias detectadas. ${data.propagatedToStores ? `Propagado a ${data.propagatedToStores} tienda(s) ya conectada(s).` : ''}`,
+      });
+      setToken('');
+      setAdAccounts(null);
+      load();
+    } catch (err) {
+      setMsg({ ok: false, text: err.response?.data?.error || 'Error al guardar el token' });
+    }
+    setSaving(false);
+  };
+
+  const removeToken = async () => {
+    if (!confirm('¿Quitar el token guardado? Las tiendas ya vinculadas siguen funcionando con su token actual.')) return;
+    setSaving(true);
+    setMsg(null);
+    try {
+      await api.delete('/api/user/meta-token');
+      setMsg({ ok: true, text: 'Token eliminado' });
+      setAdAccounts(null);
+      load();
+    } catch (err) {
+      setMsg({ ok: false, text: err.response?.data?.error || 'Error' });
+    }
+    setSaving(false);
+  };
+
+  const previewAccounts = async () => {
+    setLoadingAccounts(true);
+    setMsg(null);
+    try {
+      const { data } = await api.get('/api/user/meta-token/ad-accounts');
+      setAdAccounts(data.accounts || []);
+    } catch (err) {
+      setMsg({ ok: false, text: err.response?.data?.error || 'Error al traer las cuentas' });
+      setAdAccounts(null);
+    }
+    setLoadingAccounts(false);
+  };
+
+  if (!status) {
+    return (
+      <div className="card p-5">
+        <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Token de Meta Ads</p>
+        <p className="text-[12px] text-gray-600">Cargando…</p>
+      </div>
+    );
+  }
+
+  const healthColor = {
+    ok: 'text-emerald-300',
+    expiring_soon: 'text-amber-300',
+    expired: 'text-red-300',
+    missing: 'text-gray-400',
+  }[status.health] || 'text-gray-400';
+
+  return (
+    <div className="card p-5 space-y-3">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Token de Meta Ads</p>
+          <p className="text-[12px] text-app-secondary mt-1">
+            Guardá tu long-lived access token una vez. Se usa para todas las tiendas que vincules con Meta, así no tenés que pegarlo en cada una.
+          </p>
+        </div>
+        {status.configured && (
+          <span className={`text-[11px] font-medium ${healthColor}`}>
+            {status.health === 'ok' && status.daysLeft !== null && `Vence en ${status.daysLeft} día${status.daysLeft === 1 ? '' : 's'}`}
+            {status.health === 'expiring_soon' && `Vence pronto (${status.daysLeft}d)`}
+            {status.health === 'expired' && 'Vencido'}
+            {status.health === 'ok' && status.daysLeft === null && 'Activo'}
+          </span>
+        )}
+      </div>
+
+      {status.configured && (
+        <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2 flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[12px] text-white font-medium">Token configurado</p>
+            {status.expiresAt && (
+              <p className="text-[11px] text-gray-500">
+                Vence el {new Date(status.expiresAt).toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' })}
+                {status.updatedAt && <> · Actualizado el {new Date(status.updatedAt).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })}</>}
+              </p>
+            )}
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button onClick={previewAccounts} disabled={loadingAccounts} className="btn-ghost text-[11px] disabled:opacity-50">
+              {loadingAccounts ? 'Consultando…' : 'Ver cuentas'}
+            </button>
+            <button onClick={removeToken} className="text-[11px] text-red-400 hover:text-red-300 transition">Quitar</button>
+          </div>
+        </div>
+      )}
+
+      {adAccounts && (
+        <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
+          <p className="text-[11px] text-app-muted mb-2">Cuentas publicitarias accesibles con este token ({adAccounts.length})</p>
+          <div className="max-h-48 overflow-y-auto space-y-1.5">
+            {adAccounts.length === 0 && <p className="text-[11px] text-gray-500">Ninguna. Revisá los permisos del token y los activos asignados.</p>}
+            {adAccounts.map((acc) => (
+              <div key={acc.id} className="flex items-center justify-between gap-3 text-[12px]">
+                <div className="min-w-0">
+                  <p className="text-white truncate">{acc.name}</p>
+                  <p className="text-[10px] text-gray-600 font-mono truncate">{acc.id}</p>
+                </div>
+                <span className={`text-[10px] shrink-0 ${acc.isActive ? 'text-emerald-300' : 'text-gray-500'}`}>
+                  {acc.isActive ? 'Activa' : 'Inactiva'}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div>
+        <label className="kpi-label mb-1 block">{status.configured ? 'Reemplazar token (long-lived)' : 'Pegá tu long-lived access token'}</label>
+        <textarea
+          value={token}
+          onChange={(e) => setToken(e.target.value)}
+          placeholder="EAA..."
+          rows={3}
+          className="input-dark w-full resize-y font-mono text-[12px]"
+        />
+        <p className="text-[10px] text-gray-600 mt-1">
+          Se valida llamando a Meta antes de guardar. Si tenés tiendas ya conectadas con el token anterior, se actualizan automáticamente.
+        </p>
+      </div>
+
+      <div className="flex items-center justify-between">
+        {msg ? (
+          <span className={`text-[12px] font-medium ${msg.ok ? 'text-emerald-400' : 'text-red-400'}`}>{msg.text}</span>
+        ) : <span />}
+        <button onClick={save} disabled={saving || !token.trim()} className="btn-primary disabled:opacity-50">
+          {saving ? 'Validando…' : status.configured ? 'Actualizar token' : 'Validar y guardar'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function MetaTutorial() {
   const [open, setOpen] = useState(false);
   return (
@@ -553,6 +720,7 @@ export default function UserProfile() {
 
         <NotificationsSection />
         <ResendSection />
+        <MetaTokenSection />
         <MyStoresSection />
         <MetaTutorial />
       </div>

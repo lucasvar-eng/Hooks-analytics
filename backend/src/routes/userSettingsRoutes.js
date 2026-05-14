@@ -12,4 +12,9 @@ router.get('/resend-config', userSettings.getResendConfig);
 router.put('/resend-config', userSettings.updateResendConfig);
 router.post('/resend-config/test', userSettings.testResendConfig);
 
+router.get('/meta-token', userSettings.getMetaToken);
+router.put('/meta-token', userSettings.updateMetaToken);
+router.delete('/meta-token', userSettings.deleteMetaToken);
+router.get('/meta-token/ad-accounts', userSettings.getMetaAdAccounts);
+
 module.exports = router;

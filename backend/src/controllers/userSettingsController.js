@@ -1,7 +1,34 @@
 const User = require('../models/User');
-const { encrypt } = require('../utils/encryption');
+const StoreConnection = require('../models/StoreConnection');
+const { encrypt, decrypt } = require('../utils/encryption');
 const { verifyApiKey } = require('../services/emailService');
+const metaAPI = require('../services/metaAPI');
 const logger = require('../utils/logger');
+
+function sanitizeMetaAccounts(accounts = []) {
+  return accounts
+    .map((account) => ({
+      id: account.id,
+      accountId: account.account_id,
+      name: account.name,
+      status: account.account_status,
+      currency: account.currency,
+      isActive: account.account_status === 1,
+    }))
+    .sort((a, b) => Number(b.isActive) - Number(a.isActive) || a.name.localeCompare(b.name));
+}
+
+async function loadUserMetaToken(userId) {
+  const user = await User.findById(userId)
+    .select('+metaUserTokenEncrypted +metaUserTokenIV +metaUserTokenAuthTag metaUserTokenExpiresAt');
+  if (!user?.metaUserTokenEncrypted) return null;
+  try {
+    return decrypt(user.metaUserTokenEncrypted, user.metaUserTokenIV, user.metaUserTokenAuthTag);
+  } catch (err) {
+    logger.error(`No se pudo descifrar metaUserToken para user ${userId}: ${err.message}`);
+    return null;
+  }
+}
 
 exports.getNotifications = async (req, res, next) => {
   try {
@@ -174,3 +201,187 @@ exports.testResendConfig = async (req, res, next) => {
     next(error);
   }
 };
+
+/**
+ * GET /api/user/meta-token — estado del long-lived access token de Meta del user.
+ */
+exports.getMetaToken = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user._id)
+      .select('+metaUserTokenEncrypted metaUserTokenExpiresAt metaUserTokenUpdatedAt');
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const expiresAt = user.metaUserTokenExpiresAt || null;
+    const daysLeft = expiresAt
+      ? Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 86_400_000)
+      : null;
+
+    res.json({
+      configured: !!user.metaUserTokenEncrypted,
+      expiresAt,
+      daysLeft,
+      updatedAt: user.metaUserTokenUpdatedAt || null,
+      health: !user.metaUserTokenEncrypted
+        ? 'missing'
+        : daysLeft !== null && daysLeft <= 0
+          ? 'expired'
+          : daysLeft !== null && daysLeft <= 14
+            ? 'expiring_soon'
+            : 'ok',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * PUT /api/user/meta-token — guarda el token (validado contra Meta) y lo
+ * propaga a todas las StoreConnection de Meta del user que tengan el token
+ * anterior (para no romper syncs activos).
+ *
+ * Body: { accessToken, expiresAt? }
+ */
+exports.updateMetaToken = async (req, res, next) => {
+  try {
+    const accessToken = String(req.body?.accessToken || '').trim();
+    const expiresAtInput = req.body?.expiresAt ? new Date(req.body.expiresAt) : null;
+
+    if (!accessToken) {
+      return res.status(400).json({ error: 'Se requiere accessToken' });
+    }
+
+    // Validar contra Meta antes de guardar
+    let accounts;
+    try {
+      accounts = await metaAPI.getAdAccounts(accessToken);
+    } catch (err) {
+      const status = err.response?.status;
+      return res.status(400).json({
+        error:
+          status === 401 || status === 403
+            ? 'El access token no es válido o no tiene permisos suficientes (ads_read).'
+            : 'No se pudieron validar las cuentas publicitarias con ese token.',
+      });
+    }
+
+    // Cargar token anterior (si existe) para propagar
+    const prevUser = await User.findById(req.user._id)
+      .select('+metaUserTokenEncrypted +metaUserTokenIV +metaUserTokenAuthTag');
+    const prevToken = prevUser?.metaUserTokenEncrypted
+      ? (() => {
+          try {
+            return decrypt(prevUser.metaUserTokenEncrypted, prevUser.metaUserTokenIV, prevUser.metaUserTokenAuthTag);
+          } catch (err) {
+            return null;
+          }
+        })()
+      : null;
+
+    // Cifrar y guardar nuevo
+    const enc = encrypt(accessToken);
+    const expiresAt =
+      expiresAtInput && !Number.isNaN(expiresAtInput.getTime())
+        ? expiresAtInput
+        : new Date(Date.now() + 60 * 24 * 60 * 60 * 1000); // default 60 días (long-lived)
+
+    await User.findByIdAndUpdate(req.user._id, {
+      $set: {
+        metaUserTokenEncrypted: enc.encrypted,
+        metaUserTokenIV: enc.iv,
+        metaUserTokenAuthTag: enc.authTag,
+        metaUserTokenExpiresAt: expiresAt,
+        metaUserTokenUpdatedAt: new Date(),
+      },
+    });
+
+    // Propagar a StoreConnections de Meta donde este user es el connectedByUser
+    let propagated = 0;
+    if (prevToken && prevToken !== accessToken) {
+      const myConnections = await StoreConnection.find({
+        connectedByUser: req.user._id,
+        provider: 'meta',
+        status: { $ne: 'revoked' },
+      }).select('+accessTokenEncrypted +accessTokenIV +accessTokenAuthTag');
+
+      for (const conn of myConnections) {
+        try {
+          const currentTokenOfConn = decrypt(conn.accessTokenEncrypted, conn.accessTokenIV, conn.accessTokenAuthTag);
+          if (currentTokenOfConn === prevToken) {
+            const reEnc = encrypt(accessToken);
+            conn.accessTokenEncrypted = reEnc.encrypted;
+            conn.accessTokenIV = reEnc.iv;
+            conn.accessTokenAuthTag = reEnc.authTag;
+            conn.expiresAt = expiresAt;
+            conn.lastError = '';
+            await conn.save();
+            propagated += 1;
+          }
+        } catch (err) {
+          logger.warn(`No se pudo propagar token a StoreConnection ${conn._id}: ${err.message}`);
+        }
+      }
+    }
+
+    logger.info(`Meta user token updated for ${req.user.email} (propagated to ${propagated} stores)`);
+
+    res.json({
+      success: true,
+      configured: true,
+      expiresAt,
+      adAccountsCount: accounts.length,
+      propagatedToStores: propagated,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * DELETE /api/user/meta-token — borra el token guardado. No toca las
+ * StoreConnections existentes (siguen funcionando con su token actual).
+ */
+exports.deleteMetaToken = async (req, res, next) => {
+  try {
+    await User.findByIdAndUpdate(req.user._id, {
+      $unset: {
+        metaUserTokenEncrypted: '',
+        metaUserTokenIV: '',
+        metaUserTokenAuthTag: '',
+        metaUserTokenExpiresAt: '',
+        metaUserTokenUpdatedAt: '',
+      },
+    });
+    res.json({ success: true, configured: false });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * GET /api/user/meta-token/ad-accounts — lista las ad accounts disponibles
+ * con el token guardado.
+ */
+exports.getMetaAdAccounts = async (req, res, next) => {
+  try {
+    const token = await loadUserMetaToken(req.user._id);
+    if (!token) {
+      return res.status(404).json({ error: 'No hay token de Meta guardado. Guardalo primero en /profile.' });
+    }
+    try {
+      const accounts = await metaAPI.getAdAccounts(token);
+      res.json({ success: true, accounts: sanitizeMetaAccounts(accounts) });
+    } catch (err) {
+      const status = err.response?.status;
+      res.status(400).json({
+        error:
+          status === 401 || status === 403
+            ? 'El token guardado dejó de ser válido. Regeneralo en Meta y actualizalo en /profile.'
+            : 'No se pudieron obtener las cuentas publicitarias.',
+      });
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.loadUserMetaToken = loadUserMetaToken;

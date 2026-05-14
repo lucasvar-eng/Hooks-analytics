@@ -15,6 +15,7 @@ const Target = require('../models/Target');
 const ImportBatch = require('../models/ImportBatch');
 const { getCurrentMonthRange } = require('../services/targetService');
 const { logAudit } = require('../services/auditLogService');
+const { loadUserMetaToken } = require('./userSettingsController');
 const logger = require('../utils/logger');
 
 function normalizeLogoUrl(url) {
@@ -347,9 +348,17 @@ exports.connectShopifyManual = async (req, res, next) => {
 
 exports.previewMetaAdAccounts = async (req, res, next) => {
   try {
-    const token = String(req.body.metaAccessToken || '').trim();
+    let token = String(req.body.metaAccessToken || '').trim();
+    let usedSavedToken = false;
     if (!token) {
-      return res.status(400).json({ error: 'Se requiere metaAccessToken' });
+      // Fallback: usar el token guardado en el perfil del user
+      token = await loadUserMetaToken(req.user._id);
+      usedSavedToken = !!token;
+    }
+    if (!token) {
+      return res.status(400).json({
+        error: 'No hay token de Meta. Pasá uno en el body o guardalo en /profile.',
+      });
     }
 
     const accounts = await metaAPI.getAdAccounts(token);
@@ -358,6 +367,7 @@ exports.previewMetaAdAccounts = async (req, res, next) => {
     res.json({
       success: true,
       accounts: sanitized,
+      usedSavedToken,
     });
   } catch (error) {
     const status = error.response?.status;
@@ -372,7 +382,7 @@ exports.previewMetaAdAccounts = async (req, res, next) => {
 
 exports.connectMetaManual = async (req, res, next) => {
   try {
-    const token = String(req.body.metaAccessToken || '').trim();
+    let token = String(req.body.metaAccessToken || '').trim();
     const requestedAccountId = String(req.body.metaAdAccountId || '').trim();
     const requestedAccountIds = Array.isArray(req.body.metaAdAccountIds)
       ? req.body.metaAdAccountIds
@@ -380,8 +390,12 @@ exports.connectMetaManual = async (req, res, next) => {
     const expiresAtInput = req.body.metaTokenExpiresAt ? new Date(req.body.metaTokenExpiresAt) : null;
     const selectionSeed = requestedAccountIds.length ? requestedAccountIds : [requestedAccountId];
 
+    if (!token) {
+      // Fallback: usar el token guardado en el perfil del user
+      token = await loadUserMetaToken(req.user._id);
+    }
     if (!token || selectionSeed.filter(Boolean).length === 0) {
-      return res.status(400).json({ error: 'Se requieren metaAccessToken y al menos una cuenta publicitaria' });
+      return res.status(400).json({ error: 'Falta el token de Meta (guardalo en /profile o pasalo en el body) o no seleccionaste ninguna cuenta publicitaria.' });
     }
 
     const store = await Store.findById(req.params.id);

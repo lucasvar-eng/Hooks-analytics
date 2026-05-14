@@ -587,6 +587,7 @@ export default function Settings() {
   const [connectingMeta, setConnectingMeta] = useState(false);
   const [syncingMeta, setSyncingMeta] = useState(false);
   const [editingMetaAccounts, setEditingMetaAccounts] = useState(false);
+  const [userMetaTokenStatus, setUserMetaTokenStatus] = useState(null);
   const [tasaIBB, setTasaIBB] = useState(0);
   const [feePlataformaPct, setFeePlataformaPct] = useState(0);
   const [comisiones, setComisiones] = useState([]);
@@ -595,6 +596,12 @@ export default function Settings() {
     api.get(`/api/stores/${storeId}/connections`)
       .then(({ data }) => setConnections(Array.isArray(data) ? data : []))
       .catch(() => setConnections([]));
+  };
+
+  const loadUserMetaTokenStatus = () => {
+    api.get('/api/user/meta-token')
+      .then(({ data }) => setUserMetaTokenStatus(data))
+      .catch(() => setUserMetaTokenStatus({ configured: false }));
   };
 
   useEffect(() => {
@@ -616,6 +623,7 @@ export default function Settings() {
       setLoading(false);
     });
     loadConnections();
+    loadUserMetaTokenStatus();
   }, [storeId]);
 
   const findConn = (provider) => connections.find((c) => c.provider === provider) || null;
@@ -951,34 +959,61 @@ export default function Settings() {
 
             <div className="mt-3 p-4 rounded-lg bg-white/[0.03] border border-white/[0.06] space-y-3">
               {(!store?.integrationStatus?.metaAds?.connected || editingMetaAccounts) && (
-                <p className="text-[12px] text-gray-500">
-                  Pegá un long-lived access token generado desde tu app de Meta (System User o usuario personal), traé las cuentas publicitarias a las que tiene acceso y elegí una o varias para sincronizar en esta tienda.
-                </p>
-              )}
-
-              {(!store?.integrationStatus?.metaAds?.connected || editingMetaAccounts) && (
                 <>
-                  <div>
-                    <label className="kpi-label mb-1 block">Long-lived access token</label>
-                    <textarea
-                      value={metaToken}
-                      onChange={(e) => setMetaToken(e.target.value)}
-                      placeholder="EAA..."
-                      rows={3}
-                      className="input-dark w-full resize-y font-mono"
-                    />
-                  </div>
+                  {userMetaTokenStatus?.configured ? (
+                    <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/[0.06] px-3 py-2 flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-[12px] text-emerald-200 font-medium">
+                          Usando tu token de Meta guardado en /profile
+                        </p>
+                        <p className="text-[11px] text-emerald-200/70">
+                          {userMetaTokenStatus.expiresAt
+                            ? `Vence el ${new Date(userMetaTokenStatus.expiresAt).toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' })}`
+                            : 'Activo'}
+                          {' · '}Traé las cuentas y elegí cuál vinculás a esta tienda.
+                        </p>
+                      </div>
+                      <a
+                        href="/profile"
+                        className="text-[11px] text-emerald-300 hover:text-emerald-200 underline-offset-2 hover:underline shrink-0"
+                      >
+                        Editar
+                      </a>
+                    </div>
+                  ) : (
+                    <div className="rounded-lg border border-amber-500/20 bg-amber-500/[0.06] px-3 py-2">
+                      <p className="text-[12px] text-amber-200 font-medium">
+                        Todavía no guardaste tu token de Meta
+                      </p>
+                      <p className="text-[11px] text-amber-200/70 mt-0.5">
+                        Para no pegarlo en cada tienda, guardalo una vez en <a href="/profile" className="text-amber-200 underline-offset-2 hover:underline">tu perfil</a>. Igual podés pegarlo acá abajo si querés.
+                      </p>
+                    </div>
+                  )}
+
+                  {!userMetaTokenStatus?.configured && (
+                    <div>
+                      <label className="kpi-label mb-1 block">Long-lived access token (solo para esta tienda)</label>
+                      <textarea
+                        value={metaToken}
+                        onChange={(e) => setMetaToken(e.target.value)}
+                        placeholder="EAA..."
+                        rows={3}
+                        className="input-dark w-full resize-y font-mono"
+                      />
+                    </div>
+                  )}
 
                   <div className="flex items-center gap-3">
                     <button
                       onClick={async () => {
-                        if (!metaToken.trim()) return;
+                        const hasInline = metaToken.trim().length > 0;
+                        if (!hasInline && !userMetaTokenStatus?.configured) return;
                         setLoadingMetaAccounts(true);
                         setMessage(null);
                         try {
-                          const { data } = await api.post(`/api/stores/${storeId}/meta/ad-accounts/preview`, {
-                            metaAccessToken: metaToken.trim(),
-                          });
+                          const body = hasInline ? { metaAccessToken: metaToken.trim() } : {};
+                          const { data } = await api.post(`/api/stores/${storeId}/meta/ad-accounts/preview`, body);
                           setMetaAccounts(data.accounts || []);
                           if (data.accounts?.length) {
                             setMetaAccountIdsInput((current) => (current.length ? current : [data.accounts[0].id]));
@@ -991,12 +1026,12 @@ export default function Settings() {
                         }
                         setLoadingMetaAccounts(false);
                       }}
-                      disabled={loadingMetaAccounts || !metaToken.trim()}
+                      disabled={loadingMetaAccounts || (!metaToken.trim() && !userMetaTokenStatus?.configured)}
                       className="btn-ghost disabled:opacity-50"
                     >
                       {loadingMetaAccounts ? 'Consultando...' : 'Traer cuentas'}
                     </button>
-                    <span className="text-[11px] text-gray-600">Después elegís una cuenta y la conectás a esta tienda.</span>
+                    <span className="text-[11px] text-gray-600">Después elegís una o varias para esta tienda.</span>
                   </div>
 
                   {metaAccounts.length > 0 && (
@@ -1046,15 +1081,17 @@ export default function Settings() {
 
                   <button
                     onClick={async () => {
-                      if (!metaToken.trim() || !orderedMetaAccountIds.length) return;
+                      const hasInline = metaToken.trim().length > 0;
+                      if ((!hasInline && !userMetaTokenStatus?.configured) || !orderedMetaAccountIds.length) return;
                       setConnectingMeta(true);
                       setMessage(null);
                       try {
-                        const { data } = await api.post(`/api/stores/${storeId}/connect-meta-manual`, {
-                          metaAccessToken: metaToken.trim(),
+                        const payload = {
                           metaAdAccountId: orderedMetaAccountIds[0],
                           metaAdAccountIds: orderedMetaAccountIds,
-                        });
+                        };
+                        if (hasInline) payload.metaAccessToken = metaToken.trim();
+                        const { data } = await api.post(`/api/stores/${storeId}/connect-meta-manual`, payload);
                         setMessage(data.message);
                         setMetaToken('');
                         setMetaAccounts([]);
@@ -1065,7 +1102,7 @@ export default function Settings() {
                       }
                       setConnectingMeta(false);
                     }}
-                    disabled={connectingMeta || !metaToken.trim() || !orderedMetaAccountIds.length}
+                    disabled={connectingMeta || (!metaToken.trim() && !userMetaTokenStatus?.configured) || !orderedMetaAccountIds.length}
                     className="btn-primary disabled:opacity-50"
                   >
                     {connectingMeta ? 'Conectando...' : store?.integrationStatus?.metaAds?.connected ? 'Actualizar cuentas y resincronizar' : 'Conectar y sincronizar'}

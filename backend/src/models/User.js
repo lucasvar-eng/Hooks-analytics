@@ -53,6 +53,15 @@ const userSchema = new mongoose.Schema(
     resendApiKeyIV: { type: String, select: false },
     resendApiKeyAuthTag: { type: String, select: false },
     resendFromEmail: { type: String, default: '' },
+
+    // Long-lived access token de Meta del user. Se guarda una vez y se reusa
+    // para vincular ad accounts en cualquier tienda. Al renovarlo se propaga
+    // a todas las StoreConnection de Meta de este user.
+    metaUserTokenEncrypted: { type: String, select: false },
+    metaUserTokenIV: { type: String, select: false },
+    metaUserTokenAuthTag: { type: String, select: false },
+    metaUserTokenExpiresAt: { type: Date },
+    metaUserTokenUpdatedAt: { type: Date },
     notificationPreferences: {
       alerts: {
         enabled: { type: Boolean, default: true },
@@ -90,6 +99,9 @@ userSchema.methods.toJSON = function () {
   delete obj.resendApiKeyEncrypted;
   delete obj.resendApiKeyIV;
   delete obj.resendApiKeyAuthTag;
+  delete obj.metaUserTokenEncrypted;
+  delete obj.metaUserTokenIV;
+  delete obj.metaUserTokenAuthTag;
   return obj;
 };
 

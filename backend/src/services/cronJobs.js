@@ -93,12 +93,18 @@ function startCronJobs() {
     logger.info('Cron: updateCashflowStates finished');
   });
 
-  // Diagnostics (alerts)
+  // Diagnostics (alerts) — corre para toda store con alguna integración activa.
+  // Anomaly detection y check de ROAS negativo funcionan sin KPIs cargados.
+  // Las threshold checks (vs target) solo disparan si la store cargó objetivos.kpis.
   cron.schedule('0 */6 * * *', async () => {
     logger.info('Cron: diagnostics starting...');
     try {
       const stores = await Store.find({
-        'objetivos.kpis': { $exists: true },
+        $or: [
+          { 'integrationStatus.tiendanube.connected': true },
+          { 'integrationStatus.shopify.connected': true },
+          { 'integrationStatus.metaAds.connected': true },
+        ],
       });
       for (const store of stores) {
         try {

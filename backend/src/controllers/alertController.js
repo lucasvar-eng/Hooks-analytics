@@ -1,4 +1,6 @@
 const Alert = require('../models/Alert');
+const Store = require('../models/Store');
+const { runDiagnostics } = require('../services/diagnosticsService');
 const mongoose = require('mongoose');
 
 exports.list = async (req, res, next) => {
@@ -57,6 +59,26 @@ exports.resolve = async (req, res, next) => {
     );
     if (!alert) return res.status(404).json({ error: 'Alert not found' });
     res.json(alert);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * POST /api/stores/:id/alerts/run — dispara diagnostics on-demand.
+ * Útil para no esperar 6h al próximo cron.
+ */
+exports.runDiagnosticsNow = async (req, res, next) => {
+  try {
+    const store = await Store.findById(req.params.id);
+    if (!store) return res.status(404).json({ error: 'Store not found' });
+    const result = await runDiagnostics(store);
+    res.json({
+      ok: true,
+      created: result?.created || 0,
+      detected: result?.total || 0,
+      hasKpis: !!(store.objetivos?.kpis && Object.values(store.objetivos.kpis).some((v) => v != null && v !== 0)),
+    });
   } catch (error) {
     next(error);
   }

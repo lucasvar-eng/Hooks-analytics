@@ -1,7 +1,13 @@
 const mongoose = require('mongoose');
 const DailyMetric = require('../models/DailyMetric');
 const Alert = require('../models/Alert');
+const StoreAccess = require('../models/StoreAccess');
+const User = require('../models/User');
+const { sendEmailForUser, buildAlertEmail } = require('./emailService');
+const { email: emailConfig } = require('../config/environment');
 const logger = require('../utils/logger');
+
+const SEVERITY_RANK = { info: 0, warning: 1, critical: 2 };
 
 const safeDiv = (a, b) => (b && b > 0 ? a / b : 0);
 
@@ -66,6 +72,66 @@ async function isDuplicate(storeId, tipo) {
 async function createAlert(storeId, data) {
   if (await isDuplicate(storeId, data.tipo)) return null;
   return Alert.create({ storeId, ...data });
+}
+
+/**
+ * Devuelve los users que deben recibir email para esta alerta:
+ *   - tienen StoreAccess a la tienda (cualquier rol)
+ *   - notificationPreferences.alerts.enabled = true
+ *   - severidad de la alerta >= minSeverity del user
+ *
+ * Devuelve docs de User con los campos sensibles cargados para que
+ * sendEmailForUser pueda descifrar la API key.
+ */
+async function getAlertRecipients(storeId, severity) {
+  const accesses = await StoreAccess.find({ storeId }).select('userId').lean();
+  const userIds = accesses.map((a) => a.userId);
+  if (!userIds.length) return [];
+
+  const users = await User.find({ _id: { $in: userIds }, isActive: true })
+    .select('+resendApiKeyEncrypted +resendApiKeyIV +resendApiKeyAuthTag email notificationEmail notificationPreferences resendFromEmail');
+
+  const sevRank = SEVERITY_RANK[severity] ?? 0;
+  return users.filter((u) => {
+    const prefs = u.notificationPreferences?.alerts;
+    if (!prefs || prefs.enabled === false) return false;
+    const minRank = SEVERITY_RANK[prefs.minSeverity || 'warning'] ?? 1;
+    return sevRank >= minRank;
+  });
+}
+
+async function notifyAlertRecipients(store, alert) {
+  const recipients = await getAlertRecipients(store._id, alert.severidad);
+  if (!recipients.length) return { sent: 0, total: 0 };
+
+  const storeUrl = `${emailConfig.appUrl}/store/${store._id}/alertas`;
+  const template = buildAlertEmail({
+    storeName: store.nombre,
+    alertTitle: alert.titulo,
+    alertMessage: alert.descripcion,
+    severity: alert.severidad,
+    storeUrl,
+  });
+
+  let sent = 0;
+  for (const user of recipients) {
+    const to = user.notificationEmail || user.email;
+    const result = await sendEmailForUser(user, {
+      to,
+      subject: template.subject,
+      html: template.html,
+      text: template.text,
+    });
+    if (result.ok) {
+      sent++;
+      logger.info(`Alert email sent: ${alert.titulo} → ${to} (resend id: ${result.id})`);
+    } else if (result.skipped) {
+      logger.warn(`Alert email NOT sent to ${to} — user sin Resend configurado.`);
+    } else {
+      logger.error(`Alert email failed to ${to}: ${result.error}`);
+    }
+  }
+  return { sent, total: recipients.length };
 }
 
 /**
@@ -218,16 +284,26 @@ async function runDiagnostics(store) {
     });
   }
 
-  // Create alerts (with dedup)
+  // Create alerts (with dedup) + notificar por email a los recipients que correspondan.
   let created = 0;
   for (const alertData of alerts) {
-    const result = await createAlert(storeId, alertData);
-    if (result) created++;
+    const alert = await createAlert(storeId, alertData);
+    if (!alert) continue;
+    created++;
+    try {
+      const result = await notifyAlertRecipients(store, alert);
+      if (result.total > 0 && result.sent === 0) {
+        logger.warn(`Alert "${alert.titulo}" creada pero no se notificó a ningún recipient (${result.total} candidatos).`);
+      }
+    } catch (err) {
+      logger.error(`Falló la notificación de alerta "${alert.titulo}": ${err.message}`);
+    }
   }
 
   if (created > 0) {
     logger.info(`Diagnostics: ${created} new alert(s) for ${store.nombre}`);
   }
+  return { created, total: alerts.length };
 }
 
-module.exports = { runDiagnostics };
+module.exports = { runDiagnostics, getAlertRecipients, notifyAlertRecipients };

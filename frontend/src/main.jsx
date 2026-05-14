@@ -8,15 +8,7 @@ import App from './App';
 import './index.css';
 import { applyAppearance, getSavedAppearance } from './utils/appearance';
 
-// Theme: default to dark
-const savedTheme = localStorage.getItem('theme') || 'dark';
-document.documentElement.classList.toggle('dark', savedTheme === 'dark');
-
-try {
-  applyAppearance(getSavedAppearance());
-} catch {
-  applyAppearance(getSavedAppearance());
-}
+applyAppearance(getSavedAppearance());
 
 const queryClient = new QueryClient({
   defaultOptions: {

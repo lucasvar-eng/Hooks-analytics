@@ -258,6 +258,43 @@ exports.revokeInvitation = async (req, res, next) => {
 };
 
 /**
+ * GET /invitations/mine
+ * Lista las invitaciones pendientes para el email del user logueado.
+ * Sirve para alimentar el dropdown de notificaciones del header.
+ */
+exports.listMyInvitations = async (req, res, next) => {
+  try {
+    const items = await StoreInvitation.find({
+      email: req.user.email,
+      status: 'pending',
+      expiresAt: { $gt: new Date() },
+    })
+      .populate('storeId', 'nombre logoUrl')
+      .populate('invitedBy', 'email nombre')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    res.json(
+      items.map((inv) => ({
+        _id: inv._id,
+        token: inv.token,
+        role: inv.role,
+        expiresAt: inv.expiresAt,
+        createdAt: inv.createdAt,
+        store: inv.storeId
+          ? { _id: inv.storeId._id, nombre: inv.storeId.nombre, logoUrl: inv.storeId.logoUrl }
+          : null,
+        invitedBy: inv.invitedBy
+          ? { email: inv.invitedBy.email, nombre: inv.invitedBy.nombre }
+          : null,
+      }))
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * GET /invitations/by-token/:token
  * Endpoint público (sin auth) para que la UI pueda mostrar datos de la
  * invitación antes de loguearse. Devuelve solo la info no sensible.

@@ -64,40 +64,85 @@ export default function LastUpdateChip() {
   const handleRefresh = async () => {
     if (syncing) return;
     setSyncing(true);
+
+    // Snapshot del lastSync actual para detectar el cambio cuando termine el sync background
+    const baselineByStore = new Map(
+      stores.map((s) => [String(s._id), getMostRecentSync(s)])
+    );
+
     try {
       if (scope === 'store' && activeStore) {
         await api.post(`/api/stores/${activeStore._id}/sync/now`);
-        await new Promise((r) => setTimeout(r, 1500));
-        await dispatch(fetchStores());
-        if (dateRange?.from && dateRange?.to) {
-          await dispatch(fetchStoreMetrics({ storeId: activeStore._id, from: dateRange.from, to: dateRange.to }));
-        }
       } else {
         await Promise.all(
           stores.map((s) =>
             api.post(`/api/stores/${s._id}/sync/now`).catch(() => null)
           )
         );
-        await new Promise((r) => setTimeout(r, 1500));
-        await dispatch(fetchStores());
+      }
+    } catch {
+      // Si falla el disparo, paramos acá
+      setSyncing(false);
+      return;
+    }
+
+    // Poll cada 6s hasta 2 min máximo; se corta antes si detectamos que el lastSync
+    // de la(s) store(s) cambió respecto del baseline (el sync background terminó).
+    const POLL_MS = 6_000;
+    const MAX_MS = 120_000;
+    const startedAt = Date.now();
+    let stopped = false;
+
+    while (!stopped && Date.now() - startedAt < MAX_MS) {
+      await new Promise((r) => setTimeout(r, POLL_MS));
+      const action = await dispatch(fetchStores());
+      const fresh = Array.isArray(action.payload) ? action.payload : [];
+      const relevantIds =
+        scope === 'store' && activeStore
+          ? [String(activeStore._id)]
+          : fresh.map((s) => String(s._id));
+
+      const detectedChange = relevantIds.some((id) => {
+        const next = getMostRecentSync(fresh.find((s) => String(s._id) === id));
+        const base = baselineByStore.get(id);
+        if (!next) return false;
+        if (!base) return true;
+        return new Date(next).getTime() > new Date(base).getTime();
+      });
+
+      if (detectedChange) {
+        stopped = true;
         if (dateRange?.from && dateRange?.to) {
-          await dispatch(fetchExecutiveOverview({ from: dateRange.from, to: dateRange.to }));
+          if (scope === 'store' && activeStore) {
+            await dispatch(
+              fetchStoreMetrics({ storeId: activeStore._id, from: dateRange.from, to: dateRange.to })
+            );
+          } else {
+            await dispatch(fetchExecutiveOverview({ from: dateRange.from, to: dateRange.to }));
+          }
         }
       }
-    } finally {
-      setSyncing(false);
-      setNow(Date.now());
     }
+
+    setSyncing(false);
+    setNow(Date.now());
   };
 
   const relative = formatRelative(lastSync, now);
-  const label = lastSync
-    ? `Actualizado ${relative}`
-    : 'Sin datos sincronizados';
+  const label = syncing
+    ? 'Sincronizando…'
+    : lastSync
+      ? `Actualizado ${relative}`
+      : 'Sin datos sincronizados';
+  const dotClass = syncing
+    ? 'bg-blue-400 animate-pulse'
+    : lastSync
+      ? 'bg-emerald-400'
+      : 'bg-gray-600';
 
   return (
     <div className="flex items-center gap-1.5 rounded-lg border border-white/[0.08] bg-white/[0.02] px-2.5 py-1.5">
-      <span className={`w-1.5 h-1.5 rounded-full ${lastSync ? 'bg-emerald-400' : 'bg-gray-600'}`} />
+      <span className={`w-1.5 h-1.5 rounded-full ${dotClass}`} />
       <span className="text-[11px] text-app-secondary whitespace-nowrap">
         {label}
       </span>

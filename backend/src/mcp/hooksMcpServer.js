@@ -11,6 +11,7 @@ const { getCreativePipeline, getFrameworkOverview } = require('../services/creat
 const { getCommercialOverview } = require('../services/productService');
 const { getFinancialConsistency } = require('../services/financeService');
 const { buildContext } = require('../services/aiService');
+const reportTemplates = require('../services/reportTemplateService');
 const logger = require('../utils/logger');
 
 const SERVER_INFO = {
@@ -456,6 +457,33 @@ const TOOLS = [
       additionalProperties: true,
     },
     handler: async (args) => createReportPayload({ ...args, tipo: 'analysis' }),
+  },
+  {
+    name: 'list_report_templates',
+    description: 'Lista los templates de reporte disponibles (executive, weekly-review, monthly-close, product-performance, customer-cohorts). Cada template es un briefing estructurado: secciones obligatorias, métricas pre-calculadas, system prompt sugerido. Usar antes de get_report_briefing.',
+    inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+    handler: async () => ({ templates: reportTemplates.listTemplates() }),
+  },
+  {
+    name: 'get_report_briefing',
+    description: 'Devuelve el briefing completo de un template para una tienda y período: estructura del reporte + métricas reales pre-calculadas + system prompt sugerido. Completá las secciones y subí el resultado con create_report.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        template_key: { type: 'string', description: 'executive | weekly-review | monthly-close | product-performance | customer-cohorts' },
+        store: { type: 'string', description: 'ID o nombre de la tienda' },
+        from: { type: 'string', description: 'YYYY-MM-DD' },
+        to: { type: 'string', description: 'YYYY-MM-DD' },
+      },
+      required: ['template_key', 'store'],
+      additionalProperties: false,
+    },
+    handler: async (args) => {
+      const store = await resolveStoreIdentifier(args.store);
+      if (!store) throw new Error(`Tienda no encontrada: ${args.store}`);
+      const briefing = await reportTemplates.buildBriefing(args.template_key, store._id, args.from, args.to);
+      return briefing;
+    },
   },
   {
     name: 'create_team_note',

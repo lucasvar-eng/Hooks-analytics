@@ -5,6 +5,72 @@ La bitácora se ordena de **arriba hacia abajo** por orden cronológico inverso 
 
 ---
 
+## 2026-05-13 — Sprint 2: Templates como esqueletos para MCP
+
+**Branch**: `codex/universal-dashboard-builder` (continúa)
+
+### Trabajo hecho
+
+Convertir los templates de reportes en **briefings estructurados** que una IA externa (vía MCP) puede consumir, completar, y subir el resultado de vuelta. Reemplaza los templates viejos que generaban texto hardcoded (parecía análisis pero era plantilla genérica).
+
+**`backend/src/services/reportTemplateService.js`** reescrito desde cero (~570 líneas). 5 templates Tier 1:
+
+1. **executive** — foto ejecutiva del período. 4 secciones (resumen, foto, lectura, acciones). Audiencia: gerencial.
+2. **weekly-review** — esta semana vs anterior con deltas calculados. 4 secciones (titular, cambios, movimientos, plan). Audiencia: operativo.
+3. **monthly-close** — cierre mensual con cohort + targets + roadmap. 6 secciones. Audiencia: cliente.
+4. **product-performance** — top sellers, dead stock, reposición urgente. 5 secciones. Audiencia: operativo.
+5. **customer-cohorts** — RFM, retención, segmentos en movimiento. 5 secciones. Audiencia: operativo.
+
+Cada template expone 4 piezas que la IA externa consume:
+- `structure[]` — secciones obligatorias con título + `type` (narrative/metrics-table/action-list/etc) + `guidance` (qué responde) + `checklist[]` opcional + `maxWords` o `minItems/maxItems`.
+- `metricsBlock` — datos pre-calculados (revenue actual, previo, delta %, segmentos RFM, sample de productos, etc.) que la IA cita SIN recalcular.
+- `contextRefs[]` — URLs y resources MCP que la IA debería leer para completar bien.
+- `systemPromptHint` — tono y reglas específicas del template.
+
+**API pública**:
+- `listTemplates()` — catálogo sin métricas
+- `getTemplate(key)` — uno solo
+- `buildBriefing(key, storeId, from, to)` — briefing completo con métricas reales inyectadas
+
+**REST endpoints nuevos** (`reportRoutes.js`):
+- `GET /api/reports/templates` — lista de templates (no requiere store)
+- `GET /api/stores/:id/reports/templates/:key/briefing?from=&to=` — briefing armado
+
+**MCP tools nuevos** (`hooksMcpServer.js`):
+- `list_report_templates` — la IA externa lista los templates disponibles
+- `get_report_briefing(template_key, store, from, to)` — devuelve el briefing completo. La IA lo completa y sube el reporte vía `create_report` ya existente.
+
+**Reportes.jsx rediseñada** (~470 líneas, antes 304):
+- Header: "Bandeja de análisis generados por IA externa vía MCP".
+- Sección **Generar briefing para IA**: grid 3×2 de cards con los 5 templates. Cada card: label + audience badge (Gerencial/Operativo/Cliente) + descripción + nº de secciones + frecuencia + CTA "Generar briefing →".
+- Click en template → `BriefingModal` muestra:
+  - "Cómo usarlo" (4 pasos numerados)
+  - Título sugerido
+  - Estructura del reporte (cada sección con tipo + guidance + checklist)
+  - Métricas pre-calculadas (JSON inspeccionable)
+  - System prompt sugerido
+  - Botón **"Copiar JSON al portapapeles"** (con feedback "✓ Copiado")
+- Bandeja: tabla rediseñada con título + tipo + sección + fecha + origen (provider/model) + summary + eliminar.
+- **`ReportDetail`** con TOC sticky a la izquierda (extrae h1/h2/h3 del markdown, slugifica acentos, scrollspy activo), contenido con renderMarkdownWithIds inyectando anchors. Metadata clara (provider, model, confianza, qualityNote en amber si está).
+
+**Validado en runtime** con Límite (período 7d):
+- `GET /reports/templates` → 5 templates listados.
+- `GET briefing/weekly-review` → metricsBlock con current revenue $6.940.410, previous $4.377.925, delta +58.5%, deltas para profit/ordenes/aov/spend, dataQuality, store name.
+- UI: bandeja muestra 9 reportes históricos. Modal de briefing abre, muestra los 4 pasos de instrucciones, las 4 secciones (titular/cambios/movimientos/plan) con guidance + checklist visible, el JSON crudo del metricsBlock al final.
+- Detail view del reporte ejecutivo histórico: TOC sticky con 5 entradas (Resumen ejecutivo, Foto del negocio, etc.), scrollspy activo en azul, markdown bien renderizado.
+
+### Pendientes
+
+**Sprint 3** — Alertas operativas (pasa a post-deploy según decisión de Lucas, porque las alertas por email solo tienen sentido si la app está corriendo siempre, no en localhost).
+
+**Después**:
+- 5 templates más (daily-snapshot, cashflow-forecast, competitive-landscape, pricing-audit, scaling-plan, risk-assessment, client-monthly).
+- Botón "Marcar como enviado al cliente" en detalle de reporte.
+- Compare-mode: 2 reportes lado a lado para ver evolución.
+- Limpiar UserProfile de la sección AI config (todavía tiene la UI de API key personal aunque el backend ya rechaza).
+
+---
+
 ## 2026-05-13 — Sprint 1: limpieza de IA interna + reorder sidebar
 
 **Branch**: `codex/universal-dashboard-builder` (continúa)

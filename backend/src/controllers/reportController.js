@@ -2,6 +2,7 @@ const Report = require('../models/Report');
 const { aggregateRange } = require('../services/metricCalculator');
 const { getEffectiveTarget } = require('../services/targetService');
 const { logAudit } = require('../services/auditLogService');
+const reportTemplates = require('../services/reportTemplateService');
 
 function buildSummary(metrics, target) {
   const summary = [];
@@ -123,6 +124,31 @@ exports.remove = async (req, res) => {
 // template, los completa, y sube el reporte vía POST /reports.
 exports.createFromTemplate = async (req, res) => {
   res.status(410).json({
-    error: 'Endpoint deprecado. Los reportes ahora los sube la IA externa vía MCP (tool create_report). El Sprint 2 expone los esqueletos de templates como recurso MCP.',
+    error: 'Endpoint deprecado. Usá GET /reports/templates + GET /reports/templates/:key/briefing para obtener el briefing y subir el reporte completado con POST /reports.',
   });
+};
+
+/**
+ * Lista los templates disponibles (Sprint 2 MCP-first).
+ * No requiere storeId — devuelve solo el catálogo.
+ */
+exports.listTemplates = async (_req, res) => {
+  res.json(reportTemplates.listTemplates());
+};
+
+/**
+ * Devuelve el briefing completo de un template para una tienda + período.
+ * La IA externa consume este endpoint, completa la estructura, y sube el
+ * reporte resultante con POST /reports.
+ */
+exports.getTemplateBriefing = async (req, res) => {
+  try {
+    const { templateKey } = req.params;
+    const { from, to } = req.query;
+    const briefing = await reportTemplates.buildBriefing(templateKey, req.params.id, from, to);
+    res.json(briefing);
+  } catch (error) {
+    const status = error.status || 500;
+    res.status(status).json({ error: error.message });
+  }
 };

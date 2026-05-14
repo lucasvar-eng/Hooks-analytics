@@ -10,6 +10,7 @@ router.get('/stores/:id/customers', auth, customerController.list);
 router.get('/stores/:id/customers/cohorts', auth, customerController.cohorts);
 router.get('/stores/:id/customers/segments', auth, customerController.segments);
 router.get('/stores/:id/customers/quality', auth, customerController.quality);
+router.get('/stores/:id/customers/period-insights', auth, customerController.periodInsights);
 router.post('/stores/:id/customers/rfm', auth, customerController.recalculateRFM);
 
 module.exports = router;

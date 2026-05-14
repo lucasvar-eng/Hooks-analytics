@@ -8,6 +8,7 @@ import ClientesTable from '../components/clientes/ClientesTable';
 import ActionCards from '../components/clientes/ActionCards';
 import ParetoCard from '../components/clientes/ParetoCard';
 import CohortHeatmap from '../components/clientes/CohortHeatmap';
+import PeriodInsightsPanel from '../components/clientes/PeriodInsightsPanel';
 import GlossaryModal from '../components/clientes/GlossaryModal';
 import CustomerProfileModal from '../components/clientes/CustomerProfileModal';
 import { CLIENTES_METRICS, CLIENTES_DEFAULTS, CLIENTES_MAX_SELECTED } from '../components/clientes/clientesMetricsCatalog';
@@ -97,6 +98,11 @@ export default function Clientes() {
           onOpenGlossary={() => setGlossaryOpen(true)}
         />
       ),
+    },
+    {
+      id: 'period-insights',
+      label: 'Insights del período',
+      node: <PeriodInsightsPanel />,
     },
     {
       id: 'segmap',

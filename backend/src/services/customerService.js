@@ -1,6 +1,8 @@
 const mongoose = require('mongoose');
 const Customer = require('../models/Customer');
 const Order = require('../models/Order');
+const MetaDailyInsight = require('../models/MetaDailyInsight');
+const { buildBusinessSourceDateMatch } = require('../utils/businessDate');
 const logger = require('../utils/logger');
 
 async function rebuildCustomersFromOrders(storeId) {
@@ -289,6 +291,150 @@ async function getQualityChecks(storeId) {
   };
 }
 
+/**
+ * Insights del período (top clientes, recurrencia, CAC, histograma de
+ * días desde última compra). Lo que las planillas Daily Tracker tenían
+ * a mano y la app no agregaba en una sola call.
+ */
+async function getPeriodInsights(storeId, from, to) {
+  const storeObjectId = new mongoose.Types.ObjectId(storeId);
+  const dateMatch = (from || to) ? buildBusinessSourceDateMatch(from, to) : null;
+
+  const orderMatch = {
+    storeId: storeObjectId,
+    estado: { $nin: ['cancelled'] },
+  };
+  if (dateMatch) orderMatch.fechaCreacion = dateMatch;
+
+  const metaMatch = { storeId: storeObjectId, granularity: 'campaign' };
+  if (from && to) {
+    metaMatch.date = { $gte: new Date(from), $lte: new Date(`${to}T23:59:59.999Z`) };
+  }
+
+  const now = new Date();
+
+  const [
+    topPeriodCustomers,
+    customerStats,
+    daysSinceAgg,
+    spendAgg,
+  ] = await Promise.all([
+    // Top clientes por gasto en el período
+    Order.aggregate([
+      { $match: orderMatch },
+      {
+        $group: {
+          _id: '$customerEmail',
+          customerName: { $first: '$customerName' },
+          ordenes: { $sum: 1 },
+          totalSpent: { $sum: '$totalOrden' },
+        },
+      },
+      { $match: { _id: { $ne: null, $ne: '' } } },
+      { $sort: { totalSpent: -1 } },
+      { $limit: 10 },
+    ]),
+
+    // Compradores únicos del período + flag de "nuevo" o "recurrente"
+    // esClienteNuevo se setea cuando la orden es la primera del cliente.
+    Order.aggregate([
+      { $match: { ...orderMatch, customerEmail: { $exists: true, $ne: null, $ne: '' } } },
+      {
+        $group: {
+          _id: '$customerEmail',
+          isNew: { $max: { $cond: [{ $eq: ['$esClienteNuevo', true] }, 1, 0] } },
+          ordenes: { $sum: 1 },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalUnique: { $sum: 1 },
+          newOnly: { $sum: { $cond: [{ $eq: ['$isNew', 1] }, 1, 0] } },
+          // Recurrente real = compradores con >1 orden en el período O ya tenía órdenes antes
+          recurrentInPeriod: { $sum: { $cond: [{ $gt: ['$ordenes', 1] }, 1, 0] } },
+        },
+      },
+    ]),
+
+    // Histograma de días desde última compra (sobre TODOS los customers de la tienda)
+    Customer.aggregate([
+      { $match: { storeId: storeObjectId, lastOrderDate: { $exists: true, $ne: null } } },
+      {
+        $project: {
+          daysSinceLast: {
+            $floor: {
+              $divide: [{ $subtract: [now, '$lastOrderDate'] }, 1000 * 60 * 60 * 24],
+            },
+          },
+        },
+      },
+      {
+        $bucket: {
+          groupBy: '$daysSinceLast',
+          boundaries: [0, 7, 30, 60, 90, 180, 365, Infinity],
+          default: '365+',
+          output: { count: { $sum: 1 } },
+        },
+      },
+    ]),
+
+    // Ad spend total del período (solo Meta por ahora — TN no tiene spend propio)
+    MetaDailyInsight.aggregate([
+      { $match: metaMatch },
+      { $group: { _id: null, totalSpend: { $sum: '$spend' } } },
+    ]),
+  ]);
+
+  const stats = customerStats[0] || { totalUnique: 0, newOnly: 0, recurrentInPeriod: 0 };
+  const recurrencePct = stats.totalUnique > 0
+    ? (stats.recurrentInPeriod / stats.totalUnique) * 100
+    : 0;
+
+  const adSpend = spendAgg[0]?.totalSpend || 0;
+  // CAC: spend / nuevos compradores del período
+  const cac = stats.newOnly > 0 ? adSpend / stats.newOnly : null;
+
+  // LTV promedio (de TODOS los customers — heuristica)
+  const ltvAgg = await Customer.aggregate([
+    { $match: { storeId: storeObjectId, ltv: { $gt: 0 } } },
+    { $group: { _id: null, avgLtv: { $avg: '$ltv' }, count: { $sum: 1 } } },
+  ]);
+  const avgLtv = ltvAgg[0]?.avgLtv || 0;
+  const cacLtvRatio = cac && avgLtv > 0 ? cac / avgLtv : null;
+
+  // Format histograma con labels descriptivos
+  const bucketLabels = {
+    0: '0-7 días',
+    7: '8-30 días',
+    30: '31-60 días',
+    60: '61-90 días',
+    90: '91-180 días',
+    180: '181-365 días',
+    365: '+365 días',
+  };
+  const histogram = (daysSinceAgg || []).map((b) => ({
+    bucket: bucketLabels[b._id] || `+${b._id}`,
+    lowerDay: b._id,
+    count: b.count,
+  }));
+
+  return {
+    topPeriodCustomers,
+    period: {
+      uniqueCustomers: stats.totalUnique,
+      newCustomers: stats.newOnly,
+      recurrentCustomers: stats.recurrentInPeriod,
+      recurrencePct,
+      adSpend,
+      cac,
+      avgLtv,
+      cacLtvRatio,
+    },
+    daysSinceLastPurchase: histogram,
+  };
+}
+
 module.exports = {
   rebuildCustomersFromOrders,
   calculateRFM,
@@ -296,4 +442,5 @@ module.exports = {
   getSegments,
   getCustomers,
   getQualityChecks,
+  getPeriodInsights,
 };

@@ -2,6 +2,7 @@ const axios = require('axios');
 const Store = require('../models/Store');
 const { tn } = require('../config/environment');
 const logger = require('../utils/logger');
+const { setStoreToken } = require('../utils/tokenAccess');
 
 /**
  * Redirect user to TiendaNube OAuth authorization.
@@ -54,8 +55,9 @@ exports.callback = async (req, res, next) => {
       return res.redirect('/?error=store_not_found');
     }
 
-    store.tnAccessToken = access_token;
+    setStoreToken(store, 'tn', access_token);
     store.tnStoreId = String(user_id);
+    store.tnTokenSource = 'manual';
     store.integrationStatus.tiendanube.connected = true;
     await store.save();
 

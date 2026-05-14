@@ -10,6 +10,7 @@ const { classifyCampaign, getThresholds } = require('../services/verdictEngine')
 const { meta: metaConfig } = require('../config/environment');
 const logger = require('../utils/logger');
 const { buildBusinessDateKeyMatch } = require('../utils/businessDate');
+const { getStoreToken, setStoreToken, loadStoreWithToken } = require('../utils/tokenAccess');
 
 function getConfiguredMetaAccounts(store) {
   const configured = Array.isArray(store?.metaAdAccounts) ? store.metaAdAccounts.filter((item) => item?.id) : [];
@@ -34,7 +35,7 @@ function buildRangeOptions(from, to) {
 }
 
 async function fetchLiveCampaignMetadata(store) {
-  const token = store?.metaAccessToken;
+  const token = getStoreToken(store, 'meta');
   const accounts = getConfiguredMetaAccounts(store);
   if (!token || !accounts.length) return new Map();
 
@@ -145,7 +146,7 @@ exports.callback = async (req, res, next) => {
     if (!store) return res.redirect('/?error=store_not_found');
 
     const primaryAccount = adAccounts[0] || null;
-    store.metaAccessToken = accessToken;
+    setStoreToken(store, 'meta', accessToken);
     store.metaTokenExpiresAt = new Date(Date.now() + expiresIn * 1000);
     store.metaAdAccountId = primaryAccount?.id || (primaryAccount?.account_id ? `act_${primaryAccount.account_id}` : '');
     store.metaAdAccounts = primaryAccount
@@ -187,7 +188,7 @@ exports.getCampaigns = async (req, res, next) => {
     const { from, to } = req.query;
 
     const [store, storedCampaigns] = await Promise.all([
-      Store.findById(storeId).select('metaAccessToken metaAdAccountId metaAdAccounts').lean(),
+      Store.findById(storeId).select('+metaAccessToken +metaTokenEncrypted +metaTokenIV +metaTokenAuthTag metaAdAccountId metaAdAccounts').lean(),
       MetaCampaign.find({
         storeId,
         level: 'campaign',
@@ -502,9 +503,9 @@ exports.syncProductInsights = async (req, res, next) => {
       return res.status(400).json({ error: 'invalid store id' });
     }
 
-    const store = await Store.findById(storeId);
+    const store = await loadStoreWithToken(Store, storeId, 'meta');
     if (!store) return res.status(404).json({ error: 'store not found' });
-    if (!store.metaAccessToken) {
+    if (!getStoreToken(store, 'meta')) {
       return res.status(400).json({ error: 'store does not have a Meta access token' });
     }
 

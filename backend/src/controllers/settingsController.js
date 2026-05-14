@@ -8,6 +8,7 @@ const tnAPI = require('../services/tiendanubeAPI');
 const shopifyAPI = require('../services/shopifyAPI');
 const metaAPI = require('../services/metaAPI');
 const { isCentralizedTiendanubeStore } = require('../utils/tiendanubeToken');
+const { getStoreToken, setStoreToken, loadStoreWithToken } = require('../utils/tokenAccess');
 const DailyMetric = require('../models/DailyMetric');
 const { dateKeyToLabel } = require('../utils/businessDate');
 const Target = require('../models/Target');
@@ -200,7 +201,7 @@ exports.connectTNManual = async (req, res, next) => {
       });
     }
 
-    store.tnAccessToken = useCentralToken ? '' : normalizedToken;
+    setStoreToken(store, 'tn', useCentralToken ? '' : normalizedToken);
     store.tnStoreId = normalizedStoreId;
     store.tnTokenSource = useCentralToken ? 'cro_service' : 'manual';
     store.plataforma = 'tiendanube';
@@ -283,7 +284,7 @@ exports.connectShopifyManual = async (req, res, next) => {
     }
 
     store.plataforma = 'shopify';
-    store.shopifyAccessToken = normalizedToken;
+    setStoreToken(store, 'shopify', normalizedToken);
     store.shopifyShopDomain = metadata.shopDomain || normalizedDomain;
     store.shopifyShopName = metadata.name || store.shopifyShopName || store.nombre;
     store.shopifyShopId = metadata.shopId || store.shopifyShopId;
@@ -393,7 +394,7 @@ exports.connectMetaManual = async (req, res, next) => {
 
     const primaryAccount = selectedAccounts[0];
 
-    store.metaAccessToken = token;
+    setStoreToken(store, 'meta', token);
     store.metaAdAccountId = primaryAccount.id;
     store.metaAdAccounts = selectedAccounts.map((account, index) => ({
       id: account.id,
@@ -463,13 +464,13 @@ exports.connectMetaManual = async (req, res, next) => {
 
 exports.syncMetaManual = async (req, res, next) => {
   try {
-    const store = await Store.findById(req.params.id);
+    const store = await loadStoreWithToken(Store, req.params.id, 'meta');
     if (!store) return res.status(404).json({ error: 'Store not found' });
 
     const hasMetaAccounts =
       Array.isArray(store.metaAdAccounts) && store.metaAdAccounts.some((item) => item?.id);
 
-    if (!store.metaAccessToken || (!store.metaAdAccountId && !hasMetaAccounts)) {
+    if (!getStoreToken(store, 'meta') || (!store.metaAdAccountId && !hasMetaAccounts)) {
       return res.status(400).json({ error: 'La tienda no tiene Meta configurado' });
     }
 

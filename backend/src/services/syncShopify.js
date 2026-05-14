@@ -8,6 +8,7 @@ const { generateCashflowEntries } = require('./cashflow');
 const { rebuildCustomersFromOrders, calculateRFM } = require('./customerService');
 const { refreshProductDerivedMetrics } = require('./productService');
 const { toBusinessDateLabel } = require('../utils/businessDate');
+const { getStoreToken } = require('../utils/tokenAccess');
 const logger = require('../utils/logger');
 
 function mapShopifyProductToSchema(shopifyProduct) {
@@ -89,7 +90,8 @@ async function syncShopifyProducts(store) {
   });
 
   try {
-    const products = await shopifyAPI.listProducts(store.shopifyShopDomain, store.shopifyAccessToken);
+    const shopifyToken = getStoreToken(store, 'shopify');
+    const products = await shopifyAPI.listProducts(store.shopifyShopDomain, shopifyToken);
 
     for (const product of products) {
       await Product.findOneAndUpdate(
@@ -130,7 +132,8 @@ async function syncShopifyOrders(store) {
   });
 
   try {
-    const orders = await shopifyAPI.listOrders(store.shopifyShopDomain, store.shopifyAccessToken, {
+    const shopifyToken = getStoreToken(store, 'shopify');
+    const orders = await shopifyAPI.listOrders(store.shopifyShopDomain, shopifyToken, {
       updatedAtMin: lastSync,
     });
 

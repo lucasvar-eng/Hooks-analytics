@@ -13,6 +13,7 @@ const { DEFAULT_THRESHOLDS } = require('../services/verdictEngine');
 const { getEffectiveTarget } = require('../services/targetService');
 const { getCostCoverage } = require('../services/costCoverage');
 const { isCentralizedTiendanubeStore } = require('../utils/tiendanubeToken');
+const { setStoreToken, getStoreToken } = require('../utils/tokenAccess');
 const { buildBusinessDateKeyMatch, buildBusinessSourceDateMatch } = require('../utils/businessDate');
 
 function safeDelta(current, baseline, invert = false) {
@@ -181,7 +182,11 @@ exports.create = async (req, res, next) => {
     if (!nombre || !nombre.trim()) {
       return res.status(400).json({ error: 'El nombre es requerido' });
     }
-    const store = await Store.create({ nombre: nombre.trim(), tnStoreId, tnAccessToken });
+    const store = await Store.create({ nombre: nombre.trim(), tnStoreId });
+    if (tnAccessToken) {
+      setStoreToken(store, 'tn', tnAccessToken);
+      await store.save();
+    }
 
     // Add store to creator's storeAccess
     await User.findByIdAndUpdate(req.user._id, {
@@ -252,7 +257,6 @@ exports.createConnected = async (req, res, next) => {
       const store = await Store.create({
         nombre: aliasNombre?.trim() || resolvedName,
         plataforma: 'tiendanube',
-        tnAccessToken: useCentralToken ? '' : normalizedToken,
         tnStoreId: normalizedStoreId,
         tnNombre: resolvedName,
         tnTokenSource: useCentralToken ? 'cro_service' : 'manual',
@@ -264,6 +268,10 @@ exports.createConnected = async (req, res, next) => {
           shopify: { connected: false },
         },
       });
+      if (!useCentralToken && normalizedToken) {
+        setStoreToken(store, 'tn', normalizedToken);
+        await store.save();
+      }
 
       await User.findByIdAndUpdate(req.user._id, { $addToSet: { storeAccess: store._id } });
 
@@ -315,7 +323,6 @@ exports.createConnected = async (req, res, next) => {
     const store = await Store.create({
       nombre: aliasNombre?.trim() || resolvedName,
       plataforma: 'shopify',
-      shopifyAccessToken: normalizedToken,
       shopifyShopDomain: metadata.shopDomain || normalizedDomain,
       shopifyShopName: resolvedName,
       shopifyShopId: metadata.shopId || undefined,
@@ -327,6 +334,8 @@ exports.createConnected = async (req, res, next) => {
         shopify: { connected: true },
       },
     });
+    setStoreToken(store, 'shopify', normalizedToken);
+    await store.save();
 
     await User.findByIdAndUpdate(req.user._id, { $addToSet: { storeAccess: store._id } });
 
@@ -476,11 +485,15 @@ exports.getOrders = async (req, res, next) => {
 
 exports.syncNow = async (req, res, next) => {
   try {
-    const store = await Store.findById(req.params.id);
+    const store = await Store.findById(req.params.id)
+      .select('+tnAccessToken +tnTokenEncrypted +tnTokenIV +tnTokenAuthTag +shopifyAccessToken +shopifyTokenEncrypted +shopifyTokenIV +shopifyTokenAuthTag');
     if (!store) return res.status(404).json({ error: 'Store not found' });
 
-    if (!store.tnStoreId || (!store.tnAccessToken && store.tnTokenSource !== 'cro_service')) {
-      if (!store.shopifyAccessToken || !store.shopifyShopDomain) {
+    const hasTnToken = !!getStoreToken(store, 'tn');
+    const hasShopifyToken = !!getStoreToken(store, 'shopify');
+
+    if (!store.tnStoreId || (!hasTnToken && store.tnTokenSource !== 'cro_service')) {
+      if (!hasShopifyToken || !store.shopifyShopDomain) {
         return res.status(400).json({ error: 'No hay una plataforma conectada' });
       }
     }
@@ -488,7 +501,7 @@ exports.syncNow = async (req, res, next) => {
     // Run sync in background (don't block the response)
     res.json({ status: 'sync_started' });
 
-    if (store.plataforma === 'shopify' || (store.integrationStatus?.shopify?.connected && store.shopifyAccessToken)) {
+    if (store.plataforma === 'shopify' || (store.integrationStatus?.shopify?.connected && hasShopifyToken)) {
       (async () => {
         try {
           await syncShopifyProducts(store);

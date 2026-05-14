@@ -3,6 +3,7 @@ const Order = require('../models/Order');
 const Product = require('../models/Product');
 const SyncLog = require('../models/SyncLog');
 const { isCentralizedTiendanubeStore, invalidateTiendanubeToken } = require('../utils/tiendanubeToken');
+const { getStoreToken } = require('../utils/tokenAccess');
 const { recalculateDailyMetric } = require('./metricCalculator');
 const { calculateOrderFinancials, classifyCustomer } = require('./orderFinancials');
 const { generateCashflowEntries } = require('./cashflow');
@@ -43,6 +44,7 @@ function mapTnOrderToSchema(tnOrder) {
 
 async function syncOrders(store) {
   const startTime = Date.now();
+  const tnToken = getStoreToken(store, 'tn');
   const lastSync =
     store.integrationStatus?.tiendanube?.lastSync || new Date(0);
   let page = 1;
@@ -64,7 +66,7 @@ async function syncOrders(store) {
         response = await tnAPI.get(
           store.tnStoreId,
           '/orders',
-          store.tnAccessToken,
+          tnToken,
           {
             updated_at_min: lastSync.toISOString(),
             per_page: perPage,
@@ -79,7 +81,7 @@ async function syncOrders(store) {
         response = await tnAPI.get(
           store.tnStoreId,
           '/orders',
-          store.tnAccessToken,
+          tnToken,
           {
             updated_at_min: lastSync.toISOString(),
             per_page: perPage,
@@ -180,6 +182,7 @@ function mapTnProductToSchema(tnProduct) {
 
 async function syncProducts(store) {
   const startTime = Date.now();
+  const tnToken = getStoreToken(store, 'tn');
   let page = 1;
   let hasMore = true;
   const perPage = 200;
@@ -198,7 +201,7 @@ async function syncProducts(store) {
         response = await tnAPI.get(
           store.tnStoreId,
           '/products',
-          store.tnAccessToken,
+          tnToken,
           {
             per_page: perPage,
             page,
@@ -211,7 +214,7 @@ async function syncProducts(store) {
         response = await tnAPI.get(
           store.tnStoreId,
           '/products',
-          store.tnAccessToken,
+          tnToken,
           { per_page: perPage, page }
         );
       }

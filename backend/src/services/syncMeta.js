@@ -6,6 +6,7 @@ const Product = require('../models/Product');
 const SyncLog = require('../models/SyncLog');
 const { recalculateDailyMetric } = require('./metricCalculator');
 const { toBusinessDateLabel, addDaysToLabel } = require('../utils/businessDate');
+const { getStoreToken, setStoreToken } = require('../utils/tokenAccess');
 const logger = require('../utils/logger');
 
 function normalizeProductName(name) {
@@ -109,7 +110,7 @@ async function syncMetaStructure(store) {
   });
 
   try {
-    const token = store.metaAccessToken;
+    const token = getStoreToken(store, 'meta');
     const adAccounts = getConfiguredMetaAccounts(store);
     let totalRecords = 0;
 
@@ -211,7 +212,7 @@ async function syncMetaInsights(store, daysBack = 7) {
   });
 
   try {
-    const token = store.metaAccessToken;
+    const token = getStoreToken(store, 'meta');
     const configuredAccounts = getConfiguredMetaAccounts(store);
     const todayLabel = toBusinessDateLabel(new Date());
     const fromStr = addDaysToLabel(todayLabel, -daysBack);
@@ -288,7 +289,7 @@ async function syncMetaProductInsights(store, daysBack = 7) {
   });
 
   try {
-    const token = store.metaAccessToken;
+    const token = getStoreToken(store, 'meta');
     const todayLabel = toBusinessDateLabel(new Date());
     const fromStr = addDaysToLabel(todayLabel, -daysBack);
     const toStr = todayLabel;
@@ -413,14 +414,15 @@ async function syncMetaProductInsights(store, daysBack = 7) {
  * Refresh Meta token if it's expiring within 7 days.
  */
 async function refreshMetaTokens(store) {
-  if (!store.metaAccessToken || !store.metaTokenExpiresAt) return;
+  const currentToken = getStoreToken(store, 'meta');
+  if (!currentToken || !store.metaTokenExpiresAt) return;
 
   const daysUntilExpiry = (store.metaTokenExpiresAt - new Date()) / (1000 * 60 * 60 * 24);
 
   if (daysUntilExpiry < 7) {
     try {
-      const { accessToken, expiresIn } = await metaAPI.refreshLongLivedToken(store.metaAccessToken);
-      store.metaAccessToken = accessToken;
+      const { accessToken, expiresIn } = await metaAPI.refreshLongLivedToken(currentToken);
+      setStoreToken(store, 'meta', accessToken);
       store.metaTokenExpiresAt = new Date(Date.now() + expiresIn * 1000);
       await store.save();
       logger.info(`Meta token refreshed for ${store.nombre} (expires in ${Math.round(expiresIn / 86400)} days)`);

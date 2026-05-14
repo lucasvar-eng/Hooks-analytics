@@ -12,13 +12,21 @@ const storeSchema = new mongoose.Schema(
     storeUrl: { type: String },
 
     // TiendaNube
-    tnAccessToken: { type: String },
+    // ⚠ tnAccessToken legacy — deprecated, se migra a tnToken* encriptado.
+    // Mantener select:false para que no salga en lecturas normales.
+    tnAccessToken: { type: String, select: false },
+    tnTokenEncrypted: { type: String, select: false },
+    tnTokenIV: { type: String, select: false },
+    tnTokenAuthTag: { type: String, select: false },
     tnStoreId: { type: String },
     tnNombre: { type: String },
     tnTokenSource: { type: String, enum: ['manual', 'cro_service'], default: 'manual' },
 
-    // Meta OAuth (Sprint 3)
-    metaAccessToken: { type: String },
+    // Meta OAuth
+    metaAccessToken: { type: String, select: false }, // ⚠ legacy
+    metaTokenEncrypted: { type: String, select: false },
+    metaTokenIV: { type: String, select: false },
+    metaTokenAuthTag: { type: String, select: false },
     metaAdAccountId: { type: String },
     metaAdAccounts: [
       {
@@ -37,7 +45,10 @@ const storeSchema = new mongoose.Schema(
     metaTokenExpiresAt: { type: Date },
 
     // Shopify
-    shopifyAccessToken: { type: String },
+    shopifyAccessToken: { type: String, select: false }, // ⚠ legacy
+    shopifyTokenEncrypted: { type: String, select: false },
+    shopifyTokenIV: { type: String, select: false },
+    shopifyTokenAuthTag: { type: String, select: false },
     shopifyShopDomain: { type: String },
     shopifyShopName: { type: String },
     shopifyShopId: { type: String },
@@ -174,6 +185,19 @@ const storeSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// Defensa en profundidad: aunque los campos son select:false, si por error alguien
+// los hace .select('+...'), toJSON tira los tokens de la response.
+const TOKEN_FIELDS = [
+  'tnAccessToken', 'tnTokenEncrypted', 'tnTokenIV', 'tnTokenAuthTag',
+  'metaAccessToken', 'metaTokenEncrypted', 'metaTokenIV', 'metaTokenAuthTag',
+  'shopifyAccessToken', 'shopifyTokenEncrypted', 'shopifyTokenIV', 'shopifyTokenAuthTag',
+];
+storeSchema.methods.toJSON = function () {
+  const obj = this.toObject();
+  for (const field of TOKEN_FIELDS) delete obj[field];
+  return obj;
+};
 
 storeSchema.index({ tnStoreId: 1 }, { unique: true, sparse: true });
 storeSchema.index({ shopifyShopDomain: 1 }, { unique: true, sparse: true });

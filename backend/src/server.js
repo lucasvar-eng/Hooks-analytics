@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
 const path = require('path');
 const rateLimit = require('express-rate-limit');
 const connectDB = require('./config/database');
@@ -32,11 +33,35 @@ const app = express();
 // Connect to MongoDB
 connectDB();
 
-// Middleware
-app.use(cors());
+// Security headers
+app.use(helmet({
+  // El frontend está servido desde el mismo origen en prod, pero igual desactivamos
+  // CSP que rompe Vite dev. Para producción se recomienda configurar CSP estricto
+  // basado en los dominios usados (TN images, Meta CDN, fonts, etc.).
+  contentSecurityPolicy: false,
+  // Permitimos cross-origin embedding para que iframes/imágenes externas (TN, Meta)
+  // sigan funcionando.
+  crossOriginEmbedderPolicy: false,
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+}));
+
+// CORS — en prod, whitelist explícito vía CORS_ORIGIN (lista coma-separada).
+// En dev (sin var seteada) acepta todo.
+const corsOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(',').map((s) => s.trim()).filter(Boolean)
+  : null;
+app.use(cors(corsOrigins ? {
+  origin: (origin, callback) => {
+    // Same-origin requests (sin Origin header) o desde whitelist
+    if (!origin || corsOrigins.includes(origin)) return callback(null, true);
+    callback(new Error(`Origin ${origin} no permitido por CORS`));
+  },
+  credentials: true,
+} : {}));
+
 app.use(express.json({ limit: '10mb' }));
 
-// Rate limiting
+// Rate limiting general
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 500,
@@ -44,6 +69,16 @@ const limiter = rateLimit({
   legacyHeaders: false,
 });
 app.use('/api/', limiter);
+
+// Rate limit estricto para login (bruteforce defense)
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10, // 10 intentos cada 15 min por IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Demasiados intentos de login. Esperá 15 minutos.' },
+});
+app.use('/api/auth/login', loginLimiter);
 
 // Health check
 app.get('/health', (_req, res) => {

@@ -5,6 +5,57 @@ La bitácora se ordena de **arriba hacia abajo** por orden cronológico inverso 
 
 ---
 
+## 2026-05-14 — Pre-deploy: encriptación de tokens + hardening de seguridad
+
+**Branch**: `codex/universal-dashboard-builder` (continúa)
+
+### Trabajo hecho
+
+Bloqueante crítico antes de publicar la app multi-usuario. Hasta ahora los tokens de integraciones (TN, Meta, Shopify) estaban en plaintext en Mongo. Auditoría detectó 2 stores con tokens Meta de 200 chars expuestos. Si alguien lee la DB (backup filtrado, dump robado, dev con acceso) tiene los tokens de todas las tiendas.
+
+**Encriptación AES-256-GCM (token rotation seguro)**:
+
+- Nuevo `backend/src/utils/tokenAccess.js`: helper con `getStoreToken / setStoreToken / clearStoreToken / loadStoreWithToken / findStoresWithToken`. Soporta 3 providers: `tn` · `meta` · `shopify`. Cada provider tiene su trio `*Encrypted + *IV + *AuthTag`.
+- Schema `Store.js`: agregados campos `tnTokenEncrypted/IV/AuthTag`, `metaTokenEncrypted/IV/AuthTag`, `shopifyTokenEncrypted/IV/AuthTag` con `select: false`. Los legacy `tnAccessToken/metaAccessToken/shopifyAccessToken` cambiaron a `select: false` también para no exponerse por accidente.
+- `Store.toJSON()` nuevo: defensa en profundidad — aunque alguien haga `.select('+token')`, el JSON nunca expone los 12 campos de token. Solo deja pasar `tnTokenSource` y `metaTokenExpiresAt` (metadata no sensible).
+- `scripts/migrateTokensToEncrypted.js`: migración one-shot, idempotente, con `--dry-run`. Validó round-trip encrypt → decrypt antes de persistir. **Migrados los 2 tokens Meta de Límite y Pataforma**. TN y Shopify tenían 0 stores con token plaintext (TN usa cro_service en estas 2 stores).
+- Update de consumers (8 archivos):
+  - `services/syncTiendanube.js`, `services/syncMeta.js`, `services/syncShopify.js`: cargan `getStoreToken(store, provider)` al inicio. `refreshMetaTokens()` ahora usa `setStoreToken()` para guardar el token refrescado.
+  - `services/creativeService.js`: idem + queries con `.select('+meta*')` para que `Store.findById(id).lean()` traiga los campos cifrados.
+  - `services/cronJobs.js`: las 3 queries (`runForTnStores`, `runForMetaStores`, `runTiendanubeTokenHealthCheck`) ahora hacen `.select('+...Encrypted +...IV +...AuthTag +legacy')` y filtran por `$or` legacy/encrypted.
+  - `controllers/metaController.js`: `setStoreToken` en el callback OAuth + `loadStoreWithToken` en `syncMetaProductInsights` manual.
+  - `controllers/settingsController.js`: `setStoreToken` en `connectTiendanubeManual`, `connectShopifyManual`, `connectMetaManual`. `getStoreToken` + `loadStoreWithToken` en `syncMetaManual`.
+  - `controllers/storeController.js`: `setStoreToken` en `create`, `createConnected` (TN y Shopify branches). `syncNow` carga con select expandido + valida via helper.
+  - `controllers/tnOAuthController.js`: `setStoreToken` en el OAuth callback.
+
+**Hardening de seguridad (defensa en capas)**:
+
+- `helmet` agregado (HSTS, X-Content-Type-Options, X-Frame-Options, etc.). CSP desactivado para no romper Vite dev — para producción se recomienda configurar CSP estricto.
+- CORS estricto vía env var `CORS_ORIGIN` (lista coma-separada de orígenes permitidos). Si no está seteada (dev), acepta todo.
+- **Rate limit estricto en `/auth/login`**: 10 intentos / 15 min / IP. Defensa anti-bruteforce. Headers `RateLimit-*` para visibilidad.
+- Rate limit general sigue: 500 req / 15 min por IP.
+
+**Validado en runtime**:
+- Round-trip encrypt/decrypt funciona para los 2 stores con Meta.
+- `GET /api/stores/:id` ya NO devuelve tokens (token-like keys leftover: vacío).
+- `POST /api/auth/login` con credenciales falsas: 401 + headers `RateLimit-Limit: 10`, `RateLimit-Remaining: 9`.
+- Security headers presentes: HSTS (`max-age=31536000`), X-Content-Type-Options nosniff, X-Frame-Options SAMEORIGIN, Cross-Origin-Opener-Policy same-origin.
+- Página `/meta-ads` renderea perfecto con los datos de Meta API consumidos via token descifrado: spend $1.84M, ROAS 2.28x, embudo de adquisición, etc.
+- Frontend build clean.
+
+### Pendientes inmediatos (bloqueantes adicionales antes de publicar)
+
+- [ ] **OAuth público de TN/Meta/Shopify**: hoy los tokens se cargan manualmente. Para multi-usuario hay que registrar apps en cada plataforma + implementar callbacks con CSRF state token.
+- [ ] **Modelo `StoreConnection`** separado: hoy los tokens viven en Store. Para que `User A` conecte sus integraciones sin exponer credenciales al `User B` que solo tiene viewer access, hay que separar.
+- [ ] **Modelo `StoreAccess`** granular con permissions (`read_metrics`, `manage_integrations`, `configure_alerts`, etc.). Hoy `storeAccess` es binario.
+- [ ] **`User.notificationEmail`** + **`Store.notificationConfig.email`** para Sprint 3 alertas (lucasvar@gmail.com como ejemplo).
+- [ ] Sistema de invitaciones por email para el equipo.
+- [ ] 2FA TOTP opt-in.
+- [ ] API keys por user para MCP remoto.
+- [ ] Audit log expandido (consultas + cambios sensibles).
+
+---
+
 ## 2026-05-13 — Sprint 2: Templates como esqueletos para MCP
 
 **Branch**: `codex/universal-dashboard-builder` (continúa)

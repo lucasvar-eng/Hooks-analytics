@@ -8,13 +8,16 @@ const logger = require('../utils/logger');
 
 async function runForTnStores(jobName, syncFn) {
   logger.info(`Cron: ${jobName} starting...`);
+  // Importante: para que los services puedan descifrar el token, hay que cargar
+  // los campos *Encrypted, *IV, *AuthTag y legacy (todos están select:false).
   const stores = await Store.find({
     'integrationStatus.tiendanube.connected': true,
     $or: [
+      { tnTokenEncrypted: { $exists: true, $ne: '' } },
       { tnAccessToken: { $exists: true, $ne: '' } },
       { tnTokenSource: 'cro_service' },
     ],
-  });
+  }).select('+tnAccessToken +tnTokenEncrypted +tnTokenIV +tnTokenAuthTag');
 
   for (const store of stores) {
     try {
@@ -31,7 +34,7 @@ async function runTiendanubeTokenHealthCheck() {
   const stores = await Store.find({
     'integrationStatus.tiendanube.connected': true,
     tnTokenSource: 'cro_service',
-  });
+  }).select('+tnAccessToken +tnTokenEncrypted +tnTokenIV +tnTokenAuthTag');
 
   for (const store of stores) {
     try {
@@ -48,8 +51,11 @@ async function runForMetaStores(jobName, syncFn) {
   logger.info(`Cron: ${jobName} starting...`);
   const stores = await Store.find({
     'integrationStatus.metaAds.connected': true,
-    metaAccessToken: { $exists: true, $ne: '' },
-  });
+    $or: [
+      { metaTokenEncrypted: { $exists: true, $ne: '' } },
+      { metaAccessToken: { $exists: true, $ne: '' } },
+    ],
+  }).select('+metaAccessToken +metaTokenEncrypted +metaTokenIV +metaTokenAuthTag');
 
   for (const store of stores) {
     try {

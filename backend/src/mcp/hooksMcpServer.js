@@ -12,6 +12,7 @@ const { getCommercialOverview } = require('../services/productService');
 const { getFinancialConsistency } = require('../services/financeService');
 const { buildContext } = require('../services/aiService');
 const reportTemplates = require('../services/reportTemplateService');
+const { logAudit } = require('../services/auditLogService');
 const logger = require('../utils/logger');
 
 const SERVER_INFO = {
@@ -255,6 +256,21 @@ async function createReportPayload(args = {}) {
     generationMode: args.generationMode || 'manual',
   });
 
+  await logAudit({
+    storeId: store._id,
+    userId: author._id,
+    action: 'mcp.report.created',
+    entityType: 'Report',
+    entityId: report._id,
+    details: {
+      tipo,
+      titulo: report.titulo,
+      section: report.section,
+      source: 'mcp',
+      model: report.model,
+    },
+  });
+
   return {
     ok: true,
     createdBy: {
@@ -285,6 +301,15 @@ async function createTeamNotePayload(args = {}) {
     section: args.section || 'general',
     text,
     author: author._id,
+  });
+
+  await logAudit({
+    storeId: store._id,
+    userId: author._id,
+    action: 'mcp.team_note.created',
+    entityType: 'TeamNote',
+    entityId: note._id,
+    details: { section: note.section, source: 'mcp' },
   });
 
   return {
@@ -421,19 +446,23 @@ const TOOLS = [
     inputSchema: {
       type: 'object',
       properties: {
-        store: { type: 'string', description: 'ID o nombre de la tienda' },
-        titulo: { type: 'string', description: 'Título del reporte' },
-        contenido: { type: 'string', description: 'Contenido markdown del reporte' },
-        summary: { type: 'string', description: 'Resumen corto del reporte' },
-        section: { type: 'string', description: 'Sección asociada, por ejemplo dashboard o creativos' },
-        tipo: { type: 'string', description: 'analysis|report|diagnostic' },
-        from: { type: 'string', description: 'YYYY-MM-DD' },
-        to: { type: 'string', description: 'YYYY-MM-DD' },
-        confidence: { type: 'number', description: 'Confianza entre 0 y 1' },
-        qualityNote: { type: 'string', description: 'Nota de calidad del dato o del análisis' },
+        store: { type: 'string', description: 'ID o nombre de la tienda', maxLength: 120 },
+        titulo: { type: 'string', description: 'Título del reporte', maxLength: 200 },
+        contenido: { type: 'string', description: 'Contenido markdown del reporte', maxLength: 200000 },
+        summary: { type: 'string', description: 'Resumen corto del reporte', maxLength: 1000 },
+        section: { type: 'string', description: 'Sección asociada, por ejemplo dashboard o creativos', maxLength: 60 },
+        tipo: {
+          type: 'string',
+          description: 'analysis|report|diagnostic',
+          enum: ['analysis', 'report', 'diagnostic'],
+        },
+        from: { type: 'string', description: 'YYYY-MM-DD', pattern: '^\\d{4}-\\d{2}-\\d{2}$' },
+        to: { type: 'string', description: 'YYYY-MM-DD', pattern: '^\\d{4}-\\d{2}-\\d{2}$' },
+        confidence: { type: 'number', description: 'Confianza entre 0 y 1', minimum: 0, maximum: 1 },
+        qualityNote: { type: 'string', description: 'Nota de calidad del dato o del análisis', maxLength: 2000 },
       },
       required: ['store', 'titulo', 'contenido'],
-      additionalProperties: true,
+      additionalProperties: false,
     },
     handler: async (args) => createReportPayload(args),
   },
@@ -443,18 +472,18 @@ const TOOLS = [
     inputSchema: {
       type: 'object',
       properties: {
-        store: { type: 'string', description: 'ID o nombre de la tienda' },
-        titulo: { type: 'string', description: 'Título del análisis' },
-        contenido: { type: 'string', description: 'Contenido markdown' },
-        summary: { type: 'string', description: 'Resumen corto' },
-        section: { type: 'string', description: 'Sección asociada' },
-        from: { type: 'string', description: 'YYYY-MM-DD' },
-        to: { type: 'string', description: 'YYYY-MM-DD' },
-        confidence: { type: 'number', description: 'Confianza entre 0 y 1' },
-        qualityNote: { type: 'string', description: 'Nota de calidad' },
+        store: { type: 'string', description: 'ID o nombre de la tienda', maxLength: 120 },
+        titulo: { type: 'string', description: 'Título del análisis', maxLength: 200 },
+        contenido: { type: 'string', description: 'Contenido markdown', maxLength: 200000 },
+        summary: { type: 'string', description: 'Resumen corto', maxLength: 1000 },
+        section: { type: 'string', description: 'Sección asociada', maxLength: 60 },
+        from: { type: 'string', description: 'YYYY-MM-DD', pattern: '^\\d{4}-\\d{2}-\\d{2}$' },
+        to: { type: 'string', description: 'YYYY-MM-DD', pattern: '^\\d{4}-\\d{2}-\\d{2}$' },
+        confidence: { type: 'number', description: 'Confianza entre 0 y 1', minimum: 0, maximum: 1 },
+        qualityNote: { type: 'string', description: 'Nota de calidad', maxLength: 2000 },
       },
       required: ['store', 'titulo', 'contenido'],
-      additionalProperties: true,
+      additionalProperties: false,
     },
     handler: async (args) => createReportPayload({ ...args, tipo: 'analysis' }),
   },
@@ -491,9 +520,9 @@ const TOOLS = [
     inputSchema: {
       type: 'object',
       properties: {
-        store: { type: 'string', description: 'ID o nombre de la tienda' },
-        section: { type: 'string', description: 'general, dashboard, creativos, etc' },
-        text: { type: 'string', description: 'Texto de la nota' },
+        store: { type: 'string', description: 'ID o nombre de la tienda', maxLength: 120 },
+        section: { type: 'string', description: 'general, dashboard, creativos, etc', maxLength: 60 },
+        text: { type: 'string', description: 'Texto de la nota', maxLength: 10000 },
       },
       required: ['store', 'text'],
       additionalProperties: false,

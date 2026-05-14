@@ -52,4 +52,9 @@ module.exports = {
     replyTo: process.env.EMAIL_REPLY_TO || '',
     appUrl: process.env.APP_PUBLIC_URL || 'http://localhost:5173',
   },
+
+  observability: {
+    sentryDsn: process.env.SENTRY_DSN || '',
+    appVersion: process.env.APP_VERSION || '',
+  },
 };

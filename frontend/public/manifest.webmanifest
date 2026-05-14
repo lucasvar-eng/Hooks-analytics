@@ -1,0 +1,21 @@
+{
+  "name": "Hooks Analytics",
+  "short_name": "Hooks",
+  "description": "Analytics multi-tienda — Tienda Nube, Meta Ads, Cashflow y creativos en un solo lugar.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "lang": "es-AR",
+  "theme_color": "#0a0a0a",
+  "background_color": "#0a0a0a",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "productivity", "finance"]
+}

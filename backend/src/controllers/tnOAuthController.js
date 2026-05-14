@@ -3,6 +3,7 @@ const Store = require('../models/Store');
 const { tn } = require('../config/environment');
 const logger = require('../utils/logger');
 const storeConnections = require('../services/storeConnections');
+const { logAudit } = require('../services/auditLogService');
 
 /**
  * Redirect user to TiendaNube OAuth authorization.
@@ -64,6 +65,15 @@ exports.callback = async (req, res, next) => {
       accessToken: access_token,
       metadata: { tnStoreId: store.tnStoreId, tokenSource: 'manual', oauthUserId: String(user_id) },
       connectedByUser: req.user?._id,
+    });
+
+    await logAudit({
+      storeId: store._id,
+      userId: req.user?._id,
+      action: 'integration.tiendanube.oauth_connected',
+      entityType: 'Store',
+      entityId: store._id,
+      details: { tnStoreId: store.tnStoreId, oauthUserId: String(user_id), ip: req.ip },
     });
 
     logger.info(`TN OAuth complete for store ${store.nombre} (${user_id})`);

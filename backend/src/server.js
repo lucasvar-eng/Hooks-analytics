@@ -28,9 +28,20 @@ const teamNoteRoutes = require('./routes/teamNoteRoutes');
 const teamRoutes = require('./routes/teamRoutes');
 const invitationRoutes = require('./routes/invitationRoutes');
 const { startCronJobs } = require('./services/cronJobs');
+const errorReporting = require('./utils/errorReporting');
 const logger = require('./utils/logger');
 
 const app = express();
+
+// Init Sentry (no-op si no hay SENTRY_DSN). El request handler se inserta acá
+// para que capture todo lo que sigue.
+errorReporting.initErrorReporting(app);
+
+// Detrás de Railway/Render/Cloudflare hay un proxy. Sin `trust proxy`, los
+// rate-limits ven todas las requests como provenientes de la IP del proxy
+// y el bruteforce por IP no funciona. `1` confía en un único proxy aguas
+// arriba (el del platform). NO usar `true` (acepta cualquier X-Forwarded-For).
+app.set('trust proxy', 1);
 
 // Connect to MongoDB
 connectDB();
@@ -61,7 +72,14 @@ app.use(cors(corsOrigins ? {
   credentials: true,
 } : {}));
 
-app.use(express.json({ limit: '10mb' }));
+// Global JSON limit: 1MB es más que suficiente para 99% de los requests.
+// Endpoints que reciben payloads grandes (CSV import, MCP briefings) tienen
+// override local con un parser dedicado.
+const jsonGlobal = express.json({ limit: '1mb' });
+const jsonLarge = express.json({ limit: '10mb' });
+// Rutas que sí necesitan 10mb: CSV import de Meta y MCP write tools.
+app.use(['/api/stores/:id/meta/csv-import', '/api/mcp', '/api/stores/:id/reports'], jsonLarge);
+app.use(jsonGlobal);
 
 // Rate limiting general
 const limiter = rateLimit({
@@ -118,6 +136,10 @@ if (nodeEnv === 'production') {
   });
 }
 
+// Sentry error handler (capture errors que pasan por next(err)). Va ANTES
+// del errorHandler propio para que vea los errors crudos.
+errorReporting.attachErrorHandler(app);
+
 // Error handler (must be last)
 app.use(errorHandler);
 
@@ -126,9 +148,13 @@ app.use(errorHandler);
 // crashea el server entero (visto al testear ReportBuilder Save con payload mal mapeado).
 process.on('unhandledRejection', (reason) => {
   logger.error(`unhandledRejection: ${reason?.stack || reason?.message || reason}`);
+  errorReporting.captureException(reason instanceof Error ? reason : new Error(String(reason)), {
+    type: 'unhandledRejection',
+  });
 });
 process.on('uncaughtException', (err) => {
   logger.error(`uncaughtException: ${err?.stack || err?.message || err}`);
+  errorReporting.captureException(err, { type: 'uncaughtException' });
 });
 
 app.listen(port, () => {

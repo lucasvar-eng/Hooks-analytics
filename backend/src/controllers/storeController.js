@@ -15,6 +15,7 @@ const { getCostCoverage } = require('../services/costCoverage');
 const { isCentralizedTiendanubeStore } = require('../utils/tiendanubeToken');
 const storeConnections = require('../services/storeConnections');
 const permissions = require('../services/permissions');
+const { logAudit } = require('../services/auditLogService');
 const { buildBusinessDateKeyMatch, buildBusinessSourceDateMatch } = require('../utils/businessDate');
 
 function safeDelta(current, baseline, invert = false) {
@@ -197,6 +198,15 @@ exports.create = async (req, res, next) => {
       userId: req.user._id,
       storeId: store._id,
       role: 'owner',
+    });
+
+    await logAudit({
+      storeId: store._id,
+      userId: req.user._id,
+      action: 'store.created',
+      entityType: 'Store',
+      entityId: store._id,
+      details: { nombre: store.nombre, tnStoreId, source: 'manual' },
     });
 
     res.status(201).json(store);
@@ -396,6 +406,16 @@ exports.remove = async (req, res, next) => {
   try {
     const store = await Store.findByIdAndDelete(req.params.id);
     if (!store) return res.status(404).json({ error: 'Store not found' });
+
+    await logAudit({
+      storeId: store._id,
+      userId: req.user?._id,
+      action: 'store.deleted',
+      entityType: 'Store',
+      entityId: store._id,
+      details: { nombre: store.nombre, plataforma: store.plataforma, ip: req.ip },
+    });
+
     res.json({ message: 'Tienda eliminada' });
   } catch (error) {
     next(error);

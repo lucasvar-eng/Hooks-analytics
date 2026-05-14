@@ -47,6 +47,29 @@ export default function ProductMonthlyHeatmap() {
     return () => { cancelled = true; };
   }, [storeId]);
 
+  const rawProducts = data?.products || [];
+
+  const products = useMemo(() => {
+    const arr = [...rawProducts];
+    const getVal = (p) => {
+      if (sortKey === 'total') return p.totalUnits || 0;
+      if (sortKey === 'totalRevenue') return p.totalRevenue || 0;
+      if (sortKey === 'stock') return p.stock || 0;
+      if (sortKey === 'nombre') return (p.nombre || '').toLowerCase();
+      return p.monthly?.[sortKey]?.units || 0;
+    };
+    arr.sort((a, b) => {
+      const av = getVal(a);
+      const bv = getVal(b);
+      if (typeof av === 'string') {
+        const r = av.localeCompare(bv);
+        return sortDir === 'asc' ? r : -r;
+      }
+      return sortDir === 'asc' ? av - bv : bv - av;
+    });
+    return arr;
+  }, [rawProducts, sortKey, sortDir]);
+
   if (loading) {
     return (
       <div className="card p-8 text-center">
@@ -62,30 +85,7 @@ export default function ProductMonthlyHeatmap() {
     );
   }
 
-  const { months, products: rawProducts, totalProductsWithSales } = data;
-
-  // Aplicar sort
-  const products = useMemo(() => {
-    const arr = [...rawProducts];
-    const getVal = (p) => {
-      if (sortKey === 'total') return p.totalUnits || 0;
-      if (sortKey === 'totalRevenue') return p.totalRevenue || 0;
-      if (sortKey === 'stock') return p.stock || 0;
-      if (sortKey === 'nombre') return (p.nombre || '').toLowerCase();
-      // Columna mensual
-      return p.monthly?.[sortKey]?.units || 0;
-    };
-    arr.sort((a, b) => {
-      const av = getVal(a);
-      const bv = getVal(b);
-      if (typeof av === 'string') {
-        const r = av.localeCompare(bv);
-        return sortDir === 'asc' ? r : -r;
-      }
-      return sortDir === 'asc' ? av - bv : bv - av;
-    });
-    return arr;
-  }, [rawProducts, sortKey, sortDir]);
+  const { months, totalProductsWithSales } = data;
 
   const toggleSort = (key) => {
     if (sortKey === key) {

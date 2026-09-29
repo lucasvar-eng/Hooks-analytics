@@ -2,7 +2,7 @@
 
 > **Cómo usar este archivo**:
 > - **Claude Desktop**: pegá el contenido en *Settings → Custom instructions* o como user instructions del proyecto/conversación.
-> - **Claude Code (CLI)**: guardalo como `CLAUDE.md` en la raíz del workspace donde laburás con la app.
+> - **Claude Code (CLI)**: no hace falta hacer nada: el `CLAUDE.md` de la raíz del repo ya importa este archivo.
 > - **Codex / otra IA**: como system prompt o user instructions.
 
 ---
@@ -56,11 +56,12 @@ Sobre eso, **servicios derivados**:
 | `MetaCampaign` | Campañas/AdSets/Ads (con `level`). Trae thumbnail, creativeTitle/Body. |
 | `MetaDailyInsight` | Insights por día y por entidad. Spend, impressions, atc, checkouts, purchases, videoViews. |
 | `MetaProductInsight` | Atribución de spend a productos del catálogo. |
-| `Alert` | Alerta generada por el cron de diagnostics. `severidad` info/warning/critical. |
+| `Alert` | Alerta generada por el cron de diagnostics. `severidad` info/warning/critical. `tipo` incluye `inventory_waste`, `inventory_restock` y `feed_health` (gasto en productos no vendibles, top sellers por agotarse, salud del catálogo). |
 | `Report` / `TeamNote` | Outputs de la IA externa o notas manuales. |
 | `AuditLog` | Audit trail de acciones sensibles (login, conexión OAuth, MCP writes, etc.). |
 | `CashflowEntry` | Movimientos manuales de tesorería. |
 | `Competitor` / `CompetitorSnapshot` | Competidores y snapshots de su catálogo. |
+| `CompetitorAd` | Biblioteca de anuncios de competidores (Meta Ad Library, Google Ads Transparency, etc.). |
 | `TopicMap` / `LanguageBank` | Embebidos en Creativos. Mapa de tópicos por audiencia. |
 
 ---
@@ -104,12 +105,23 @@ GET    /api/stores/:id/customers/period-insights?from&to — recurrencia, CAC, t
 GET    /api/stores/:id/meta/overview?from&to   — totals + funnel + daily
 GET    /api/stores/:id/meta/campaigns?from&to  — campañas + frec + hookRate + verdict
 POST   /api/stores/:id/meta/csv-import         — carga CSV histórico
-POST   /api/stores/:id/connect-meta-manual     — conectar token manual
+POST   /api/stores/:id/connect-meta-manual     — conectar ad accounts (usa el token guardado en /profile si no viene en el body)
 POST   /api/stores/:id/meta/ad-accounts/preview — preview de ad accounts con un token
+POST   /api/stores/:id/meta/sync-now           — sync Meta manual, body { daysBack } (máx 180; la UI manda 30)
+
+GET    /api/user/meta-token                    — estado del token Meta del user (vencimiento, health)
+PUT    /api/user/meta-token                    — guardar/actualizar token (valida contra Meta y propaga a sus tiendas)
+DELETE /api/user/meta-token                    — borrar token guardado
+GET    /api/user/meta-token/ad-accounts        — ad accounts accesibles con el token guardado
+
+GET    /api/stores/:id/media-planning/spend-vs-sellability — gasto Meta por producto × vendibilidad (stock, curva de talles)
+GET    /api/stores/:id/media-planning/push-segments        — productos "listos para empujar" y "reponer"
+GET    /api/stores/:id/media-planning/feed-health          — salud del catálogo publicado (feed DPA)
 
 GET    /api/stores/:id/creativos               — ads
 GET    /api/stores/:id/creativos/angles?from&to — performance por ángulo
 GET    /api/stores/:id/competitors             — competidores
+GET    /api/stores/:id/competitors/:competitorId/ads — anuncios del competidor (POST crea; PUT/DELETE .../ads/:adId)
 GET    /api/stores/:id/cashflow                — saldos + movimientos
 GET    /api/stores/:id/reports                 — bandeja de reportes
 GET    /api/stores/:id/team                    — miembros + invitaciones
@@ -142,12 +154,15 @@ Server: `backend/src/mcp/hooksMcpServer.js`. Conexión vía stdio. Cuando una IA
 - `get_financial_consistency(store, from, to)` — auditoría de coherencia financiera.
 - `list_report_templates()` — templates disponibles.
 - `get_report_briefing(template_key, store, from, to)` — JSON estructurado: secciones obligatorias + métricas pre-calculadas + system prompt sugerido.
+- `list_competitors(store)` — competidores de la tienda + resumen de anuncios cargados.
+- `get_competitor_ads(store, competitor)` — anuncios cargados de un competidor (hooks, ofertas, ángulos).
 
 **Writes:**
 
 - `create_report(store, titulo, contenido, summary?, section?, tipo?, from?, to?, confidence?)` — sube un reporte. Markdown en `contenido`. Audit-logged como `mcp.report.created`.
 - `save_analysis(...)` — wrapper de `create_report` con `tipo: 'analysis'`.
 - `create_team_note(store, section?, text)` — nota interna del equipo.
+- `save_competitor_ad(...)` — guarda un anuncio de competidor visto en Meta Ad Library, Google Ads Transparency u otra fuente.
 
 **Reglas de uso (importante para IAs):**
 
@@ -164,7 +179,7 @@ Server: `backend/src/mcp/hooksMcpServer.js`. Conexión vía stdio. Cuando una IA
 ```
 /login                                 — login
 /                                      — home: cards de tiendas
-/profile                               — perfil del user (cuenta, notif, Resend, mis tiendas, tutorial Meta)
+/profile                               — perfil del user (cuenta, notif, Resend, token de Meta + tutorial, mis tiendas)
 /admin/users                           — gestión de usuarios (admin global only)
 /invitations/accept?token=             — aceptar invitación
 
@@ -174,7 +189,9 @@ Server: `backend/src/mcp/hooksMcpServer.js`. Conexión vía stdio. Cuando una IA
 /store/:storeId/tienda                 — TN: pagos, canal, UTM, dist temporal, daily
 /store/:storeId/productos              — Catálogo, indicadores, heatmap mensual
 /store/:storeId/clientes               — RFM, period insights, cohortes, pareto
-/store/:storeId/meta-ads               — Meta: campañas con verdict, embudo, gasto/revenue daily
+/store/:storeId/meta-ads               — Meta: campañas con verdict, embudo global y por campaña, gasto/revenue daily
+/store/:storeId/gasto-vendibilidad     — Gasto vs Stock: gasto de Meta en productos no vendibles + salud del feed
+/store/:storeId/para-pauta             — Para pauta: productos listos para empujar / reponer, export CSV
 /store/:storeId/creativos              — Ads, performance por ángulo, hooks, hipótesis
 /store/:storeId/competencia            — Competidores
 /store/:storeId/cashflow               — Saldos + proyección
@@ -193,10 +210,10 @@ Server: `backend/src/mcp/hooksMcpServer.js`. Conexión vía stdio. Cuando una IA
 1. **No hay IA interna en la app**. Toda la "inteligencia narrada" (análisis, reportes ejecutivos, briefings creativos) viene de IA externa (Claude/Codex) vía MCP. La app solo da datos + reglas determinísticas.
 2. **Auto-insights = reglas deterministas**, no IA. El servicio `autoInsightsService.js` corre umbrales sobre datos del período. Sirve para conclusiones repetitivas; cuando hace falta análisis profundo, la IA externa lo hace via MCP.
 3. **Cada user trae su Resend**. No hay un Resend centralizado. Esto evita verificar dominio + mantiene aislamiento de cuentas.
-4. **No usamos OAuth público de Meta/TN** (por ahora). Cada miembro genera su token manual con tutorial dedicado. Decisión por costo (App Review de Meta toma 2-6 semanas).
+4. **No usamos OAuth público de Meta** (por ahora). Cada usuario genera su token (ideal: System User sin vencimiento), lo guarda una vez en `/profile` y se reusa en todas sus tiendas. Decisión por costo (App Review de Meta toma 2-6 semanas). Tiendanube sí conecta por OAuth de su app o por el token central `cro_service`.
 5. **Multi-tienda, multi-user con StoreAccess granular**. Roles `owner/admin/editor/viewer` por tienda. Permisos por endpoint vía `requirePermission(PERMISSIONS.X)`.
 6. **AuditLog cableado** en endpoints sensibles (login, OAuth, MCP writes, store create/delete, team invitations, integration connects).
-7. **Deploy: Railway desde `main`**. Branch de trabajo: `codex/universal-dashboard-builder`. Merge a `main` dispara build.
+7. **Deploy: Railway desde `main`**. Push a `main` dispara build y deploy (no hay staging). El branch `codex/universal-dashboard-builder` ya está mergeado; se trabaja sobre `main`.
 
 ---
 
@@ -234,8 +251,7 @@ Si en cambio el usuario te pide un análisis ad-hoc fuera de los templates (ej. 
 
 - Repo: `lucasvar-eng/Hooks-analytics`
 - Branch principal: `main` (deploy auto a Railway)
-- Branch de desarrollo: `codex/universal-dashboard-builder`
-- Producción: `https://hooks-analytics-production-36b6.up.railway.app` (subdominio actual, puede cambiar si Lucas agrega dominio propio)
+- Producción: `https://hooks-analytics-production-36b6.up.railway.app` (subdominio actual de Railway)
 - Bitácora: `BITACORA.md` en la raíz — historial cronológico de sprints.
 - Stack envs: ver `.env.example` (tiene comentarios sobre cada variable).
 
@@ -243,4 +259,4 @@ Si en cambio el usuario te pide un análisis ad-hoc fuera de los templates (ej. 
 
 ## Si te quedan dudas
 
-Pediselas a Lucas vía chat humano. No inventes nada que no esté acá — la app se mueve y este doc puede quedar desactualizado.
+Preguntale al responsable actual del proyecto. No inventes nada que no esté acá o en el código — la app se mueve y este doc puede quedar desactualizado.

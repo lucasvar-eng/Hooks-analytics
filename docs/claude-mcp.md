@@ -37,7 +37,7 @@ Servidor MCP local `read-only` para que Claude Code o Claude Desktop tengan acce
 Desde el backend:
 
 ```bash
-cd "/Users/lucasvargas/Desktop/ANALISIS ECOM/Hooks-analytics/backend"
+cd "/ruta/a/Hooks-analytics/backend"
 npm run mcp
 ```
 
@@ -46,7 +46,7 @@ npm run mcp
 Agregar el servidor MCP:
 
 ```bash
-claude mcp add hooks-analytics -- node "/Users/lucasvargas/Desktop/ANALISIS ECOM/Hooks-analytics/backend/src/mcp/hooksMcpServer.js"
+claude mcp add hooks-analytics -- node "/ruta/a/Hooks-analytics/backend/src/mcp/hooksMcpServer.js"
 ```
 
 Después, en Claude Code, vas a poder:
@@ -69,7 +69,7 @@ Agregar el server MCP en la configuración de Claude Desktop:
     "hooks-analytics": {
       "command": "node",
       "args": [
-        "/Users/lucasvargas/Desktop/ANALISIS ECOM/Hooks-analytics/backend/src/mcp/hooksMcpServer.js"
+        "/ruta/a/Hooks-analytics/backend/src/mcp/hooksMcpServer.js"
       ]
     }
   }
@@ -101,7 +101,7 @@ Las escrituras MCP se guardan usando:
 Por defecto conviene usar:
 
 ```env
-MCP_DEFAULT_AUTHOR_EMAIL=lucas@hooks.com.ar
+MCP_DEFAULT_AUTHOR_EMAIL=<email del admin responsable>
 ```
 
 ## Claude Code / Claude Desktop / Claude.ai

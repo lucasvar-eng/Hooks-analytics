@@ -78,7 +78,7 @@ Cuando deployes:
 
 **Recomendación**: parar el backend local (`Ctrl+C` en nodemon) cuando Railway esté arriba. Para desarrollo, usar Railway como "fuente de verdad" y solo levantar local cuando estés iterando código.
 
-Si necesitás correr ambos en paralelo (raro), agregamos una env var `SKIP_CRONS=true` para deshabilitar en una de las instancias.
+Si necesitás correr ambos en paralelo, poné `SKIP_CRONS=true` en el `.env` local: el backend arranca sin crons y Railway sigue siendo el único que sincroniza.
 
 ## 6. Verificación post-deploy
 

@@ -161,7 +161,13 @@ process.on('uncaughtException', (err) => {
 
 app.listen(port, () => {
   logger.info(`Server running on port ${port} (${nodeEnv})`);
-  startCronJobs();
+  // SKIP_CRONS=true para levantar el backend local contra la base de producción
+  // sin duplicar los syncs/alertas que ya corre Railway.
+  if (process.env.SKIP_CRONS === 'true') {
+    logger.info('Cron jobs deshabilitados (SKIP_CRONS=true)');
+  } else {
+    startCronJobs();
+  }
 });
 
 module.exports = app;

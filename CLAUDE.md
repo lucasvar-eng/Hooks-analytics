@@ -35,10 +35,11 @@ No hay tests automatizados. Para validar: `node --check` en los archivos del bac
 **Tiendanube**: un token por tienda en `StoreConnection` (provider `tiendanube`). Hay dos orígenes, según `Store.tnTokenSource`:
 - `manual`: OAuth de la app de Tiendanube (`GET /api/tn/connect/:storeId` → autorización → `GET /api/tn/callback`).
 - `cro_service`: el token lo entrega una API externa (`CRO_SERVICE_API_URL` + `CRO_SERVICE_API_KEY`).
+- El chequeo de token (`checkTiendanubeTokenHealth`) solo corre para `cro_service`, y los errores de sync de las conexiones `manual` no se guardan en `StoreConnection.lastError`. Por eso Settings puede mostrar "Conectada" una tienda que no sincroniza: mirá `synclogs`.
 
 **Meta Ads** (sin OAuth):
 1. Cada usuario guarda su access token en `/profile` (`PUT /api/user/meta-token`, cifrado en `User.metaUserToken*`).
-2. En Settings de cada tienda: "Traer cuentas" + "Conectar Meta Ads" (`POST /api/stores/:id/connect-meta-manual`). La conexión queda con `connectedByUser` = ese usuario.
+2. En Settings de cada tienda: "Traer cuentas" + "Conectar y sincronizar" ("Actualizar cuentas y resincronizar" si ya estaba conectada; se abre con "Re-conectar" o "Cambiar cuentas conectadas"). Llama a `POST /api/stores/:id/connect-meta-manual` y la conexión queda con `connectedByUser` = ese usuario.
 3. Si el usuario actualiza su token en `/profile`, se propaga a las conexiones donde es `connectedByUser` y tenían el token anterior.
 
 Detalles de Meta a tener en cuenta:

@@ -156,6 +156,35 @@ export const COMPETENCIA_METRICS = [
       return `${fmtPct((withUrl / total) * 100, 0)} del total`;
     },
   },
+  {
+    key: 'adsTotal',
+    defaultLabel: 'Ads monitoreados',
+    info: 'Anuncios competitivos cargados desde bibliotecas publicitarias',
+    getValue: (d) => fmtNum(d?.overview?.ads?.summary?.total || 0),
+    getSub: (d) => {
+      const active = d?.overview?.ads?.summary?.active || 0;
+      const meta = d?.overview?.ads?.summary?.meta || 0;
+      return `${fmtNum(active)} activos · ${fmtNum(meta)} Meta`;
+    },
+  },
+  {
+    key: 'adsHooks',
+    defaultLabel: 'Ads con hook',
+    info: 'Anuncios competitivos donde ya se identificó el hook creativo',
+    getValue: (d) => fmtNum(d?.overview?.ads?.summary?.withHook || 0),
+    getSub: (d) => {
+      const total = d?.overview?.ads?.summary?.total || 0;
+      const withHook = d?.overview?.ads?.summary?.withHook || 0;
+      if (!total) return 'Sin ads cargados';
+      return `${fmtPct((withHook / total) * 100, 0)} clasificados`;
+    },
+    getTone: (d) => {
+      const total = d?.overview?.ads?.summary?.total || 0;
+      const withHook = d?.overview?.ads?.summary?.withHook || 0;
+      if (!total) return null;
+      return (withHook / total) >= 0.7 ? 'good' : 'warn';
+    },
+  },
 ];
 
 export const COMPETENCIA_DEFAULTS = ['total', 'analyzed', 'opportunities', 'lastAnalysis'];

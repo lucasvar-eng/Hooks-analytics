@@ -3,6 +3,8 @@ const DailyMetric = require('../models/DailyMetric');
 const Alert = require('../models/Alert');
 const StoreAccess = require('../models/StoreAccess');
 const User = require('../models/User');
+const Product = require('../models/Product');
+const MetaProductInsight = require('../models/MetaProductInsight');
 const { sendEmailForUser, buildAlertEmail } = require('./emailService');
 const { email: emailConfig } = require('../config/environment');
 const logger = require('../utils/logger');
@@ -132,6 +134,106 @@ async function notifyAlertRecipients(store, alert) {
     }
   }
   return { sent, total: recipients.length };
+}
+
+// --- Inventory / feed health helpers (capa accionable producto × pauta) ---
+function sizesInStock(p) {
+  return Array.isArray(p?.variantes) ? p.variantes.filter((v) => (v?.stock || 0) > 0).length : 0;
+}
+function curveOK(p) {
+  const s = sizesInStock(p);
+  const t = Array.isArray(p?.variantes) ? p.variantes.length : 0;
+  const stock = p?.stock || 0;
+  return s >= 4 || (t <= 3 && s >= 2 && stock >= 12);
+}
+function isPublished(p) {
+  return p?.activo === true || /publi|activ/i.test(p?.estadoPublicacion || '');
+}
+function isSellable(p) {
+  return (p?.stock || 0) >= 8 && curveOK(p);
+}
+
+/**
+ * Alertas de producto/inventario:
+ *   - inventory_waste: gasto Meta en productos no vendibles (stock 0 / curva rota)
+ *   - inventory_restock: top sellers por agotarse (venden fuerte, stock crítico)
+ *   - feed_health: % alto del catálogo publicado no vendible (feed DPA sucio)
+ */
+async function buildProductAlerts(storeId) {
+  const alerts = [];
+  const soid = new mongoose.Types.ObjectId(storeId);
+
+  const products = await Product.find({ storeId: soid })
+    .select('tnProductId nombre stock variantes ventas30dias activo estadoPublicacion')
+    .lean();
+  if (!products.length) return alerts;
+  const pmap = new Map(products.map((p) => [String(p.tnProductId), p]));
+
+  // Exposición Meta por producto, últimos 30 días.
+  const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const expoRows = await MetaProductInsight.aggregate([
+    { $match: { storeId: soid, tnProductId: { $nin: [null, ''] }, date: { $gte: since } } },
+    { $group: { _id: '$tnProductId', spend: { $sum: '$spend' } } },
+  ]);
+
+  // 1) Waste — exposición sobre no-vendibles
+  let totalExpo = 0;
+  let expoNon = 0;
+  let nonCount = 0;
+  for (const r of expoRows) {
+    const p = pmap.get(String(r._id));
+    totalExpo += r.spend || 0;
+    if (!p || !isSellable(p)) {
+      expoNon += r.spend || 0;
+      nonCount += 1;
+    }
+  }
+  if (nonCount >= 3 && expoNon > 0 && totalExpo > 0) {
+    const pct = (100 * expoNon) / totalExpo;
+    alerts.push({
+      tipo: 'inventory_waste',
+      severidad: pct >= 40 ? 'critical' : 'warning',
+      titulo: `Gasto en productos no vendibles: ${nonCount} productos`,
+      descripcion: `En los últimos 30 días se pautearon ${nonCount} productos sin stock o con curva de talles rota (≈${pct.toFixed(0)}% de la exposición por producto). Restringí el feed a los productos sanos.`,
+      metricas: { nonSellableCount: nonCount, exposureNonSellable: Math.round(expoNon), pctNonSellable: +pct.toFixed(1) },
+    });
+  }
+
+  // 2) Restock — venden fuerte y se agotan
+  const restock = products
+    .filter((p) => isPublished(p) && (p.ventas30dias || 0) >= 5 && (p.stock || 0) <= 5)
+    .sort((a, b) => (b.ventas30dias || 0) - (a.ventas30dias || 0));
+  if (restock.length) {
+    const top = restock[0];
+    alerts.push({
+      tipo: 'inventory_restock',
+      severidad: 'warning',
+      titulo: `${restock.length} top seller(s) por agotarse`,
+      descripcion: `${restock.length} producto(s) venden fuerte y están por agotarse. Ej: "${top.nombre}" vende ${top.ventas30dias}/mes y quedan ${top.stock}. Reponé o sacá de pauta.`,
+      metricas: { count: restock.length, ejemplo: top.nombre, ventas30dias: top.ventas30dias, stock: top.stock },
+    });
+  }
+
+  // 3) Feed health — % no vendible del catálogo publicado
+  let published = 0;
+  let healthy = 0;
+  for (const p of products) {
+    if (!isPublished(p)) continue;
+    published += 1;
+    if (isSellable(p)) healthy += 1;
+  }
+  const nonSell = published - healthy;
+  if (published > 0 && nonSell / published >= 0.4) {
+    alerts.push({
+      tipo: 'feed_health',
+      severidad: 'info',
+      titulo: `Feed DPA: ${nonSell} de ${published} productos no vendibles`,
+      descripcion: `El ${((100 * nonSell) / published).toFixed(0)}% del catálogo publicado no se puede comprar (sin stock o curva rota). Restringí el product set del catálogo a los ${healthy} sanos.`,
+      metricas: { published, healthy, nonSellable: nonSell, pctNonSellable: +((100 * nonSell) / published).toFixed(1) },
+    });
+  }
+
+  return alerts;
 }
 
 /**
@@ -282,6 +384,14 @@ async function runDiagnostics(store) {
       severidad: 'critical',
       metricas: { roas: current.roas, adSpend: current.adSpend, revenue: current.revenue },
     });
+  }
+
+  // --- Inventory / feed checks (capa accionable; no requieren objetivos) ---
+  try {
+    const productAlerts = await buildProductAlerts(storeId);
+    alerts.push(...productAlerts);
+  } catch (err) {
+    logger.warn(`Product diagnostics skipped for ${store.nombre}: ${err.message}`);
   }
 
   // Create alerts (with dedup) + notificar por email a los recipients que correspondan.

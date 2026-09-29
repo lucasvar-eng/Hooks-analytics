@@ -9,6 +9,8 @@ import MetaAds from './pages/MetaAds';
 import Cashflow from './pages/Cashflow';
 import Costos from './pages/Costos';
 import Productos from './pages/Productos';
+import GastoVendibilidad from './pages/GastoVendibilidad';
+import PautaSegmentos from './pages/PautaSegmentos';
 import Clientes from './pages/Clientes';
 import Creativos from './pages/Creativos';
 import Competencia from './pages/Competencia';
@@ -53,6 +55,8 @@ export default function App() {
         <Route path="meta-ads" element={<MetaAds />} />
         {/* Backwards compat for old bookmarks */}
         <Route path="meta-pixel" element={<Navigate to="../meta-ads" replace />} />
+        <Route path="gasto-vendibilidad" element={<GastoVendibilidad />} />
+        <Route path="para-pauta" element={<PautaSegmentos />} />
         <Route path="cashflow" element={<Cashflow />} />
         <Route path="costos" element={<Costos />} />
         <Route path="productos" element={<Productos />} />

@@ -5,6 +5,7 @@ const Store = require('../models/Store');
 const Report = require('../models/Report');
 const TeamNote = require('../models/TeamNote');
 const User = require('../models/User');
+const Competitor = require('../models/Competitor');
 const { aggregateRange } = require('../services/metricCalculator');
 const { getSyncStatus } = require('../services/tiendaService');
 const { getCreativePipeline, getFrameworkOverview } = require('../services/creativeService');
@@ -12,6 +13,7 @@ const { getCommercialOverview } = require('../services/productService');
 const { getFinancialConsistency } = require('../services/financeService');
 const { buildContext } = require('../services/aiService');
 const reportTemplates = require('../services/reportTemplateService');
+const competitorAdService = require('../services/competitorAdService');
 const { logAudit } = require('../services/auditLogService');
 const logger = require('../utils/logger');
 
@@ -145,6 +147,39 @@ async function resolveStoreIdentifier(identifier) {
   return store;
 }
 
+async function resolveCompetitorIdentifier(storeId, identifier) {
+  const raw = String(identifier || '').trim();
+  if (!raw) throw new Error('competitor es requerido');
+
+  let competitor = null;
+  if (/^[a-f0-9]{24}$/i.test(raw)) {
+    competitor = await Competitor.findOne({ _id: raw, storeId }).lean();
+  }
+
+  if (!competitor) {
+    competitor = await Competitor.findOne({
+      storeId,
+      nombre: new RegExp(`^${raw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i'),
+    }).lean();
+  }
+
+  if (!competitor) {
+    const normalized = normalizeName(raw);
+    const competitors = await Competitor.find({ storeId }).select('nombre url').lean();
+    competitor = competitors.find((item) =>
+      [item.nombre, item.url]
+        .filter(Boolean)
+        .some((candidate) => normalizeName(candidate).includes(normalized))
+    );
+  }
+
+  if (!competitor) {
+    throw new Error(`No encontré un competidor para "${raw}"`);
+  }
+
+  return competitor;
+}
+
 async function getStoreOverviewPayload(storeRef, args = {}) {
   const store = await resolveStoreIdentifier(storeRef);
   const { from, to } = parseDateRange(args);
@@ -231,6 +266,93 @@ async function getFinancialConsistencyPayload(storeRef, args = {}) {
     store: { id: String(store._id), nombre: store.nombre },
     range: { from, to },
     consistency,
+  };
+}
+
+async function listCompetitorsPayload(storeRef) {
+  const store = await resolveStoreIdentifier(storeRef);
+  const [competitors, adsOverview] = await Promise.all([
+    Competitor.find({ storeId: store._id })
+      .sort({ nombre: 1 })
+      .select('nombre url positioning mainOffer angles territories objectionsDetected lastAnalysis analysisResult updatedAt')
+      .lean(),
+    competitorAdService.getAdsOverview(store._id),
+  ]);
+
+  return {
+    store: { id: String(store._id), nombre: store.nombre },
+    competitors: competitors.map((item) => ({
+      id: String(item._id),
+      nombre: item.nombre,
+      url: item.url || null,
+      positioning: item.positioning || null,
+      mainOffer: item.mainOffer || null,
+      angles: item.angles || [],
+      territories: item.territories || [],
+      objectionsDetected: item.objectionsDetected || [],
+      hasAnalysis: !!String(item.analysisResult || '').trim(),
+      lastAnalysis: item.lastAnalysis || null,
+      updatedAt: item.updatedAt,
+    })),
+    adsOverview,
+  };
+}
+
+async function getCompetitorAdsPayload(storeRef, args = {}) {
+  const store = await resolveStoreIdentifier(storeRef);
+  const competitor = await resolveCompetitorIdentifier(store._id, args.competitor);
+  const ads = await competitorAdService.listCompetitorAds(store._id, competitor._id, args);
+  return {
+    store: { id: String(store._id), nombre: store.nombre },
+    competitor: { id: String(competitor._id), nombre: competitor.nombre, url: competitor.url || null },
+    ads,
+  };
+}
+
+async function saveCompetitorAdPayload(args = {}) {
+  const store = await resolveStoreIdentifier(args.store);
+  const competitor = await resolveCompetitorIdentifier(store._id, args.competitor);
+  const author = await resolveAuthorUser();
+  const ad = await competitorAdService.createCompetitorAd(
+    store._id,
+    competitor._id,
+    args,
+    { userId: author._id, source: 'mcp' }
+  );
+
+  await logAudit({
+    storeId: store._id,
+    userId: author._id,
+    action: 'mcp.competitor_ad.created',
+    entityType: 'CompetitorAd',
+    entityId: ad._id,
+    details: {
+      source: 'mcp',
+      competitorId: String(competitor._id),
+      platform: ad.platform,
+      status: ad.status,
+    },
+  });
+
+  return {
+    ok: true,
+    createdBy: {
+      id: String(author._id),
+      email: author.email,
+      nombre: author.nombre,
+    },
+    competitor: {
+      id: String(competitor._id),
+      nombre: competitor.nombre,
+    },
+    ad: {
+      id: String(ad._id),
+      platform: ad.platform,
+      status: ad.status,
+      headline: ad.headline || null,
+      hook: ad.hook || null,
+      createdAt: ad.createdAt,
+    },
   };
 }
 
@@ -439,6 +561,75 @@ const TOOLS = [
       additionalProperties: false,
     },
     handler: async (args) => getFinancialConsistencyPayload(args.store, args),
+  },
+  {
+    name: 'list_competitors',
+    description: 'Lista competidores de una tienda y un resumen de anuncios competitivos cargados.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        store: { type: 'string', description: 'ID o nombre de la tienda' },
+      },
+      required: ['store'],
+      additionalProperties: false,
+    },
+    handler: async (args) => listCompetitorsPayload(args.store),
+  },
+  {
+    name: 'get_competitor_ads',
+    description: 'Devuelve anuncios competitivos cargados para un competidor. Útil para analizar hooks, ofertas y ángulos.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        store: { type: 'string', description: 'ID o nombre de la tienda' },
+        competitor: { type: 'string', description: 'ID, nombre o URL parcial del competidor' },
+        platform: { type: 'string', enum: ['meta', 'google', 'youtube', 'tiktok', 'microsoft', 'other'] },
+        status: { type: 'string', enum: ['active', 'inactive', 'unknown'] },
+        limit: { type: 'number', minimum: 1, maximum: 300 },
+      },
+      required: ['store', 'competitor'],
+      additionalProperties: false,
+    },
+    handler: async (args) => getCompetitorAdsPayload(args.store, args),
+  },
+  {
+    name: 'save_competitor_ad',
+    description: 'Guarda un anuncio competitivo visto en Meta Ad Library, Google Ads Transparency Center u otra fuente.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        store: { type: 'string', description: 'ID o nombre de la tienda', maxLength: 120 },
+        competitor: { type: 'string', description: 'ID, nombre o URL parcial del competidor', maxLength: 160 },
+        platform: { type: 'string', enum: ['meta', 'google', 'youtube', 'tiktok', 'microsoft', 'other'] },
+        sourceUrl: { type: 'string', maxLength: 1000 },
+        externalAdId: { type: 'string', maxLength: 160 },
+        status: { type: 'string', enum: ['active', 'inactive', 'unknown'] },
+        format: { type: 'string', enum: ['image', 'video', 'carousel', 'search', 'display', 'shopping', 'unknown'] },
+        primaryText: { type: 'string', maxLength: 12000 },
+        headline: { type: 'string', maxLength: 500 },
+        description: { type: 'string', maxLength: 1000 },
+        cta: { type: 'string', maxLength: 120 },
+        landingUrl: { type: 'string', maxLength: 1000 },
+        mediaUrl: { type: 'string', maxLength: 1000 },
+        thumbnailUrl: { type: 'string', maxLength: 1000 },
+        hook: { type: 'string', maxLength: 300 },
+        angle: { type: 'string', maxLength: 200 },
+        avatar: { type: 'string', maxLength: 200 },
+        awarenessLevel: {
+          type: 'string',
+          enum: ['unaware', 'problem-aware', 'solution-aware', 'product-aware', 'most-aware', 'unknown'],
+        },
+        offer: { type: 'string', maxLength: 300 },
+        objection: { type: 'string', maxLength: 300 },
+        notes: { type: 'string', maxLength: 2000 },
+        tags: { type: 'array', items: { type: 'string', maxLength: 80 }, maxItems: 30 },
+        countries: { type: 'array', items: { type: 'string', maxLength: 80 }, maxItems: 20 },
+        confidence: { type: 'number', minimum: 0, maximum: 1 },
+      },
+      required: ['store', 'competitor', 'platform'],
+      additionalProperties: false,
+    },
+    handler: async (args) => saveCompetitorAdPayload(args),
   },
   {
     name: 'create_report',

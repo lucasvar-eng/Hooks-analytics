@@ -22,4 +22,10 @@ router.post('/stores/:id/competitors/:competitorId/scrape/apply', auth, competit
 router.get('/stores/:id/competitors/:competitorId/snapshots', auth, competitorController.listSnapshots);
 router.get('/stores/:id/competitors/:competitorId/diff', auth, competitorController.latestDiff);
 
+// Biblioteca de anuncios competitivos (Meta/Google/etc.)
+router.get('/stores/:id/competitors/:competitorId/ads', auth, competitorController.listAds);
+router.post('/stores/:id/competitors/:competitorId/ads', auth, competitorController.createAd);
+router.put('/stores/:id/competitors/:competitorId/ads/:adId', auth, competitorController.updateAd);
+router.delete('/stores/:id/competitors/:competitorId/ads/:adId', auth, competitorController.deleteAd);
+
 module.exports = router;

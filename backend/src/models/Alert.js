@@ -4,7 +4,7 @@ const alertSchema = new mongoose.Schema({
   storeId: { type: mongoose.Schema.Types.ObjectId, ref: 'Store', required: true },
   tipo: {
     type: String,
-    enum: ['performance', 'anomaly', 'threshold', 'system'],
+    enum: ['performance', 'anomaly', 'threshold', 'system', 'inventory_waste', 'inventory_restock', 'feed_health'],
     required: true,
   },
   titulo: { type: String, required: true },

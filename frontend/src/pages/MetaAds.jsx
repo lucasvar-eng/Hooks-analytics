@@ -8,6 +8,7 @@ import { getPeriodLabel } from '../components/common/MasterMetricBoard';
 import SourceMetricsRow from '../components/resumen/SourceMetricsRow';
 import { META_METRICS, META_DEFAULTS } from '../components/meta/metaMetricsCatalog';
 import MetaFunnel from '../components/meta/MetaFunnel';
+import CampaignFunnelTable from '../components/meta/CampaignFunnelTable';
 import MetaSpendRevenueChart from '../components/meta/MetaSpendRevenueChart';
 import TopInsightBar from '../components/insights/TopInsightBar';
 import SortableLayout from '../components/common/SortableLayout';
@@ -96,6 +97,11 @@ export default function MetaAds() {
         />
       ),
     },
+    ...(campaigns.length > 0 ? [{
+      id: 'campaign-funnel',
+      label: 'Embudo por campaña',
+      node: <CampaignFunnelTable campaigns={campaigns} />,
+    }] : []),
     {
       id: 'spend-revenue',
       label: 'Gasto vs facturación',

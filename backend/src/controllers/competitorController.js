@@ -2,6 +2,7 @@ const Competitor = require('../models/Competitor');
 const { getCompetitorOverview } = require('../services/contentStrategyService');
 const snapshotService = require('../services/competitorSnapshotService');
 const { scrapeCompetitor } = require('../services/competitorScrapeService');
+const competitorAdService = require('../services/competitorAdService');
 
 exports.list = async (req, res) => {
   const competitors = await Competitor.find({ storeId: req.params.id }).sort({ nombre: 1 });
@@ -9,8 +10,11 @@ exports.list = async (req, res) => {
 };
 
 exports.overview = async (req, res) => {
-  const overview = await getCompetitorOverview(req.params.id);
-  res.json(overview);
+  const [overview, ads] = await Promise.all([
+    getCompetitorOverview(req.params.id),
+    competitorAdService.getAdsOverview(req.params.id),
+  ]);
+  res.json({ ...overview, ads });
 };
 
 exports.create = async (req, res) => {
@@ -178,5 +182,61 @@ exports.latestDiff = async (req, res) => {
     res.json(diff);
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+};
+
+exports.listAds = async (req, res) => {
+  try {
+    const ads = await competitorAdService.listCompetitorAds(
+      req.params.id,
+      req.params.competitorId,
+      req.query
+    );
+    res.json(ads);
+  } catch (error) {
+    res.status(error.status || 500).json({ error: error.message });
+  }
+};
+
+exports.createAd = async (req, res) => {
+  try {
+    const ad = await competitorAdService.createCompetitorAd(
+      req.params.id,
+      req.params.competitorId,
+      req.body,
+      { userId: req.user?._id, source: 'manual' }
+    );
+    res.status(201).json(ad);
+  } catch (error) {
+    res.status(error.status || 500).json({ error: error.message });
+  }
+};
+
+exports.updateAd = async (req, res) => {
+  try {
+    const ad = await competitorAdService.updateCompetitorAd(
+      req.params.id,
+      req.params.competitorId,
+      req.params.adId,
+      req.body,
+      { userId: req.user?._id }
+    );
+    res.json(ad);
+  } catch (error) {
+    res.status(error.status || 500).json({ error: error.message });
+  }
+};
+
+exports.deleteAd = async (req, res) => {
+  try {
+    const deleted = await competitorAdService.deleteCompetitorAd(
+      req.params.id,
+      req.params.competitorId,
+      req.params.adId
+    );
+    if (!deleted) return res.status(404).json({ error: 'Anuncio competitivo no encontrado' });
+    res.json({ message: 'Deleted' });
+  } catch (error) {
+    res.status(error.status || 500).json({ error: error.message });
   }
 };

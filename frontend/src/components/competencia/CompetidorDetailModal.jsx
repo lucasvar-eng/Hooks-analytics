@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { renderMarkdown } from '../../utils/markdown';
 import CompetidorHistoria from './CompetidorHistoria';
+import CompetidorAdsPanel from './CompetidorAdsPanel';
 
 /**
  * Modal de detalle del competidor: análisis AI completo en markdown,
@@ -184,6 +185,11 @@ export default function CompetidorDetailModal({
               <p className="text-[10px] font-bold uppercase tracking-[1.5px] text-gray-300 mb-3">Historia de cambios</p>
               <CompetidorHistoria storeId={storeId} competitor={c} />
             </div>
+          )}
+
+          {/* Biblioteca de anuncios competitivos */}
+          {storeId && (
+            <CompetidorAdsPanel storeId={storeId} competitor={c} />
           )}
 
           {/* Oportunidades (botón → llamada al endpoint) */}

@@ -74,14 +74,12 @@ npm install
 
 ```bash
 cd ../backend
-node src/seed.js
+SEED_ADMIN_EMAIL=tu@email.com node src/seed.js
 ```
 
-Esto crea un usuario admin con:
-- **Email:** `lucas@hooks.com.ar`
-- **Password:** `hooks2026`
+Esto crea un usuario admin con ese email y una contraseña aleatoria que se imprime una sola vez (o la que pases en `SEED_ADMIN_PASSWORD`).
 
-> Cambiá el email/password en `backend/src/seed.js` antes de correr el seed si querés usar otros datos.
+> Si la base ya tiene usuarios, usá `node scripts/createUser.js` (ver `docs/onboarding/README.md`).
 
 ### 5. Build del frontend
 

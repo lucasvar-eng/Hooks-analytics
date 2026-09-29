@@ -7,7 +7,7 @@ Carpeta con todo lo necesario para sumar a alguien que **no conoce** la app.
 | Archivo | Para qué | Cómo entregarlo |
 |---|---|---|
 | `1-bienvenida-y-tour.html` | Tour completo de la app, página por página. Onboarding visual. | Mandar por mail/WhatsApp. Se abre con doble click, navega solo. |
-| `2-tutorial-meta-access-token.html` | Cómo generar el access token de Meta para conectar sus ad accounts. | Idem. |
+| `2-tutorial-meta-access-token.html` | Cómo generar el access token de Meta. **Parcialmente desactualizado**: hoy el token se guarda una vez en `/profile` (ahí está el tutorial vigente) y en cada tienda se usa "Traer cuentas". | Idem. |
 | `3-vincular-tienda.html` | Cómo conectar una Tienda Nube o Shopify a la app. | Idem. |
 | `claude-context.md` | Brief técnico para que el Claude/Codex de la persona tenga contexto de la app. | Que lo pegue en su `CLAUDE.md` o como "user instructions" en Claude Desktop / Codex / proyecto. |
 
@@ -20,12 +20,12 @@ Carpeta con todo lo necesario para sumar a alguien que **no conoce** la app.
 Desde tu máquina local (apuntando al mismo Mongo Atlas que producción):
 
 ```bash
-cd "/Users/lucasvargas/Desktop/ANALISIS ECOM/Hooks-analytics/backend"
+cd /ruta/a/Hooks-analytics/backend
 
 node scripts/createUser.js \
   --email valentina@ejemplo.com \
   --name "Valentina" \
-  --password "valentina2026" \
+  --password "<contraseña-temporal>" \
   --role analyst \
   --notification-email valentina@ejemplo.com
 ```
@@ -37,7 +37,7 @@ Roles globales válidos:
 
 **Cambios típicos para Valentina**:
 - Reemplazá `valentina@ejemplo.com` por su email real.
-- Reemplazá `valentina2026` por una password temporal que vas a compartirle por privado. Ella la debería cambiar al entrar (TODO: agregar endpoint de cambio de password en la app).
+- Reemplazá `<contraseña-temporal>` por una password temporal que vas a compartirle por privado. Ella la debería cambiar al entrar (TODO: agregar endpoint de cambio de password en la app).
 
 ### 2) Asignarle acceso a tiendas
 

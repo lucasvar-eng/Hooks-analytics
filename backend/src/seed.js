@@ -1,7 +1,11 @@
 /**
  * Seed script — creates the first admin user.
  * Run once: node src/seed.js
+ *
+ * Env opcionales: SEED_ADMIN_EMAIL, SEED_ADMIN_PASSWORD. Si no hay password,
+ * se genera una aleatoria y se imprime una sola vez.
  */
+const crypto = require('crypto');
 const mongoose = require('mongoose');
 const { mongodbUri } = require('./config/environment');
 const User = require('./models/User');
@@ -10,22 +14,24 @@ async function seed() {
   await mongoose.connect(mongodbUri);
   console.log('Connected to MongoDB');
 
-  const existing = await User.findOne({ email: 'lucas@hooks.com.ar' });
+  const email = process.env.SEED_ADMIN_EMAIL || 'admin@hooks.local';
+  const existing = await User.findOne({ $or: [{ email }, { role: 'admin' }] });
   if (existing) {
-    console.log('Admin user already exists, skipping.');
+    console.log('Ya existe un admin, skipping. Para sumar usuarios usá scripts/createUser.js');
     process.exit(0);
   }
 
+  const password = process.env.SEED_ADMIN_PASSWORD || crypto.randomBytes(12).toString('base64url');
   const admin = await User.create({
-    email: 'lucas@hooks.com.ar',
-    password: 'hooks2026',
-    nombre: 'Lucas',
+    email,
+    password,
+    nombre: 'Admin',
     role: 'admin',
   });
 
   console.log(`Admin user created: ${admin.email}`);
-  console.log('Login with: lucas@hooks.com.ar / hooks2026');
-  console.log('IMPORTANT: Change this password after first login!');
+  console.log(`Password: ${password}`);
+  console.log('Guardala ahora: no se vuelve a mostrar.');
   process.exit(0);
 }
 

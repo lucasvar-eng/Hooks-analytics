@@ -7,7 +7,7 @@
  *   node scripts/createUser.js \
  *     --email valentina@ejemplo.com \
  *     --name "Valentina" \
- *     --password "valentina2026" \
+ *     --password "<contraseña-temporal>" \
  *     --role analyst \
  *     --notification-email valentina@ejemplo.com
  *
